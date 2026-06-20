@@ -5,7 +5,8 @@ their impacts, in the context of rising sea-surface temperature, sea level and r
 
 - **Course:** Visual Analytics, Hochschule Düsseldorf (HSD), 4th semester
 - **External framing:** [Pacific Dataviz Challenge 2026](https://pacificdatavizchallenge.org/) — theme *Climate Change*
-- **Concept:** a free-to-explore multi-view dashboard (map · time series · 5D multivariate), linked via brushing
+- **Concept:** a scroll-driven **3D globe** (pure D3) that flies to storm-hit Pacific islands and shows
+  storm **strength** (track colour), **density** (all tracks) and **impact** (people-affected halos) — purely visual, no charts or tables
 
 > Full project documentation (idea, visualisation concept, dimensions, implementation plan and the
 > rules-compliance check) lives under [`docs/`](docs/) — note: written in German.
@@ -17,9 +18,10 @@ their impacts, in the context of rising sea-surface temperature, sea level and r
 ├─ docs/                     # Project documentation (00–09)
 ├─ scripts/                  # Data preprocessing (Python)
 │  ├─ prepare_pacific_data.py   # EM-DAT / WPP → Pacific subsets
-│  └─ build_app_dataset.py      # SDMX + WPP → app/public/data/ocean.json
-├─ app/                      # D3 MVP app (Vite) — 5D bubble-plot explorer
-│  ├─ src/                   #   main, bubbleChart, controls, dataTable, tooltip, metrics
+│  ├─ build_app_dataset.py      # SDMX + WPP → ocean.json (tidy climate/impact table)
+│  └─ build_globe_dataset.py    # IBTrACS + impacts → cyclones.json + islands.json
+├─ app/                      # D3 MVP app (Vite) — 3D globe scrollytelling
+│  ├─ src/                   #   main, globe (d3-geo canvas), scroller (scrollama), steps
 │  └─ public/data/           #   generated, licence-clean (committed)
 ├─ Data/        (git-ignored) # Raw + derived datasets — see "Data" below
 └─ README.md
@@ -43,7 +45,8 @@ All sources are cited in the submission form and the accompanying short paper.
 ## Reproduce the derived data
 
 ```bash
-python3 scripts/build_app_dataset.py     # SDMX + WPP → app/public/data/ocean.json + meta.json
+python3 scripts/build_app_dataset.py     # SDMX + WPP → app/public/data/ocean.json
+python3 scripts/build_globe_dataset.py   # IBTrACS + impacts → cyclones.json + islands.json
 python3 scripts/prepare_pacific_data.py  # (optional) EM-DAT/WPP Pacific subsets → Data/processed/
 ```
 
@@ -56,12 +59,14 @@ npm run dev        # dev server with hot reload
 # or: npm run build && npm run preview   # production build + local preview
 ```
 
-The app is a **5-dimensional bubble-plot explorer** (X = SST anomaly · Y = sea-level anomaly ·
-size = population · colour = region · time = year slider) with switchable axis/size metrics, a region
-filter, a hover tooltip, country search, and a linked sortable data table.
+The app is a **scroll-driven 3D globe** (D3 `d3-geo` orthographic on canvas + scrollama). Scrolling flies
+the globe to storm-hit islands; each hero storm (Winston 2016, Harold 2020, Gita 2018) is drawn with its
+**track colour = Saffir–Simpson category**, and the island shows a **pulsing halo sized by people
+affected** — a single, eye-readable visualisation (no charts, no data table). See
+[`docs/10_Masterplan-Globus-Scrollytelling.md`](docs/10_Masterplan-Globus-Scrollytelling.md).
 
 ## Status
 
-✅ Data pipeline + **first interactive MVP** (5D bubble-plot explorer, milestones M2–M5).
-Next: deploy to GitHub Pages, then add the map (deck.gl) and impact-time views. See
-[`docs/06_Arbeitsplan.md`](docs/06_Arbeitsplan.md) and [`docs/09_Projektplan.md`](docs/09_Projektplan.md).
+✅ Data pipeline + **interactive MVP: 3D globe scrollytelling** of Pacific cyclones & their impacts.
+Next: deploy to GitHub Pages; add a Western-Pacific typhoon station and storm-density layer.
+See [`docs/06_Arbeitsplan.md`](docs/06_Arbeitsplan.md) and [`docs/10_Masterplan-Globus-Scrollytelling.md`](docs/10_Masterplan-Globus-Scrollytelling.md).

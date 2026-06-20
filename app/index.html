@@ -3,41 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pacific Cyclones &amp; Their Impacts — Climate Explorer</title>
+    <title>Pacific Cyclones &amp; Their Impacts</title>
   </head>
   <body>
-    <header class="app-header">
-      <h1>Pacific Climate Explorer</h1>
-      <p class="subtitle">
-        Sea-surface temperature, sea level, rainfall &amp; disaster impacts across Pacific Island
-        countries, 1993–2023. <strong>Drag the year slider, switch axes, search a country.</strong>
-      </p>
-    </header>
+    <div class="scrolly">
+      <div class="sticky">
+        <canvas id="globe"></canvas>
 
-    <main class="app-main">
-      <section class="viz-panel">
-        <div id="controls" class="controls" aria-label="Visualisation controls"></div>
-        <div id="chart" class="chart" role="img"
-             aria-label="Animated bubble chart of Pacific Island climate indicators"></div>
-        <div id="legend" class="legend" aria-label="Region legend"></div>
-      </section>
-
-      <aside class="data-panel" aria-label="Searchable data table">
-        <div class="data-panel__head">
-          <h2>Data explorer</h2>
-          <input id="search" type="search" placeholder="Search country…"
-                 autocomplete="off" aria-label="Search country" />
+        <div class="title-card">
+          <h1>Pacific Cyclones<br />&amp; Their Impacts</h1>
+          <p class="scroll-hint">scroll to explore ↓</p>
         </div>
-        <div id="table" class="table-wrap"></div>
-      </aside>
-    </main>
 
-    <footer class="app-footer">
-      <span>Sources: Pacific Data Hub (SPC), NOAA IBTrACS, UN WPP 2024.</span>
-      <span>5 channels: X · Y · size · colour · time.</span>
+        <div class="legend" aria-label="Storm category legend">
+          <span class="legend__title">Storm strength</span>
+          <span class="legend__scale">
+            <i style="background:#74add1"></i><i style="background:#fee090"></i><i style="background:#fdae61"></i><i style="background:#f46d43"></i><i style="background:#d73027"></i><i style="background:#a50026"></i>
+          </span>
+          <span class="legend__ends"><span>Tropical storm</span><span>Category 5</span></span>
+          <span class="legend__impact"><i class="halo"></i> circle = people affected</span>
+        </div>
+      </div>
+
+      <div id="steps" class="steps"></div>
+    </div>
+
+    <footer class="credits">
+      Data: NOAA IBTrACS (storm tracks) · Pacific Data Hub / UN OCHA (people affected) · world-atlas.
+      Visualisation in D3.
     </footer>
-
-    <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
     <script type="module" src="/src/main.js"></script>
   </body>
