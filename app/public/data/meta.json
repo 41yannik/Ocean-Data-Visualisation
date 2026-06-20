@@ -1,0 +1,182 @@
+{
+  "yearRange": [
+    1993,
+    2023
+  ],
+  "years": [
+    1993,
+    1994,
+    1995,
+    1996,
+    1997,
+    1998,
+    1999,
+    2000,
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023
+  ],
+  "regions": [
+    "Melanesia",
+    "Micronesia",
+    "Polynesia"
+  ],
+  "countries": [
+    {
+      "iso3": "ASM",
+      "country": "American Samoa",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "COK",
+      "country": "Cook Islands",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "FJI",
+      "country": "Fiji",
+      "region": "Melanesia"
+    },
+    {
+      "iso3": "FSM",
+      "country": "Micronesia (Fed. States of)",
+      "region": "Micronesia"
+    },
+    {
+      "iso3": "GUM",
+      "country": "Guam",
+      "region": "Micronesia"
+    },
+    {
+      "iso3": "KIR",
+      "country": "Kiribati",
+      "region": "Micronesia"
+    },
+    {
+      "iso3": "MHL",
+      "country": "Marshall Islands",
+      "region": "Micronesia"
+    },
+    {
+      "iso3": "MNP",
+      "country": "Northern Mariana Islands",
+      "region": "Micronesia"
+    },
+    {
+      "iso3": "NCL",
+      "country": "New Caledonia",
+      "region": "Melanesia"
+    },
+    {
+      "iso3": "NIU",
+      "country": "Niue",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "NRU",
+      "country": "Nauru",
+      "region": "Micronesia"
+    },
+    {
+      "iso3": "PCN",
+      "country": "Pitcairn",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "PLW",
+      "country": "Palau",
+      "region": "Micronesia"
+    },
+    {
+      "iso3": "PNG",
+      "country": "Papua New Guinea",
+      "region": "Melanesia"
+    },
+    {
+      "iso3": "PYF",
+      "country": "French Polynesia",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "SLB",
+      "country": "Solomon Islands",
+      "region": "Melanesia"
+    },
+    {
+      "iso3": "TKL",
+      "country": "Tokelau",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "TON",
+      "country": "Tonga",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "TUV",
+      "country": "Tuvalu",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "VUT",
+      "country": "Vanuatu",
+      "region": "Melanesia"
+    },
+    {
+      "iso3": "WLF",
+      "country": "Wallis and Futuna",
+      "region": "Polynesia"
+    },
+    {
+      "iso3": "WSM",
+      "country": "Samoa",
+      "region": "Polynesia"
+    }
+  ],
+  "domains": {
+    "sst_anom": [
+      -0.8,
+      1.1
+    ],
+    "sea_level": [
+      -0.2,
+      0.2
+    ],
+    "rain_anom": [
+      -54.4,
+      66.6
+    ],
+    "population": [
+      1552,
+      10389635
+    ],
+    "affected": [
+      0.0,
+      633584.0
+    ],
+    "econ_loss_usd": [
+      4.9,
+      374109863.0
+    ]
+  }
+}

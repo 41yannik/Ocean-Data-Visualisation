@@ -6,9 +6,10 @@
 # ── Rohdaten & abgeleitete Daten ────────────────────────────
 # Zu groß für GitHub (Coastline ~2 GB, IBTrACS > 100 MB) und/oder lizenzbeschränkt
 # (EM-DAT = CC BY-NC-ND). Über scripts/ reproduzierbar — nicht im Repo verteilt.
-Data/
-Recherche Data/
-Developer API/
+# An die Wurzel geankert (/), damit app/public/data/ (lizenz-saubere App-Daten) NICHT ignoriert wird.
+/Data/
+/Recherche Data/
+/Developer API/
 
 # ── Python ──────────────────────────────────────────────────
 __pycache__/

@@ -16,13 +16,18 @@ their impacts, in the context of rising sea-surface temperature, sea level and r
 .
 ├─ docs/                     # Project documentation (00–09)
 ├─ scripts/                  # Data preprocessing (Python)
-│  └─ prepare_pacific_data.py
+│  ├─ prepare_pacific_data.py   # EM-DAT / WPP → Pacific subsets
+│  └─ build_app_dataset.py      # SDMX + WPP → app/public/data/ocean.json
+├─ app/                      # D3 MVP app (Vite) — 5D bubble-plot explorer
+│  ├─ src/                   #   main, bubbleChart, controls, dataTable, tooltip, metrics
+│  └─ public/data/           #   generated, licence-clean (committed)
 ├─ Data/        (git-ignored) # Raw + derived datasets — see "Data" below
 └─ README.md
 ```
 
 The `Data/` tree is **not committed** (size and licensing — see below). It is reproduced locally from
-the original sources via the scripts in `scripts/`.
+the original sources via the scripts in `scripts/`. The app's `public/data/*.json` **is** committed
+(small, licence-clean: Pacific Data Hub + UN WPP only).
 
 ## Data sources & licences
 
@@ -38,11 +43,25 @@ All sources are cited in the submission form and the accompanying short paper.
 ## Reproduce the derived data
 
 ```bash
-python3 scripts/prepare_pacific_data.py
-# → writes filtered, tidy CSVs to Data/processed/
+python3 scripts/build_app_dataset.py     # SDMX + WPP → app/public/data/ocean.json + meta.json
+python3 scripts/prepare_pacific_data.py  # (optional) EM-DAT/WPP Pacific subsets → Data/processed/
 ```
+
+## Run the MVP app
+
+```bash
+cd app
+npm install
+npm run dev        # dev server with hot reload
+# or: npm run build && npm run preview   # production build + local preview
+```
+
+The app is a **5-dimensional bubble-plot explorer** (X = SST anomaly · Y = sea-level anomaly ·
+size = population · colour = region · time = year slider) with switchable axis/size metrics, a region
+filter, a hover tooltip, country search, and a linked sortable data table.
 
 ## Status
 
-Setup & data pipeline in progress (milestone M2). See [`docs/06_Arbeitsplan.md`](docs/06_Arbeitsplan.md)
-for milestones and [`docs/09_Projektplan.md`](docs/09_Projektplan.md) for the full plan.
+✅ Data pipeline + **first interactive MVP** (5D bubble-plot explorer, milestones M2–M5).
+Next: deploy to GitHub Pages, then add the map (deck.gl) and impact-time views. See
+[`docs/06_Arbeitsplan.md`](docs/06_Arbeitsplan.md) and [`docs/09_Projektplan.md`](docs/09_Projektplan.md).
