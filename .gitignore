@@ -1,0 +1,22 @@
+# ── OS / editor ─────────────────────────────────────────────
+.DS_Store
+*.swp
+.vscode/
+
+# ── Rohdaten & abgeleitete Daten ────────────────────────────
+# Zu groß für GitHub (Coastline ~2 GB, IBTrACS > 100 MB) und/oder lizenzbeschränkt
+# (EM-DAT = CC BY-NC-ND). Über scripts/ reproduzierbar — nicht im Repo verteilt.
+Data/
+Recherche Data/
+Developer API/
+
+# ── Python ──────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ── Node / Web-App (später) ─────────────────────────────────
+node_modules/
+dist/
+.cache/
