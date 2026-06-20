@@ -1,7 +1,7 @@
 // Orchestrierung: Daten laden, Globus init, Zeit-Steuerung + Scroll-Steps verdrahten, Legende bauen.
 import "./styles.css";
 import { feature } from "topojson-client";
-import landTopo from "world-atlas/land-110m.json";
+import landTopo from "world-atlas/land-50m.json";
 import { createGlobe } from "./globe.js";
 import { createScroller } from "./scroller.js";
 import { createControls } from "./controls.js";
