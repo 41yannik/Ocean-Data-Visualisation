@@ -12,17 +12,12 @@
 
         <div class="title-card">
           <h1>Pacific Cyclones<br />&amp; Their Impacts</h1>
-          <p class="scroll-hint">scroll to explore ↓</p>
+          <p class="scroll-hint">drag to spin · scroll to explore ↓</p>
         </div>
 
-        <div class="legend" aria-label="Storm category legend">
-          <span class="legend__title">Storm strength</span>
-          <span class="legend__scale">
-            <i style="background:#74add1"></i><i style="background:#fee090"></i><i style="background:#fdae61"></i><i style="background:#f46d43"></i><i style="background:#d73027"></i><i style="background:#a50026"></i>
-          </span>
-          <span class="legend__ends"><span>Tropical storm</span><span>Category 5</span></span>
-          <span class="legend__impact"><i class="halo"></i> circle = people affected</span>
-        </div>
+        <aside id="legend" class="legend" aria-label="Legend"></aside>
+
+        <div id="controls" class="controls" aria-label="Time controls"></div>
       </div>
 
       <div id="steps" class="steps"></div>
@@ -30,7 +25,7 @@
 
     <footer class="credits">
       Data: NOAA IBTrACS (storm tracks) · Pacific Data Hub / UN OCHA (people affected) · world-atlas.
-      Visualisation in D3.
+      Built with D3 (colours: ColorBrewer).
     </footer>
 
     <script type="module" src="/src/main.js"></script>

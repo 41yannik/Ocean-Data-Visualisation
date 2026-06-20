@@ -159,8 +159,12 @@ def main():
             "lon": lon, "lat": lat, "affected": affected.get(iso3, {}),
         })
 
+    # ── Dichte-Raster (intensitätsgewichtet): Σ (max(cat,0)+1) je ~2.5°-Zelle ──
+    density = build_density(storms, step=2.5)
+
     (APP / "cyclones.json").write_text(json.dumps({"storms": storms}, ensure_ascii=False), encoding="utf-8")
     (APP / "islands.json").write_text(json.dumps(islands, ensure_ascii=False), encoding="utf-8")
+    (APP / "density.json").write_text(json.dumps(density, ensure_ascii=False), encoding="utf-8")
 
     pts_total = sum(len(s["pts"]) for s in storms)
     heroes = [s["name"] for s in storms if s["hero"]]
@@ -168,6 +172,25 @@ def main():
     print(f"cyclones.json: {len(storms)} Stürme, {pts_total} Punkte, {sz} KB")
     print(f"  Heroes: {heroes}")
     print(f"islands.json: {len(islands)} Inseln, mit Betroffenen-Daten: {len(affected)}")
+    print(f"density.json: {len(density['cells'])} Zellen (step {density['step']}°, max {density['max']})")
+
+
+def build_density(storms, step=2.5):
+    """Bint alle (ausgedünnten) Track-Punkte in lon/lat-Zellen, gewichtet nach Sturmstärke."""
+    grid: dict[tuple[int, int], float] = {}
+    for s in storms:
+        for lon, lat, cat in s["pts"]:
+            gx = int((lon + 180) // step)
+            gy = int((lat + 90) // step)
+            grid[(gx, gy)] = grid.get((gx, gy), 0) + max(0, cat) + 1
+    cells = []
+    mx = 0.0
+    for (gx, gy), w in grid.items():
+        lon_sw = round(gx * step - 180, 3)
+        lat_sw = round(gy * step - 90, 3)
+        cells.append([lon_sw, lat_sw, round(w, 1)])
+        mx = max(mx, w)
+    return {"step": step, "max": mx, "cells": cells}
 
 
 if __name__ == "__main__":
