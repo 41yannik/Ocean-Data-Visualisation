@@ -13,7 +13,7 @@
 
 **„So what":** Wer Katastrophenschutz plant, darf nicht nur auf die Sturmstärke schauen. Die Visualisierung zeigt die **Abweichung vom Intensitätstrend** — die Lücke zwischen dem, was Windstärke allein erwarten ließe, und dem, was ein Sturm tatsächlich anrichtet. Diese Abweichung wird ehrlich als Mischung aus Verwundbarkeit, Exposition und Meldepraxis eingeordnet (das Residuum korreliert r≈0,45 mit der Landesbevölkerung — eine reine „Verwundbarkeits"-Kausalität wäre eine Überdehnung).
 
-**Beleg, dass die Daten das tragen** (verifiziert 2026-07-02 gegen `Data/processed/emdat_pacific_storms_events.csv`): Zyklon *Heta* (2004, ~300–310 km/h) — **ein** Sturm, zwei Gesellschaften: **23.060 Betroffene in Amerikanisch-Samoa, 702 auf Niue.** Daneben *Maila* (2026, 185 km/h): **340.641 Betroffene** auf den Salomonen. Absolut ist die Intensitäts-Beziehung statistisch null (R²=0,010, p=0,49); **pro Kopf wird sie signifikant (R²=0,145, p=0,0099)** — deshalb ist pro Kopf die Standardansicht. ⚠️ Das alte Preview-Mockup ([mockups/t02_track_to_toll.png](mockups/t02_track_to_toll.png)) ist **superseded** — es enthält die widerlegte Zahl „Mawar ~700 Betroffene" (real: 100.000 = 60 % der Bevölkerung Guams; die 702 gehören zu Heta/Niue).
+**Beleg, dass die Daten das tragen** (verifiziert 2026-07-02 gegen `Data/processed/emdat_pacific_storms_events.csv`): Zyklon *Heta* (2004, ~300–310 km/h) — **ein** Sturm, zwei Gesellschaften: **23.060 Betroffene in Amerikanisch-Samoa, 702 auf Niue.** Daneben *Maila* (2026, 185 km/h): **340.641 Betroffene** auf den Salomonen. Auf der finalen Intensitätsachse (USA_WIND via Join, n=78, Pipeline 2026-07-02): absolut ist die Beziehung statistisch null (**R²=0,006, p=0,50**); **pro Kopf wird sie signifikant (R²=0,065, p=0,025)** — klein, aber real; deshalb ist pro Kopf die Standardansicht. *(Vorläufige Review-Werte auf der EM-DAT-magnitude-Achse, n=45–48: R²=0,010/0,145 — überholt durch C4.)* ⚠️ Das alte Preview-Mockup ([mockups/t02_track_to_toll.png](mockups/t02_track_to_toll.png)) ist **superseded** — es enthält die widerlegte Zahl „Mawar ~700 Betroffene" (real: 100.000 = 60 % der Bevölkerung Guams; die 702 gehören zu Heta/Niue).
 
 ---
 
@@ -52,7 +52,7 @@
 ### C. Daten & Analyse
 - ✅ **C1 — Schadensmaß (y-Achse):** **Betroffene Personen** (entschieden 2026-07-01). Beste Abdeckung (79/99), menschzentriert. **Varianten-Zusatz (2026-07-02):** Kurs-Variante = EM-DAT `total_affected` (intern, Abgabe 24.07.); Challenge-Variante = offene Quelle, Entscheidung nach dem 24.07. — siehe [Decision Record](decisions/2026-07-02_datenquellen.md).
 - ✅ **C2 — Abweichung sichtbar machen (revidiert 2026-07-02):** **Intensitätstrend + Quantilband; Abweichung über Position + Annotation**, nicht mehr als divergierende Residuum-Farbe (redundant zur y-Position). Framing „**Abweichung vom Intensitätstrend**" (Verwundbarkeit **und** Exposition), nicht kausal „Verwundbarkeit". R²/n/p direkt an der Linie; die fast flache Absolut-Linie (R²=0,010, p=0,49) ist selbst der Befund („wind alone predicts almost nothing").
-- ✅ **C3 — Normalisierung (revidiert 2026-07-02):** **Pro Kopf = Standardansicht**, absolut = Toggle. Pro Kopf ist die Beziehung signifikant (R²=0,145, p=0,0099, n=45) und kleine Inseln werden nicht unterdrückt; je Modus eigener Fit (aus der Pipeline), Achse/Punkte/Linie/Band transitionieren gemeinsam.
+- ✅ **C3 — Normalisierung (revidiert 2026-07-02):** **Pro Kopf = Standardansicht**, absolut = Toggle. Pro Kopf ist die Beziehung signifikant (Pipeline-final auf USA_WIND-Achse: **R²=0,065, p=0,025, n=78**; absolut R²=0,006, p=0,50) und kleine Inseln werden nicht unterdrückt; je Modus eigener Fit (aus der Pipeline), Achse/Punkte/Linie/Band transitionieren gemeinsam.
 - ✅ **C4 — Intensitätsquelle (präzisiert 2026-07-02):** durchgängig **IBTrACS `USA_WIND` (1-min, kt)** via Namens+Saison-Join — bei 100 % der gematchten Stürme vorhanden; **kein Mischen mit WMO_WIND** (10-min; basin-abhängiger Bias bis ~15 %). EM-DAT-`magnitude` (÷ 1,852 → kt) nur als markierter Fallback (`intensity_source`). Join real 94/99, mit Fixes 97/99. Der Join ist **Pflicht, kein Fallback**: 6 der Top-10-Schadensevents (u. a. Winston, 540.558 Betroffene) haben kein EM-DAT-magnitude.
 - ✅ **C5 — Becken/Umfang:** **Alle Pazifik-Inselstaaten (SP+WP)** (entschieden 2026-07-01). Alle ~99 EM-DAT-Ereignisse; Intensität aus beiden Becken.
 - ✅ **C6 — Zeitraum (revidiert 2026-07-02):** **2001–2026** — alle verfügbaren Ereignisse (Daten beginnen real 2001). Caveats transparent in UI/meta.json: 2025 leer, 2024 nur 1 Zeile, 2026er-Einträge jung und revisionsanfällig (Maila!), Bevölkerung ab 2024 als Forward-Fill des 2023-WPP-Werts (`pop_extrapolated`). Story-Zahlen werden skriptgestützt aus `events.json` generiert, nie hart getippt.
@@ -85,7 +85,7 @@ Eine **einseitige, geführte Scrollytelling-Anwendung** (Englisch), nüchtern-wi
 │   (dateline-zentriert)    │   y = Betroffene PRO KOPF (log) │
 │   ~ IBTrACS-Zugbahnen ~   │      ●     ● ← Ausreißer (Anno) │
 │   Strichstärke=Kategorie  │    ●˙·˙●●˙·˙ Trend + Quantilband│
-│        ●Insel-Punkte      │      R²=0.15 · n=45 · p<0.01    │
+│        ●Insel-Punkte      │      R²=0.07 · n=78 · p=0.02    │
 │   ◄──── Brushing ────►    │   x = Intensität (USA_WIND, kt) │
 ├──────────────────────────┴────────────────────────────────┤
 │ [Toggle: pro Kopf ↔ absolut]  [Klick Sturm → Detailpanel]  │
@@ -105,7 +105,7 @@ Eine **einseitige, geführte Scrollytelling-Anwendung** (Englisch), nüchtern-wi
 0. **Klimakontext (SST):** Der Pazifik erwärmt sich (PDH-SST-Anomalien 1850–2025) — die Bühne, auf der Stürme auf exponierte Inselgesellschaften treffen.
 1. **Hook (Heta 2004):** Ein Zyklon, ~300 km/h — **23.060 Betroffene in Amerikanisch-Samoa, 702 auf Niue.** Gleicher Sturm, andere Folgen.
 2. **Streuung:** alle ~74–78 Punkte (pro Kopf, log) → **keine Diagonale**; annotiert: *Mawar* (295 km/h → 100.000 Betroffene = 60 % Guams) vs. *Percy*/Tokelau (249 km/h → 26).
-3. **Trend & Grenzen:** Linie + Quantilband erscheinen; „pro Kopf erklärt Intensität ~15 % der Varianz, absolut ~1 % — und ein Teil des Rests ist Exposition, nicht Verwundbarkeit."
+3. **Trend & Grenzen:** Linie + Quantilband erscheinen; „pro Kopf erklärt Intensität nur ~6–7 % der Varianz (signifikant, p≈0,02), absolut ~1 % (nicht signifikant) — und ein Teil des Rests ist Exposition, nicht Verwundbarkeit."
 4. **Ein Sturm, vier Länder (Harold 2020):** Track-Highlight, 4 verbundene Punkte (FJI 180.000 / SLB 150.000 / VUT 130.120 / TON 25.000), Detailpanel öffnet sich.
 5. **Muster & Toggle:** Länder wiederholt über dem Trend (Vanuatu 71 %, Fidschi 70 % der Events über der Linie — mit Expositions-Caveat); Toggle-Moment: Gita/Tonga 82 % der Bevölkerung, Tuvalu-Median ~47 %.
 6. **Datenehrlichkeit (visuell):** Rug-Leiste, gestrichelte Fallback-Punkte, Join-Abdeckung, 2026er-Revisionsvorbehalt, n je Ansicht.
@@ -122,7 +122,7 @@ Eine **einseitige, geführte Scrollytelling-Anwendung** (Englisch), nüchtern-wi
 5. **Fits (in Python, nie im Frontend):** zwei Regressionen `log10(y+1) ~ Intensität` (absolut + pro Kopf) mit Steigung/Intercept/R²/p/n, Residuen je Zeile, Quantilband-Stützpunkte.
 6. **SST-Intro:** mittlere SST-Anomalie je Jahr (PDH-Datensatz, 1850–2025) → `sst.json`.
 7. **Crosswalk/Referenz:** ISO3↔GEO_PICT, Subregion, Insel-Zentroide (`scripts/pipeline/reference.py`).
-8. **Validierung (`validate.py`):** Join ≥ 94/99 · scatterfähig ≥ 74 · Winston 2016/FJI mit `intensity_source=="ibtracs"` · Harold 2020 = 4 Länderzeilen · kein `affected == 0` · Maila mit `affected_pc` · 0,10 < R²_pc < 0,20 und p < 0,05 · alle Track-Lons ∈ [−180, 180] · Challenge-Variante ohne EM-DAT-Felder (Lizenz-Assertion).
+8. **Validierung (`validate.py`):** Join ≥ 94/99 · scatterfähig ≥ 74 · Winston 2016/FJI mit `intensity_source=="ibtracs"` · Harold 2020 = 4 Länderzeilen · kein `affected == 0` · Maila mit `affected_pc` · **p_pc < 0,05 und R²_pc > R²_abs** (final: R²_pc≈0,065) · alle Track-Lons ∈ [−180, 180] · Challenge-Variante ohne EM-DAT-Felder (Lizenz-Assertion).
 
 **Ausgabeschema (`app/public/data/`):**
 - `events.json` — `[{id, sid, name, year, iso3, country, subregion, intensity_kt, intensity_source, category, affected, affected_pc, pop, pop_extrapolated, deaths, damage_kusd, residual_abs, residual_pc}]` *(Kurs-Variante EM-DAT-basiert → via `.gitignore` vom Repo ausgeschlossen)*

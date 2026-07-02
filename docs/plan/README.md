@@ -45,7 +45,7 @@
 
 1. **EM-DAT-Lizenz-/Regel-Blocker** (Challenge §9 open data, §13 IP; kein offizieller PDH-Datensatz im Kerndesign) → Paket 01.
 2. **Story-Hook faktisch falsch** (Mawar: 100.000 Betroffene, nicht ~700; Maila 2026 außerhalb C6-Fenster) → Paket 02, 06.
-3. **Erwartungslinie absolut statistisch hohl** (R²=0,010, p=0,49) — pro Kopf signifikant (R²=0,145, p=0,0099) → Pro-Kopf als Default → Paket 02, 03, 04.
+3. **Erwartungslinie absolut statistisch hohl** — pro Kopf signifikant (Pipeline-final: p=0,025, R²=0,065, n=78) → Pro-Kopf als Default → Paket 02, 03, 04.
 4. **IBTrACS-Join ist Pflicht** (6 der Top-10-Events ohne EM-DAT-magnitude) + **USA_WIND einheitlich** (WMO/USA-Mix: bis ~15 % Bias) → Paket 03.
 5. **Analyseeinheit ungeklärt** (99 Zeilen = 73 Stürme; Sturm-Land-Paar festschreiben) → Paket 02, 03.
 6. **OneDrive-/Repo-Risiko akut** (33 unkommittierte Löschungen, .gitignore fehlt, neue Docs untracked) → Paket 00.
@@ -57,7 +57,7 @@
 | EM-DAT-Zeilen (= Sturm-**Land**-Paare) | 99 (2001–2026; 2025 leer) · 73 distinkte Stürme |
 | Join EM-DAT↔IBTrACS (Name+Saison ±1) | 94/99 Zeilen; mit Apostroph-/Alias-Fix 97/99; 0 Mehrdeutigkeiten |
 | Scatter-fähig (Intensität + Betroffene) | 74–78 Zeilen (nur EM-DAT-magnitude: 48) |
-| Regression absolut / pro Kopf | R²=0,010 (p=0,49) / **R²=0,145 (p=0,0099)** |
+| Regression absolut / pro Kopf | **Pipeline-final (USA_WIND-Achse, n=78):** R²=0,006 (p=0,50) / **R²=0,065 (p=0,025)** · vorläufige Review-Werte auf EM-DAT-magnitude (n=45–48): 0,010 / 0,145 |
 | Track-Volumen (gematchte Stürme) | ~5.800 Punkte → tracks.json 59 KB roh / 16 KB gzip |
 | WPP-Bevölkerung | 21 Länder, 1950–**2023** → 7 Event-Zeilen (2024/2026) brauchen Forward-Fill |
 | Top-Event | Winston 2016/FJI: 540.558 Betroffene — **kein** EM-DAT-magnitude, nur via Join |

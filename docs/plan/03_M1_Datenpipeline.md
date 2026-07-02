@@ -44,7 +44,9 @@ Data/<PDH VC_DSR_AFFCT>.csv (Challenge-Variante) ─┘                         
   assert Harold-2020 hat 4 Länderzeilen
   assert (affected == 0).sum() == 0   # log-Skala sicher
   assert Maila-Zeilen haben affected_pc (Forward-Fill greift)
-  assert 0.10 < R²_pro_kopf < 0.20 und p_pro_kopf < 0.05   # Plausibilitätskorridor
+  assert p_pro_kopf < 0.05 und R²_pro_kopf > R²_absolut    # Signifikanz statt starrem Korridor
+  # (Pipeline-final auf USA_WIND-Achse, n=78: R²_pc=0,065 / p=0,025; der frühere Korridor
+  #  0,10–0,20 stammte von der vorläufigen EM-DAT-magnitude-Achse mit n=45)
   ```
 - [ ] **11. Lizenz-Schalter:** Bei `--variant challenge` darf **kein** EM-DAT-Feld in die Outputs gelangen (Assertion auf Spaltenliste); bei `--variant kurs` schreibt das Skript einen Hinweis „EM-DAT — internal use only, not for publication" in `meta.json`.
 
