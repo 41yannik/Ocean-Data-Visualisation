@@ -1,20 +1,19 @@
 # Feinkonzept — Thema ②: „From Track to Toll"
 
 > **Arbeitstitel:** *From Track to Toll — Warum der stärkste Sturm nicht den größten Schaden anrichtet.*
-> Lebendes Spezifikationsdokument. Offene Entscheidungen sind mit **[OFFEN]** markiert und werden per Rückfrage geklärt; meine Empfehlung steht jeweils dabei.
-> Übergeordnetes Dokument: [../KONZEPT.md](../KONZEPT.md) · Datenlage: [../KONZEPT.md §2–§3](../KONZEPT.md) · Visualisierungsvergleich: [Visualisierungsmoeglichkeiten.md](Visualisierungsmoeglichkeiten.md)
+> Lebendes Spezifikationsdokument. Übergeordnetes Dokument: [../KONZEPT.md](../KONZEPT.md) · Datenlage: [../KONZEPT.md §2–§3](../KONZEPT.md) · Visualisierungsvergleich: [Visualisierungsmoeglichkeiten.md](Visualisierungsmoeglichkeiten.md) · Umsetzungsplan: [plan/README.md](plan/README.md) · Datenquellen-Entscheidung: [decisions/2026-07-02_datenquellen.md](decisions/2026-07-02_datenquellen.md)
 
-**Stand:** 2026-07-01 · **Status:** ✅ Konzept vollständig definiert (16 Entscheidungen in 4 Runden) — bereit für die Umsetzung ab Meilenstein M0.
+**Stand:** 2026-07-02 · **Status:** ✅ Konzept vollständig definiert; Review-Korrekturen vom 2026-07-02 eingearbeitet (Hook, Zeitfenster, Pro-Kopf-Default, USA_WIND, Analyseeinheit, Farbarchitektur) — in Umsetzung (Paket 03: Datenpipeline).
 
 ---
 
 ## 1. Kernthese & Ziel
 
-**These:** Die gemessene Intensität eines tropischen Wirbelsturms (Wind/Kategorie) erklärt den menschlichen Schaden nur schwach. Was den Ausschlag gibt, ist die **Verwundbarkeit** der getroffenen Gesellschaft (Bevölkerungsdichte, Vorbereitung, Infrastruktur, Armut, Inselgröße).
+**These:** Die gemessene Intensität eines tropischen Wirbelsturms (Wind/Kategorie) erklärt den menschlichen Schaden nur schwach. Was den Ausschlag gibt, sind **Verwundbarkeit und Exposition** der getroffenen Gesellschaften (wie viele Menschen im Pfad leben, Vorbereitung, Infrastruktur, Meldewege) — nicht die Windstärke allein.
 
-**„So what":** Wer Katastrophenschutz plant, darf nicht nur auf die Sturmstärke schauen. Die Visualisierung macht den „**Verwundbarkeits-Rest**" sichtbar — die Lücke zwischen dem, was ein Sturm physikalisch „sein müsste", und dem, was er tatsächlich anrichtet.
+**„So what":** Wer Katastrophenschutz plant, darf nicht nur auf die Sturmstärke schauen. Die Visualisierung zeigt die **Abweichung vom Intensitätstrend** — die Lücke zwischen dem, was Windstärke allein erwarten ließe, und dem, was ein Sturm tatsächlich anrichtet. Diese Abweichung wird ehrlich als Mischung aus Verwundbarkeit, Exposition und Meldepraxis eingeordnet (das Residuum korreliert r≈0,45 mit der Landesbevölkerung — eine reine „Verwundbarkeits"-Kausalität wäre eine Überdehnung).
 
-**Beleg, dass die Daten das tragen** (bereits gerendert, siehe [Preview ②](mockups/t02_track_to_toll.png)): Ein 185-km/h-Sturm (*Maila*) traf 350.000 Menschen; der stärkste (*Mawar*, ~295 km/h) nur ~700. Keine Diagonale — großer Streuungsrest.
+**Beleg, dass die Daten das tragen** (verifiziert 2026-07-02 gegen `Data/processed/emdat_pacific_storms_events.csv`): Zyklon *Heta* (2004, ~300–310 km/h) — **ein** Sturm, zwei Gesellschaften: **23.060 Betroffene in Amerikanisch-Samoa, 702 auf Niue.** Daneben *Maila* (2026, 185 km/h): **340.641 Betroffene** auf den Salomonen. Absolut ist die Intensitäts-Beziehung statistisch null (R²=0,010, p=0,49); **pro Kopf wird sie signifikant (R²=0,145, p=0,0099)** — deshalb ist pro Kopf die Standardansicht. ⚠️ Das alte Preview-Mockup ([mockups/t02_track_to_toll.png](mockups/t02_track_to_toll.png)) ist **superseded** — es enthält die widerlegte Zahl „Mawar ~700 Betroffene" (real: 100.000 = 60 % der Bevölkerung Guams; die 702 gehören zu Heta/Niue).
 
 ---
 
@@ -22,16 +21,17 @@
 
 | Rolle | Quelle | Abdeckung / Hinweis |
 |---|---|---|
-| **Sturm-Intensität** | IBTrACS SP+WP (Spitzenwind WMO/USA, Kategorie USA_SSHS) **oder** `emdat…events.magnitude` (km/h) | IBTrACS: geometrisch vollständig, Wind aber erst ab Satelliten-Ära; EM-DAT-magnitude: 56/99 Ereignisse |
+| **Sturm-Intensität** | IBTrACS SP+WP: **USA_WIND-Peak (kt, 1-min)** + Kategorie max(USA_SSHS) via Join; Fallback `emdat…events.magnitude` (km/h ÷ 1,852), markiert | **Kein WMO/USA-Mix** (basin-abhängiger Bias bis ~15 %); USA_WIND bei 100 % der gematchten Stürme; Fallback bringt netto ~4 Punkte |
 | **Sturm-Bahn (Karte)** | IBTrACS SP+WP LAT/LON | ~100 % gefüllt — Karten immer aus IBTrACS, **nie** aus EM-DAT (dort nur 2/99 Koordinaten) |
 | **Schaden — Betroffene** | `emdat…events.total_affected` | **79/99** — beste Abdeckung |
 | **Schaden — Tote** | `total_deaths` | ~44/99 |
 | **Schaden — Sachschaden** | `total_damage_kusd` (+ inflationsbereinigt) | ~32/99 |
 | **Normalisierung** | `wpp_pacific_population` (pro Kopf) | via ISO3↔GEO_PICT-Crosswalk |
 | **Verwundbarkeits-Kontext (optional)** | Trinkwasser %, TB, BIP-Proxy, Bevölkerungsdichte | pro Land, join über country/year |
-| **Storm↔Impact-Verknüpfung** | Namens- + Saison-Join (±1 Jahr) IBTrACS↔EM-DAT | ~84/99 Treffer |
+| **Klimakontext (PDH-Pflichtdatensatz)** | SPC/PDH „Mean sea surface temperature anomalies" (21 PICTs, 1850–2025) | Story-Intro („warming backdrop"); erfüllt Challenge-Regel §9 → `sst.json` (siehe [Decision Record](decisions/2026-07-02_datenquellen.md)) |
+| **Storm↔Impact-Verknüpfung** | Namens- + Saison-Join (±1 Jahr) IBTrACS↔EM-DAT | real **94/99 Zeilen** (97,1 % der Stürme), mit Apostroph-/Alias-Fix **97/99**; 0 Mehrdeutigkeiten (verifiziert 2026-07-02) |
 
-**Analyse-Einheit [OFFEN]:** Ereignis (ein Sturm) vs. Sturm-Land-Paar vs. Land-Jahr-Aggregat. → *Empfehlung: Ereignis als Grundeinheit, optional nach Land gefärbt/gefiltert.*
+**Analyse-Einheit (entschieden 2026-07-02): Sturm-Land-Paar.** Die 99 EM-DAT-Zeilen entsprechen 73 distinkten Stürmen; 16 Stürme treffen mehrere Länder (Pam 2015 = 5 Zeilen, Heta 2004 und Harold 2020 = je 4). Konsequenzen: (a) vertikale Punktstapel gleicher Intensität sind **Feature** — „ein Sturm, unterschiedliche Folgen" (Harold: 25.000–180.000 Betroffene in 4 Ländern), optional dünn verbunden; (b) Detailpanel aggregiert je **Sturm** über alle Länderzeilen; (c) Brushing-Mapping Track↔Punkte ist 1:n; (d) Punkte sind nicht unabhängig (Cluster je Sturm) → Limitation in Story-Schritt „Ehrlichkeit" und Paperwork.
 
 ---
 
@@ -50,12 +50,12 @@
 - ✅ **B3 — Nebenansichten:** **Minimal — nur Karte + Scatter** (entschieden 2026-07-01). Keine Dauer-Zusatzpanels; maximaler Fokus. (Ranking/Verteilung ggf. als optionaler Ausbau.)
 
 ### C. Daten & Analyse
-- ✅ **C1 — Schadensmaß (y-Achse):** **Betroffene Personen** (entschieden 2026-07-01). Beste Abdeckung (79/99), menschzentriert.
-- ✅ **C2 — Verwundbarkeit sichtbar machen:** **Residuum einer Erwartungslinie** (entschieden 2026-07-01). Regressionslinie „erwarteter Schaden bei Intensität"; Abweichung nach oben = hohe Verwundbarkeit, farblich markiert.
-- ✅ **C3 — Normalisierung:** **Beides umschaltbar** (absolut ↔ pro Kopf) (entschieden 2026-07-01). Macht kleine, hochverwundbare Inseln ehrlich sichtbar.
-- ✅ **C4 — Intensitätsquelle:** **IBTrACS-Spitzenwind via Namens+Saison-Join** (entschieden 2026-07-01), EM-DAT-`magnitude` als Fallback für unverknüpfte Ereignisse. Authoritativ + höhere Abdeckung (~84/99).
+- ✅ **C1 — Schadensmaß (y-Achse):** **Betroffene Personen** (entschieden 2026-07-01). Beste Abdeckung (79/99), menschzentriert. **Varianten-Zusatz (2026-07-02):** Kurs-Variante = EM-DAT `total_affected` (intern, Abgabe 24.07.); Challenge-Variante = offene Quelle, Entscheidung nach dem 24.07. — siehe [Decision Record](decisions/2026-07-02_datenquellen.md).
+- ✅ **C2 — Abweichung sichtbar machen (revidiert 2026-07-02):** **Intensitätstrend + Quantilband; Abweichung über Position + Annotation**, nicht mehr als divergierende Residuum-Farbe (redundant zur y-Position). Framing „**Abweichung vom Intensitätstrend**" (Verwundbarkeit **und** Exposition), nicht kausal „Verwundbarkeit". R²/n/p direkt an der Linie; die fast flache Absolut-Linie (R²=0,010, p=0,49) ist selbst der Befund („wind alone predicts almost nothing").
+- ✅ **C3 — Normalisierung (revidiert 2026-07-02):** **Pro Kopf = Standardansicht**, absolut = Toggle. Pro Kopf ist die Beziehung signifikant (R²=0,145, p=0,0099, n=45) und kleine Inseln werden nicht unterdrückt; je Modus eigener Fit (aus der Pipeline), Achse/Punkte/Linie/Band transitionieren gemeinsam.
+- ✅ **C4 — Intensitätsquelle (präzisiert 2026-07-02):** durchgängig **IBTrACS `USA_WIND` (1-min, kt)** via Namens+Saison-Join — bei 100 % der gematchten Stürme vorhanden; **kein Mischen mit WMO_WIND** (10-min; basin-abhängiger Bias bis ~15 %). EM-DAT-`magnitude` (÷ 1,852 → kt) nur als markierter Fallback (`intensity_source`). Join real 94/99, mit Fixes 97/99. Der Join ist **Pflicht, kein Fallback**: 6 der Top-10-Schadensevents (u. a. Winston, 540.558 Betroffene) haben kein EM-DAT-magnitude.
 - ✅ **C5 — Becken/Umfang:** **Alle Pazifik-Inselstaaten (SP+WP)** (entschieden 2026-07-01). Alle ~99 EM-DAT-Ereignisse; Intensität aus beiden Becken.
-- ✅ **C6 — Zeitraum:** **2000–2024** (übernommen). Aktuellste 1–2 Jahre wegen Meldeverzug/Unvollständigkeit ausgeklammert; wird im UI transparent vermerkt.
+- ✅ **C6 — Zeitraum (revidiert 2026-07-02):** **2001–2026** — alle verfügbaren Ereignisse (Daten beginnen real 2001). Caveats transparent in UI/meta.json: 2025 leer, 2024 nur 1 Zeile, 2026er-Einträge jung und revisionsanfällig (Maila!), Bevölkerung ab 2024 als Forward-Fill des 2023-WPP-Werts (`pop_extrapolated`). Story-Zahlen werden skriptgestützt aus `events.json` generiert, nie hart getippt.
 
 ### D. Interaktion
 - ✅ **D1/D2 — Interaktionsgrad:** **Interaktive Schritte + freie Erkundung am Ende** (entschieden 2026-07-01). Geführte Story als Rückgrat; Hover/Tooltips in jedem Schritt; abschließender frei erkundbarer Zustand (Filter/Brushing). Nutzt CMV voll.
@@ -63,7 +63,7 @@
 
 ### E. Gestaltung
 - ✅ **E1 — Stil/Stimmung:** **Nüchtern-wissenschaftlich** (entschieden 2026-07-01). Zurückhaltend, klassisch, maximale Lesbarkeit; ein einziger kräftiger Akzent bleibt für „hohe Verwundbarkeit" reserviert.
-- ✅ **E2 — Farbkonzept:** **Farbenblind-sichere ColorBrewer-Paletten** (entschieden 2026-07-01), getrennte Skalen für Sturmintensität (sequenziell) vs. Verwundbarkeits-Rest (divergierend). Ein kräftiger Akzent für „hohe Verwundbarkeit".
+- ✅ **E2 — Farbkonzept (revidiert 2026-07-02):** **Eine bedeutungstragende Farbskala gleichzeitig.** Karte im Grundzustand entsättigt; Sturmkategorie als **Strichstärke** (keine zweite Farbskala); die divergierende Residuum-Farbe entfällt (redundant zur Position). Der eine kräftige Akzentton ist **exklusiv** für das view-übergreifende Hover-/Brush-/Story-Highlight reserviert (sichert Objektidentität im CMV). Freigewordener Kanal: **Tote als Punktgröße** (44/99; fehlend = Minimalgröße + „nicht gemeldet"-Marker). Farbenblind-sicher (ColorBrewer/Viridis, simulatorgeprüft).
 - ✅ **E3 — Barrierefreiheit:** **Ja** (entschieden 2026-07-01) — Kontrast, Alt-Texte, keine reine Farbkodierung. Zählt als Kursinhalt.
 
 ### F. Technik & Umfang
@@ -75,56 +75,61 @@
 
 ---
 
-## 4. Zielbild (final)
+## 4. Zielbild (final, revidiert 2026-07-02)
 
-Eine **einseitige, geführte Scrollytelling-Anwendung** (Englisch), nüchtern-wissenschaftlich. Ein **fixes Verbund-Grafik-Panel** aus zwei verknüpften Ansichten bleibt beim Scrollen sichtbar; links daneben/darüber laufen die Story-Texte:
+Eine **einseitige, geführte Scrollytelling-Anwendung** (Englisch), nüchtern-wissenschaftlich. Ein **fixes Verbund-Grafik-Panel** aus zwei verknüpften Ansichten bleibt beim Scrollen sichtbar; daneben laufen die Story-Texte. Der Einstieg setzt einen kurzen **SST-Klimakontext** (PDH-Pflichtdatensatz, „warming backdrop").
 
 ```
-┌──────────────────────────┬───────────────────────────────┐
-│   FLACHE PAZIFIKKARTE     │   SCATTER                      │
-│   (dateline-zentriert)    │   y = Betroffene (log)         │
-│   ~ IBTrACS-Zugbahnen ~   │        ●  ● ← hoher Rest (rot) │
-│   Farbe = Kategorie       │     ● ●●  ·                    │
-│        ●Insel-Punkte      │   ─────── Erwartungslinie      │
-│   ◄──── Brushing ────►    │   x = Intensität (Spitzenwind) │
-├──────────────────────────┴───────────────────────────────┤
-│  [Toggle: absolut ↔ pro Kopf]   [Klick Sturm → Detailpanel]│
-└────────────────────────────────────────────────────────────┘
+┌──────────────────────────┬────────────────────────────────┐
+│   FLACHE PAZIFIKKARTE     │   SCATTER                       │
+│   (dateline-zentriert)    │   y = Betroffene PRO KOPF (log) │
+│   ~ IBTrACS-Zugbahnen ~   │      ●     ● ← Ausreißer (Anno) │
+│   Strichstärke=Kategorie  │    ●˙·˙●●˙·˙ Trend + Quantilband│
+│        ●Insel-Punkte      │      R²=0.15 · n=45 · p<0.01    │
+│   ◄──── Brushing ────►    │   x = Intensität (USA_WIND, kt) │
+├──────────────────────────┴────────────────────────────────┤
+│ [Toggle: pro Kopf ↔ absolut]  [Klick Sturm → Detailpanel]  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-- **Links – flache Pazifikkarte:** IBTrACS-Zugbahnen der im Schritt betrachteten Stürme; Farbe = Saffir-Simpson-Kategorie; Inselstaaten als Punkte.
-- **Rechts – Scatter:** x = Sturmintensität (IBTrACS-Spitzenwind, kt), y = **betroffene Personen** (log). Eine **Erwartungslinie** (Regression) zeigt den „normalen" Schaden je Intensität; das **Residuum nach oben = Verwundbarkeit** wird divergierend eingefärbt, hoher Rest im Akzentton.
-- **Verknüpfung (CMV):** Hover/Brushing verbindet Karte ↔ Scatter; **Klick auf einen Sturm** öffnet ein **Detailpanel** (Mini-Zugbahn + Kennzahlen).
-- **Toggle:** Betroffene **absolut ↔ pro Kopf** (kleine Inseln wie Tuvalu/Niue werden pro Kopf dramatisch sichtbar).
+- **Links — flache Pazifikkarte:** IBTrACS-Zugbahnen, im Grundzustand entsättigt (Opazität ~0,3); **Kategorie = Strichstärke** (keine zweite Farbskala); 22 PICT-Zentroide als Pflicht-Layer (kleine Atolle fehlen in der 110m-Basiskarte).
+- **Rechts — Scatter:** x = USA_WIND-Spitzenwind (kt), y = **Betroffene pro Kopf** (log, Default). **Trendlinie + Quantilband** (Fits aus der Pipeline; `R²/n/p` direkt annotiert); Abweichung nach oben wird über Position + Annotation gelesen, nicht über Farbe. **Tote = Punktgröße** (fehlend: Minimalgröße + Marker); Fallback-Intensität = gestrichelter Umriss; Multi-Country-Stapel dünn vertikal verbunden.
+- **Verknüpfung (CMV):** Hover/Brushing verbindet Karte ↔ Scatter (1:n je Sturm; Akzent-Highlight identisch in beiden Views); **Klick** öffnet ein **Detailpanel je Sturm** (Mini-Zugbahn + Kennzahlen-Tabelle je Land).
+- **Toggle:** **pro Kopf ↔ absolut** — je Modus eigener Fit; Achse, Punkte, Linie und Band transitionieren gemeinsam („expectation re-fitted for this scale").
+- **Missing Data sichtbar:** Rug-Leiste für Events mit Intensität, aber ohne Betroffenenzahl; dynamische n-Angabe je Story-Schritt.
 - **Abschluss:** frei erkundbarer Zustand (Filter Jahr/Land/Kategorie, Brushing).
 
-**Mehrdimensionalität (Challenge-Anforderung):** Intensität (x) · Betroffene (y) · Verwundbarkeits-Rest (Farbe) · Kategorie (Bahnfarbe) · Land/Subregion (Karte+Detail) · Zeit (Story-Schritte/Filter) · Skalierung absolut/pro Kopf (Toggle) → **≥ 5 gleichzeitig lesbare Dimensionen**.
+**Mehrdimensionalität (ehrlich hergeleitet):** Unabhängig gleichzeitig lesbar: **Intensität (x) · Betroffene pro Kopf (y) · Tote (Punktgröße) · Sturm/Land/Raum (Karte + CMV-Verknüpfung) · Zeit (Filter/Story)**. Abgeleitet/sequenziell (nicht mitgezählt): Trend-Abweichung (aus x/y), Kategorie (Strichstärke, korreliert mit x), Modus-Toggle (Transformation). Diese Herleitung geht so in die Paperwork ein.
 
-**Story-Bogen (Scroll-Schritte):**
-1. **Hook:** „Der stärkste Sturm ist nicht der schlimmste." — Typhoon *Mawar* (~295 km/h, ~700 Betroffene) vs. Zyklon *Heta/Ami* (schwächer, Zehntausende Betroffene).
-2. **Streuung:** alle Ereignisse erscheinen → sichtbar **keine Diagonale**.
-3. **Erwartungslinie:** eingeblendet → der **Verwundbarkeits-Rest** wird benannt und eingefärbt.
-4. **Karten-Verknüpfung:** Bahn eines Ausreißers hervorheben, Detailpanel öffnen (z.B. *Pam* 2015 / *Winston* 2016).
-5. **Muster:** welche Länder wiederholt über der Linie liegen; **Toggle auf pro Kopf** → kleine Inseln treten hervor.
-6. **Ehrlichkeit:** kurze Einordnung der Datengrenzen (Namens-Join-Abdeckung, Meldelücken).
-7. **Aussage + freie Erkundung:** Katastrophenschutz muss Verwundbarkeit adressieren, nicht nur Windstärke — danach frei erkunden.
+**Story-Bogen (Scroll-Schritte; alle Zahlen skriptgestützt aus `events.json`/`meta.json`, nie hart getippt):**
+0. **Klimakontext (SST):** Der Pazifik erwärmt sich (PDH-SST-Anomalien 1850–2025) — die Bühne, auf der Stürme auf exponierte Inselgesellschaften treffen.
+1. **Hook (Heta 2004):** Ein Zyklon, ~300 km/h — **23.060 Betroffene in Amerikanisch-Samoa, 702 auf Niue.** Gleicher Sturm, andere Folgen.
+2. **Streuung:** alle ~74–78 Punkte (pro Kopf, log) → **keine Diagonale**; annotiert: *Mawar* (295 km/h → 100.000 Betroffene = 60 % Guams) vs. *Percy*/Tokelau (249 km/h → 26).
+3. **Trend & Grenzen:** Linie + Quantilband erscheinen; „pro Kopf erklärt Intensität ~15 % der Varianz, absolut ~1 % — und ein Teil des Rests ist Exposition, nicht Verwundbarkeit."
+4. **Ein Sturm, vier Länder (Harold 2020):** Track-Highlight, 4 verbundene Punkte (FJI 180.000 / SLB 150.000 / VUT 130.120 / TON 25.000), Detailpanel öffnet sich.
+5. **Muster & Toggle:** Länder wiederholt über dem Trend (Vanuatu 71 %, Fidschi 70 % der Events über der Linie — mit Expositions-Caveat); Toggle-Moment: Gita/Tonga 82 % der Bevölkerung, Tuvalu-Median ~47 %.
+6. **Datenehrlichkeit (visuell):** Rug-Leiste, gestrichelte Fallback-Punkte, Join-Abdeckung, 2026er-Revisionsvorbehalt, n je Ansicht.
+7. **Aussage + freie Erkundung:** „Preparedness must target vulnerability and exposure — not just forecast wind speeds."
 
-## 5. Datenpipeline-Plan
+## 5. Datenpipeline-Plan (revidiert 2026-07-02 — Detail-Spezifikation: [plan/03_M1_Datenpipeline.md](plan/03_M1_Datenpipeline.md))
 
-**Rohquellen → Verarbeitung (`scripts/build_track_to_toll.py`, Python/pandas) → schlanke Frontend-Dateien.**
+**Rohquellen → `scripts/build_track_to_toll.py --variant kurs|challenge` (modulare Module unter `scripts/pipeline/`) → schlanke Frontend-Dateien.** Jedes Modul einzeln lauffähig (Smoke-Main), Ausführung bricht bei verletzten Assertions laut ab.
 
-1. **EM-DAT-Pazifik-Ereignisse** (`Data/processed/emdat_pacific_storms_events.csv`, gefiltert 2000–2024): Name, Jahr, Land/ISO3, Betroffene, Tote, Schaden (+adj.), Subtyp.
-2. **IBTrACS SP+WP**: pro Sturm (SID) Spitzenwind (WMO/USA, kt), Spitzen-Kategorie (USA_SSHS), ausgedünnte Zugbahn (LAT/LON), Becken.
-3. **Join:** normalisierter **Name + Saison ±1** (EM-DAT ↔ IBTrACS) → Intensität & Bahn anhängen (~84/99). Unverknüpft: **Fallback** EM-DAT-`magnitude` (km/h→kt), markiert.
-4. **Normalisierung:** Join mit `wpp_pacific_population` (ISO3+Jahr) → Betroffene **pro Kopf**.
-5. **Erwartungslinie:** Regression `log10(Betroffene+1) ~ Intensität`; **Residuum** je Ereignis → Verwundbarkeits-Maß.
-6. **Crosswalk/Referenz:** ISO3↔GEO_PICT, Subregion, Insel-Zentroide (einmalig, aus KONZEPT §9).
+1. **EM-DAT-Ereignisse** (`Data/processed/emdat_pacific_storms_events.csv`, 2001–2026): Sturm-**Land**-Zeilen mit Name, Jahr, ISO3, Betroffenen, Toten, Schaden.
+2. **IBTrACS SP+WP:** je SID Peak **USA_WIND (kt)** + max(USA_SSHS); ausgedünnte Zugbahn (6h-Hauptsynoptik, 2 Dezimalstellen), **LON normalisiert auf [−180, 180]**.
+3. **Join:** normalisierter Name (Präfixe/Quotes entfernen, Apostroph **löschen** → „CHATAAN", Alias ULLA→ULA, Klammer-Alternativnamen als Kandidaten) + Saison ±1 → erwartet **94–97/99, 0 Mehrdeutigkeiten**. Unverknüpft: Fallback `magnitude` ÷ 1,852, Flag `intensity_source`.
+4. **Bevölkerung:** WPP-Join (ISO3+Jahr), **Forward-Fill 2023 → 2024ff** (Flag `pop_extrapolated`), `affected_pc`.
+5. **Fits (in Python, nie im Frontend):** zwei Regressionen `log10(y+1) ~ Intensität` (absolut + pro Kopf) mit Steigung/Intercept/R²/p/n, Residuen je Zeile, Quantilband-Stützpunkte.
+6. **SST-Intro:** mittlere SST-Anomalie je Jahr (PDH-Datensatz, 1850–2025) → `sst.json`.
+7. **Crosswalk/Referenz:** ISO3↔GEO_PICT, Subregion, Insel-Zentroide (`scripts/pipeline/reference.py`).
+8. **Validierung (`validate.py`):** Join ≥ 94/99 · scatterfähig ≥ 74 · Winston 2016/FJI mit `intensity_source=="ibtracs"` · Harold 2020 = 4 Länderzeilen · kein `affected == 0` · Maila mit `affected_pc` · 0,10 < R²_pc < 0,20 und p < 0,05 · alle Track-Lons ∈ [−180, 180] · Challenge-Variante ohne EM-DAT-Felder (Lizenz-Assertion).
 
-**Ausgabeschema (fürs Frontend):**
-- `events.json` — `[{id, name, year, iso3, country, subregion, intensity_kt, intensity_source, category, affected, affected_pc, deaths, damage_kusd, residual, above_line}]`
-- `tracks.json` — `{ SID: [[lon,lat], …] }` (ausgedünnt, nur verknüpfte Stürme)
-- `pacific_land.topo.json` — Basiskarte (Natural Earth 110m Land, pazifik-zentriert; **leichtgewichtig**, nicht das 1,9-GB-GeoPackage)
-- `meta.json` — Fit-Parameter, Abdeckungszahlen, Zeitraum, Datenhinweise/Caveats
+**Ausgabeschema (`app/public/data/`):**
+- `events.json` — `[{id, sid, name, year, iso3, country, subregion, intensity_kt, intensity_source, category, affected, affected_pc, pop, pop_extrapolated, deaths, damage_kusd, residual_abs, residual_pc}]` *(Kurs-Variante EM-DAT-basiert → via `.gitignore` vom Repo ausgeschlossen)*
+- `tracks.json` — `{SID: [[lon, lat, wind, sshs], …]}` (nur gematchte Stürme; real ~59 KB)
+- `meta.json` — Fits beider Modi, n je Ansicht, Join-Abdeckung, Zeitraum, Caveats, Quellen/Lizenzen
+- `sst.json` — `[{year, anom}]` (PDH-SST fürs Story-Intro)
+- `land-110m.json` — Basiskarte (world-atlas / Natural Earth, public domain; kommt in Paket 04 dazu, Zentroide aus `reference.py`)
 
 ## 6. Umsetzungsschritte / Meilensteine (MVP-first)
 
@@ -147,3 +152,4 @@ Eine **einseitige, geführte Scrollytelling-Anwendung** (Englisch), nüchtern-wi
 | 2026-07-01 | **Runde 2 entschieden:** A2=Jury/Fachpublikum · A3=Englisch (Doku DE) · C5=alle Pazifikstaaten (SP+WP) · E1=nüchtern-wissenschaftlich. Zusätzlich C4=IBTrACS-Spitzenwind via Join festgelegt. |
 | 2026-07-01 | **Runde 3 entschieden:** C3=absolut/pro Kopf umschaltbar · B2=flache Pazifikkarte · D1/D2=interaktive Schritte + freies Ende · F4=fokussiertes MVP zuerst. |
 | 2026-07-01 | **Runde 4 entschieden:** B3=minimal (nur Karte+Scatter) · D3=Detailpanel mit Mini-Track · E2/E3=farbenblind-sicher + Alt-Texte · F1–F3=D3 v7 + Vite + Python-Pipeline, offline. Übernommen: C6=2000–2024, F5=2–3 min. **Finales Zielbild (§4), Datenpipeline-Plan (§5) und Meilensteine (§6) geschrieben. Konzept vollständig.** |
+| 2026-07-02 | **Review-Korrekturen eingearbeitet** (Multi-Agenten-Prüfung, siehe [plan/README.md](plan/README.md)): §1-Hook → **Heta 2004** (Mawar-Zahl widerlegt: 100.000 Betroffene, nicht ~700); C6 → **2001–2026** mit Caveats; C3 → **pro Kopf als Default** (R²=0,145 vs. 0,010); C2 → **Trend + Quantilband** statt Residuum-Farbe, Framing „Verwundbarkeit & Exposition"; C4 → durchgängig **USA_WIND**, Join real 94–97/99; **Analyseeinheit = Sturm-Land-Paar** (entschieden); E2 → eine Farbskala, Akzent nur fürs Highlight, **Tote als Punktgröße**; §2 um **SST-PDH-Kerndatensatz** und Zwei-Varianten-Strategie ergänzt ([decisions/2026-07-02_datenquellen.md](decisions/2026-07-02_datenquellen.md)); §4/§5 neu gefasst (Story-Schritt 0 = SST-Intro, Missing-Data-Sichtbarkeit, Story-Zahlen skriptgestützt); Mockup t02 als superseded markiert. |
