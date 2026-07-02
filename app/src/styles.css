@@ -1,0 +1,232 @@
+/* Farben kommen als CSS-Variablen aus core/config.js (main.js setzt sie auf :root) —
+   eine Quelle der Wahrheit; Paket 07 tauscht nur config.COLORS. */
+:root {
+  --bg: #fdfdfb;
+  --land: #e3e1d8;
+  --graticule: #ecebe3;
+  --track: #7b8a9a;
+  --point: #46688c;
+  --trend: #2f3640;
+  --band: #8a93a0;
+  --accent: #e4572e;
+  --text: #333333;
+  --muted: #777777;
+  --dim-opacity: 0.07;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ---------- Layout ---------- */
+.app {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) 1fr;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.story-col { padding: 32px 8px; }
+.story-header .kicker {
+  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 12px; color: var(--muted); margin: 0 0 4px;
+}
+.story-header h1 { font-size: 30px; line-height: 1.15; margin: 0 0 12px; }
+.abstract { color: var(--text); }
+.hint { color: var(--muted); font-size: 13px; }
+
+.panel {
+  position: sticky; top: 0;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  padding: 12px 0;
+}
+.views {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 12px;
+  min-height: 0;
+  align-items: center;
+}
+.view { margin: 0; min-width: 0; }
+.view svg { width: 100%; height: auto; display: block; }
+
+.ui-bar {
+  display: flex; flex-wrap: wrap; gap: 16px 28px;
+  align-items: center;
+  padding: 10px 4px 2px;
+  border-top: 1px solid var(--graticule);
+  font-size: 13px;
+}
+
+@media (max-width: 999px) {
+  .app { display: block; }
+  .panel { position: static; height: auto; }
+  .views { grid-template-columns: 1fr; }
+}
+
+/* ---------- SVG-Zustandsklassen (zentral) ---------- */
+.track {
+  fill: none;
+  stroke: var(--track);
+  stroke-opacity: 0.3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.track.hovered, .track.detail { stroke: var(--accent); stroke-opacity: 0.95; }
+.track.selected { stroke: var(--point); stroke-opacity: 0.85; }
+.track.dimmed { stroke-opacity: var(--dim-opacity); }
+.track.filtered-out { display: none; }
+
+.point {
+  fill: var(--point);
+  fill-opacity: 0.7;
+  stroke: #ffffff;
+  stroke-width: 0.8;
+  cursor: pointer;
+}
+.point.fallback { fill: none; stroke: var(--point); stroke-dasharray: 3 2; stroke-width: 1.4; cursor: default; }
+.point.hovered { fill: var(--accent); fill-opacity: 1; stroke: var(--accent); }
+.point.fallback.hovered { stroke: var(--accent); }
+.point.sibling { stroke: var(--accent); stroke-width: 1.6; }
+.point.dimmed { fill-opacity: var(--dim-opacity); stroke-opacity: 0.2; }
+.point.filtered-out { display: none; }
+.point:focus-visible { outline: none; stroke: var(--accent); stroke-width: 2.4; }
+
+.connector { stroke: var(--point); stroke-opacity: 0.35; stroke-width: 0.8; }
+.connector.dimmed { stroke-opacity: var(--dim-opacity); }
+
+.centroid { fill: var(--text); fill-opacity: 0.75; }
+.centroid.emphasis { fill: var(--accent); fill-opacity: 1; }
+.centroid-label { font-size: 10px; fill: var(--muted); }
+
+.land { fill: var(--land); stroke: none; }
+.graticule { fill: none; stroke: var(--graticule); stroke-width: 0.6; }
+
+.trend-line { fill: none; stroke: var(--trend); stroke-width: 1.6; }
+.trend-median { fill: none; stroke: var(--band); stroke-width: 1; stroke-dasharray: 4 3; }
+.trend-band { fill: var(--band); fill-opacity: 0.18; }
+.trend-annotation { font-size: 12px; fill: var(--trend); }
+.axis text { font-size: 11px; fill: var(--muted); }
+.axis line, .axis path { stroke: var(--graticule); }
+.axis-label { font-size: 12px; fill: var(--muted); }
+.n-caption { font-size: 12px; fill: var(--muted); }
+
+/* ---------- Tooltip ---------- */
+.tooltip {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  background: #ffffff;
+  border: 1px solid var(--graticule);
+  border-left: 3px solid var(--accent);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  padding: 8px 12px;
+  font-size: 13px;
+  max-width: 280px;
+  display: none;
+}
+.tooltip.visible { display: block; }
+.tooltip .tt-title { font-weight: 600; }
+.tooltip .tt-sub { color: var(--muted); font-size: 12px; }
+.tooltip dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; }
+.tooltip dt { color: var(--muted); }
+.tooltip dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Detailpanel ---------- */
+.detail-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: min(400px, 92vw);
+  height: 100vh;
+  background: #ffffff;
+  border-left: 1px solid var(--graticule);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 30;
+}
+.detail-panel.open { transform: translateX(0); }
+@media (prefers-reduced-motion: reduce) {
+  .detail-panel { transition: none; }
+}
+.detail-panel h2 { margin: 0 0 2px; font-size: 20px; }
+.detail-panel .dp-sub { color: var(--muted); margin: 0 0 12px; font-size: 13px; }
+.detail-panel .dp-close {
+  position: absolute; top: 12px; right: 12px;
+  border: none; background: none; font-size: 20px; cursor: pointer; color: var(--muted);
+}
+.detail-panel .dp-close:hover, .detail-panel .dp-close:focus-visible { color: var(--accent); }
+.detail-panel table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+.detail-panel th { text-align: left; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--graticule); padding: 4px 6px 4px 0; }
+.detail-panel td { padding: 4px 6px 4px 0; border-bottom: 1px solid var(--graticule); font-variant-numeric: tabular-nums; }
+.detail-panel td.num { text-align: right; }
+.detail-panel .dp-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+/* ---------- UI-Bar-Komponenten ---------- */
+.mode-toggle button {
+  border: 1px solid var(--graticule);
+  background: #fff;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.mode-toggle button[aria-pressed="true"] { background: var(--trend); color: #fff; border-color: var(--trend); }
+.mode-toggle button:first-of-type { border-radius: 4px 0 0 4px; }
+.mode-toggle button:last-of-type { border-radius: 0 4px 4px 0; margin-left: -1px; }
+.mode-toggle .refit-hint { margin-left: 10px; color: var(--accent); font-size: 12px; opacity: 0; transition: opacity 0.3s; }
+.mode-toggle .refit-hint.visible { opacity: 1; }
+
+.filter-panel { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.filter-panel fieldset { border: none; margin: 0; padding: 0; display: flex; gap: 6px; align-items: center; }
+.filter-panel legend { float: left; padding-right: 6px; color: var(--muted); }
+.filter-panel input[type="number"] { width: 64px; }
+.filter-panel select { max-width: 150px; }
+.filter-panel button { cursor: pointer; }
+.filter-panel[data-disabled="true"] { opacity: 0.45; pointer-events: none; }
+
+.legend { display: flex; gap: 18px; align-items: center; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+.legend svg { display: inline-block; vertical-align: middle; }
+
+button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Fehlerbanner ---------- */
+.error-banner {
+  margin: 40px auto; max-width: 720px;
+  border: 1px solid var(--accent);
+  border-left: 6px solid var(--accent);
+  background: #fff6f2;
+  padding: 16px 20px;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+/* ---------- Dev-Harness ---------- */
+.harness-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 8px 12px;
+  background: #1f2430; color: #e6e8ef;
+  font-size: 12px;
+  align-items: center;
+}
+.harness-bar .hb-title { font-weight: 700; margin-right: 10px; }
+.harness-bar button {
+  border: 1px solid #4a5268; background: #2b3040; color: #e6e8ef;
+  padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.harness-bar button:hover { background: #3a4157; }
+.harness-container { padding: 20px; max-width: 1100px; margin: 0 auto; }
+.harness-summary { font-family: ui-monospace, monospace; font-size: 14px; white-space: pre-wrap; }
