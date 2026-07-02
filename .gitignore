@@ -1,23 +1,15 @@
-# ── OS / editor ─────────────────────────────────────────────
+# System
 .DS_Store
-*.swp
-.vscode/
 
-# ── Rohdaten & abgeleitete Daten ────────────────────────────
-# Zu groß für GitHub (Coastline ~2 GB, IBTrACS > 100 MB) und/oder lizenzbeschränkt
-# (EM-DAT = CC BY-NC-ND). Über scripts/ reproduzierbar — nicht im Repo verteilt.
-# An die Wurzel geankert (/), damit app/public/data/ (lizenz-saubere App-Daten) NICHT ignoriert wird.
-/Data/
-/Recherche Data/
-/Developer API/
-
-# ── Python ──────────────────────────────────────────────────
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# ── Node / Web-App (später) ─────────────────────────────────
+# Dependencies & Build
 node_modules/
 dist/
-.cache/
+
+# Rohdaten — nicht im Repo (Größe + Lizenzen; EM-DAT: internal use only)
+/Data/
+/Developer API/
+
+# EM-DAT-Derivate der Kurs-Variante — Lizenz erlaubt keine Weiterverbreitung
+# (Challenge-Variante ohne EM-DAT wird separat freigegeben, siehe docs/decisions/)
+app/public/data/events*.json
+app/public/data/meta*.json
