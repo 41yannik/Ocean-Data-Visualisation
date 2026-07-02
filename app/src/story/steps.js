@@ -31,8 +31,10 @@ export const makeStoryFx = (over = {}) => ({
 const fx = makeStoryFx;
 
 // Flüchtigen State je Step deterministisch setzen (Rückwärts-Scrollen, Deep-Links).
+// exploreUnlocked: false gehört dazu — wer von Step 7 zurückscrollt, ist wieder gesperrt.
 const base = (over = {}) => ({
   hover: null, selectedEventIds: null, detailSid: null, mode: 'perCapita',
+  exploreUnlocked: false,
   ...over,
 });
 

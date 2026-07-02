@@ -12,8 +12,9 @@ import { createDetailPanel } from '../ui/detailPanel.js';
 import { createModeToggle } from '../ui/modeToggle.js';
 import { createLegend } from '../ui/legend.js';
 import { createFilterPanel } from '../ui/filterPanel.js';
-import { buildSteps } from '../story/steps.js';
+import { buildSteps, stepLayout } from '../story/steps.js';
 import { resolveRefs } from '../story/refs.js';
+import { createStoryRunner } from '../story/storyRunner.js';
 import { createSstIntro } from '../story/sstIntro.js';
 import { createLayoutController } from '../story/layoutController.js';
 import { createProgressNav } from '../story/progressNav.js';
@@ -68,6 +69,28 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
   },
 
   sst: { title: 'SST-Intro: Warming Stripes (PDH)', mount: (c, ctx) => createSstIntro(c, ctx) },
+
+  story: {
+    title: 'storyRunner: scrollen/Pfeiltasten → Steps feuern (Log unten links)',
+    mount(c, ctx) {
+      c.innerHTML = `
+        <div class="scrolly" style="margin-top:0;"><div id="hs-steps"></div></div>
+        <pre class="harness-summary" id="hs-log"
+          style="position:fixed;left:12px;bottom:12px;background:#1f2430;color:#9fe8a8;padding:8px 10px;z-index:60;margin:0;">step: –</pre>`;
+      const runner = createStoryRunner(c.querySelector('#hs-steps'), ctx);
+      const log = c.querySelector('#hs-log');
+      return {
+        update(state, patch) {
+          runner.update(state, patch);
+          if (!patch || 'step' in patch || 'exploreUnlocked' in patch) {
+            log.textContent = `step: ${state.step} · layout: ${stepLayout(state.step)}`
+              + ` · exploreUnlocked: ${state.exploreUnlocked} · fx: ${state.storyFx ? 'aktiv' : 'null'}`;
+          }
+        },
+        destroy: runner.destroy,
+      };
+    },
+  },
 
   nav: {
     title: 'Progress-Nav (rechts fixiert): step0–step7/stepOff klicken; Punkte setzen step-Patches',
