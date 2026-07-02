@@ -21,12 +21,14 @@ export const stepLayout = (step) =>
   step >= 0 && step < STEP_COUNT ? STEP_LAYOUTS[step] : 'explore';
 
 // storyFx immer als KOMPLETTES Objekt ersetzen — fehlende Flags = neutraler Zustand.
-const fx = (over = {}) => ({
+// Exportiert, damit Fixtures (Harness) dieselbe Shape garantieren.
+export const makeStoryFx = (over = {}) => ({
   focusSids: null, drawSid: null, emphasisIso3: [],
   showPoints: false, showTrend: false, showBand: false,
   residualReveal: false, annotations: [], focusEventIds: null, showRug: false,
   ...over,
 });
+const fx = makeStoryFx;
 
 // Flüchtigen State je Step deterministisch setzen (Rückwärts-Scrollen, Deep-Links).
 const base = (over = {}) => ({

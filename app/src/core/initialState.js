@@ -12,6 +12,9 @@ export function makeInitialState() {
     mode: 'perCapita',         // C3: pro Kopf = Default
     filters: { yearRange: [2001, 2026], categories: null, countries: null },
     step: -1,                  // -1 = freie Erkundung; 0..7 = Story (Paket 06)
+    // Story-Choreografie (Paket 06): null = neutral (alles sichtbar, keine Effekte).
+    // Nicht-null nur während der Story; Shape siehe story/steps.js fx().
+    storyFx: null,
     exploreUnlocked: true,
     reducedMotion: typeof matchMedia !== 'undefined'
       && matchMedia('(prefers-reduced-motion: reduce)').matches,
