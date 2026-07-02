@@ -3,10 +3,11 @@ import re
 
 from pipeline.reference import NAME_ALIASES
 
-# Führende Gattungswörter, die kein Sturmname sind (werden iterativ entfernt)
+# Führende Gattungswörter, die kein Sturmname sind (werden iterativ entfernt).
+# Inkl. real vorkommender EM-DAT-Tippfehler: "Tropial cylone Niran", "Tropical cylone Raquel/Lusi".
 _GENERIC_LEAD = {
-    "TROPICAL", "SEVERE", "SUPER", "CYCLONE", "CYCLONES", "TYPHOON", "HURRICANE",
-    "STORM", "DEPRESSION", "TC", "TY", "STY", "SURGE",
+    "TROPICAL", "TROPIAL", "SEVERE", "SUPER", "CYCLONE", "CYCLONES", "CYLONE",
+    "TYPHOON", "HURRICANE", "STORM", "DEPRESSION", "TC", "TY", "STY", "SURGE",
 }
 _SEPARATORS = re.compile(r"[()\[\]/,;&]|\band\b|\bAND\b")
 _DROP_CHARS = re.compile(r"[\"'`´’‘„“”]")  # Apostrophe/Quotes LÖSCHEN (Chata'an -> CHATAAN)
@@ -52,6 +53,8 @@ if __name__ == "__main__":
     assert normalize_name("Ulla") == "ULA"  # Alias EM-DAT-Tippfehler
     assert normalize_name("Tropical cyclone 'Heta'") == "HETA"
     assert normalize_name("Typhoon Mawar") == "MAWAR"
+    assert normalize_name("Tropial cylone 'Niran'") == "NIRAN"   # EM-DAT-Tippfehler
+    assert normalize_name("Tropical cylone Raquel") == "RAQUEL"  # EM-DAT-Tippfehler
     assert "YOLANDA" in name_candidates("Haiyan (Yolanda)") and "HAIYAN" in name_candidates("Haiyan (Yolanda)")
     assert "ROSITA" in name_candidates("Yutu/Rosita")
     assert normalize_lon(264.5) == -95.5 and normalize_lon(-179.8) == -179.8 and normalize_lon(181) == -179
