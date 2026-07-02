@@ -6,7 +6,8 @@ node_modules/
 dist/
 
 # Rohdaten — nicht im Repo (Größe + Lizenzen; EM-DAT: internal use only)
-/Data/
+# ohne Slash: matcht auch den Data-Symlink in der Arbeitskopie
+/Data
 /Developer API/
 
 # EM-DAT-Derivate der Kurs-Variante — Lizenz erlaubt keine Weiterverbreitung
