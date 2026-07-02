@@ -6,6 +6,11 @@ import { makeInitialState } from './core/initialState.js';
 import { applyCssVars } from './core/config.js';
 import { createMap } from './map/index.js';
 import { createScatter } from './scatter/index.js';
+import { createTooltip } from './ui/tooltip.js';
+import { createDetailPanel } from './ui/detailPanel.js';
+import { createModeToggle } from './ui/modeToggle.js';
+import { createLegend } from './ui/legend.js';
+import { createFilterPanel } from './ui/filterPanel.js';
 
 const params = new URLSearchParams(location.search);
 
@@ -26,10 +31,14 @@ async function runApp() {
     const ctx = { data, meta, bus: store, config: null };
 
     // Deterministische Update-Reihenfolge (Lücke L14): Views vor UI.
-    // C11–C15 hängen hier tooltip, detail, legend, toggle, filters an.
     const components = [
       createMap(document.querySelector('#map'), ctx),
       createScatter(document.querySelector('#scatter'), ctx),
+      createTooltip(document.body, ctx),
+      createDetailPanel(document.querySelector('#detail'), ctx),
+      createLegend(document.querySelector('#legend'), ctx),
+      createModeToggle(document.querySelector('#mode-toggle'), ctx),
+      createFilterPanel(document.querySelector('#filters'), ctx),
     ];
 
     store.subscribe((state, patch) => {

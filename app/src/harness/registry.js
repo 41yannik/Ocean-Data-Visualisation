@@ -7,8 +7,35 @@ import { MAP } from '../core/config.js';
 import { isScatterable } from '../core/filters.js';
 import { createMap } from '../map/index.js';
 import { createScatter } from '../scatter/index.js';
+import { createTooltip } from '../ui/tooltip.js';
+import { createDetailPanel } from '../ui/detailPanel.js';
+import { createModeToggle } from '../ui/modeToggle.js';
+import { createLegend } from '../ui/legend.js';
+import { createFilterPanel } from '../ui/filterPanel.js';
 
 export const REGISTRY = {
+  tooltip: {
+    title: 'Tooltip (Fixtures = Hover-Zustände)',
+    mount(c, ctx) {
+      c.innerHTML = '<p class="harness-summary">Tooltip hängt an &lt;body&gt; — Hover-Fixtures klicken.</p>';
+      return createTooltip(document.body, ctx);
+    },
+  },
+  detail: {
+    title: 'Detailpanel',
+    mount(c, ctx) {
+      c.innerHTML = '<p class="harness-summary">Detailpanel als Overlay — detailHarold/detailPam/detailHeta klicken, Esc schließt.</p>';
+      const aside = document.createElement('aside');
+      aside.className = 'detail-panel';
+      aside.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(aside);
+      const comp = createDetailPanel(aside, ctx);
+      return { update: comp.update, destroy() { comp.destroy(); aside.remove(); } };
+    },
+  },
+  toggle: { title: 'Modus-Toggle', mount: (c, ctx) => createModeToggle(c, ctx) },
+  legend: { title: 'Legende', mount: (c, ctx) => createLegend(c, ctx) },
+  filters: { title: 'Filterpanel', mount: (c, ctx) => createFilterPanel(c, ctx) },
   'scatter.axes': { title: 'Achsen solo', mount: (c, ctx) => createScatter(c, ctx, { layers: ['axes'] }) },
   'scatter.points': { title: 'Punkte (mit Achsen)', mount: (c, ctx) => createScatter(c, ctx, { layers: ['axes', 'points'] }) },
   'scatter.trend': { title: 'Trend + Band (mit Achsen)', mount: (c, ctx) => createScatter(c, ctx, { layers: ['axes', 'trend'] }) },
