@@ -6,8 +6,13 @@ import { makePacificProjection, makeGeoPath } from '../core/scales.js';
 import { MAP } from '../core/config.js';
 import { isScatterable } from '../core/filters.js';
 import { createMap } from '../map/index.js';
+import { createScatter } from '../scatter/index.js';
 
 export const REGISTRY = {
+  'scatter.axes': { title: 'Achsen solo', mount: (c, ctx) => createScatter(c, ctx, { layers: ['axes'] }) },
+  'scatter.points': { title: 'Punkte (mit Achsen)', mount: (c, ctx) => createScatter(c, ctx, { layers: ['axes', 'points'] }) },
+  'scatter.trend': { title: 'Trend + Band (mit Achsen)', mount: (c, ctx) => createScatter(c, ctx, { layers: ['axes', 'trend'] }) },
+  scatter: { title: 'Scatter komplett', mount: (c, ctx) => createScatter(c, ctx) },
   'map.basemap': { title: 'Basemap solo', mount: (c, ctx) => createMap(c, ctx, { layers: ['basemap'] }) },
   'map.tracks': { title: 'Tracks solo (auf Basemap)', mount: (c, ctx) => createMap(c, ctx, { layers: ['basemap', 'tracks'] }) },
   'map.centroids': { title: 'Zentroide solo (auf Basemap)', mount: (c, ctx) => createMap(c, ctx, { layers: ['basemap', 'centroids'] }) },
