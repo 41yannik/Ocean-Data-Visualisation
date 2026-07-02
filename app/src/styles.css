@@ -123,6 +123,16 @@ body {
 .point.story-reveal { fill: var(--accent); fill-opacity: 0.95; }
 .point.story-focus { stroke: var(--accent); stroke-width: 1.8; fill-opacity: 0.95; }
 
+.track { transition: stroke-opacity 0.35s ease; }
+.track.story-focus { stroke: var(--accent); stroke-opacity: 0.95; }
+.track.story-faded { stroke-opacity: 0.06; pointer-events: none; }
+.centroid-pulse {
+  fill: none; stroke: var(--accent); stroke-width: 1.4;
+  transform-box: fill-box; transform-origin: center;
+  animation: anno-pulse 1.8s ease-out infinite;
+}
+.centroid-label.emphasis { fill: var(--text); font-weight: 600; }
+
 .g-story-annotations { pointer-events: none; }
 .anno-ring {
   fill: none; stroke: var(--accent); stroke-width: 1.6;
@@ -137,8 +147,8 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .point, .connector, .trend-line, .trend-median, .trend-band, .trend-annotation { transition: none; }
-  .anno-ring { animation: none; }
+  .point, .connector, .trend-line, .trend-median, .trend-band, .trend-annotation, .track { transition: none; }
+  .anno-ring, .centroid-pulse { animation: none; }
 }
 .axis text { font-size: 11px; fill: var(--muted); }
 .axis line, .axis path { stroke: var(--graticule); }

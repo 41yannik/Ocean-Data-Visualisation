@@ -17,18 +17,31 @@ export function createCentroidsLayer(gCentroids, gLabels, layerCtx) {
     .attr('cy', (d) => d.point[1])
     .attr('r', 2.2);
 
-  gLabels.selectAll('text')
-    .data(entries.filter((d) => LABELED_ISO3.includes(d.iso3)), (d) => d.iso3)
-    .join('text')
-    .attr('class', 'centroid-label')
-    .attr('x', (d) => d.point[0] + 5)
-    .attr('y', (d) => d.point[1] + 3)
-    .text((d) => COUNTRY_LOOKUP[d.iso3] ?? d.iso3);
-
   function render(state) {
     const hoverIsos = hoverCountries(state);
+    const storyIsos = state.storyFx?.emphasisIso3 ?? [];
     dots.classed('emphasis', (d) =>
-      (state.filters.countries?.includes(d.iso3) ?? false) || hoverIsos.has(d.iso3));
+      (state.filters.countries?.includes(d.iso3) ?? false)
+      || hoverIsos.has(d.iso3) || storyIsos.includes(d.iso3));
+
+    // Puls-Ringe an den Story-Zentroiden (Hook: Aufprallorte ASM/NIU)
+    gCentroids.selectAll('circle.centroid-pulse')
+      .data(entries.filter((d) => storyIsos.includes(d.iso3)), (d) => d.iso3)
+      .join('circle')
+      .attr('class', 'centroid-pulse')
+      .attr('cx', (d) => d.point[0])
+      .attr('cy', (d) => d.point[1])
+      .attr('r', 9);
+
+    // Labels dynamisch: Story-Inseln (LABELED_ISO3) + aktuell betonte (z. B. ASM im Hook)
+    gLabels.selectAll('text')
+      .data(entries.filter((d) => LABELED_ISO3.includes(d.iso3) || storyIsos.includes(d.iso3)), (d) => d.iso3)
+      .join('text')
+      .attr('class', 'centroid-label')
+      .classed('emphasis', (d) => storyIsos.includes(d.iso3))
+      .attr('x', (d) => d.point[0] + 5)
+      .attr('y', (d) => d.point[1] + 3)
+      .text((d) => COUNTRY_LOOKUP[d.iso3] ?? d.iso3);
   }
 
   function hoverCountries(state) {
@@ -45,7 +58,7 @@ export function createCentroidsLayer(gCentroids, gLabels, layerCtx) {
 
   return {
     update(state, patch) {
-      if (!patch || 'hover' in patch || 'filters' in patch) render(state);
+      if (!patch || 'hover' in patch || 'filters' in patch || 'storyFx' in patch) render(state);
     },
     destroy() {
       gCentroids.selectAll('*').remove();

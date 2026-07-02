@@ -18,12 +18,18 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
     .attr('tabindex', 0)
     .attr('aria-label', (d) => `${d.name ?? 'Unnamed storm'} ${d.year}, ${d.country}`)
     .on('mousemove', (event, d) => {
+      if (!bus.get().exploreUnlocked) return; // Story-Gate: keine Hover-Ausgabe
       bus.set({ hover: { sid: d.sid, eventId: d.id, x: event.clientX, y: event.clientY, source: 'scatter' } });
     })
-    .on('mouseleave', () => bus.set({ hover: null }))
-    .on('click', (event, d) => { if (d.sid) bus.set({ detailSid: d.sid }); })
+    .on('mouseleave', () => {
+      if (!bus.get().exploreUnlocked) return;
+      bus.set({ hover: null });
+    })
+    .on('click', (event, d) => {
+      if (d.sid && bus.get().exploreUnlocked) bus.set({ detailSid: d.sid });
+    })
     .on('keydown', (event, d) => {
-      if (event.key === 'Enter' && d.sid) bus.set({ detailSid: d.sid });
+      if (event.key === 'Enter' && d.sid && bus.get().exploreUnlocked) bus.set({ detailSid: d.sid });
     });
 
   function position(state, animate) {
