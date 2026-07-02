@@ -12,6 +12,8 @@ import { createDetailPanel } from '../ui/detailPanel.js';
 import { createModeToggle } from '../ui/modeToggle.js';
 import { createLegend } from '../ui/legend.js';
 import { createFilterPanel } from '../ui/filterPanel.js';
+import { buildSteps } from '../story/steps.js';
+import { resolveRefs } from '../story/refs.js';
 
 export const REGISTRY = {
   tooltip: {
@@ -58,6 +60,34 @@ centroids:   ${Object.keys(index.centroids).length}   (erwartet 22)
 bySid:       ${index.bySid.size} Stürme · byId: ${index.byId.size}
 fits:        abs R²=${ctx.meta.fits.absolute.r2} (p=${ctx.meta.fits.absolute.p}) · pc R²=${ctx.meta.fits.perCapita.r2} (p=${ctx.meta.fits.perCapita.p})
 Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: ${index.bySid.get('2015066S08170')?.length} (erwartet 5)</pre>`;
+      return { update() {}, destroy() { container.innerHTML = ''; } };
+    },
+  },
+
+  'story.text': {
+    title: 'Story-Texte: alle Referenzen aufgelöst (GATE: keine {{…}} übrig, Fehler-Selbsttest rot)',
+    mount(container, ctx) {
+      const steps = buildSteps(ctx);
+      // Negativ-Selbsttest: eine bewusst falsche Referenz MUSS werfen.
+      let selfTest;
+      try {
+        resolveRefs('{{event:9999-9999-XXX.affected:int}}', ctx);
+        selfTest = 'FAIL — unbekannte Referenz hat NICHT geworfen!';
+      } catch (err) {
+        selfTest = `PASS — wirft wie erwartet: „${err.message}"`;
+      }
+      container.innerHTML = `
+        <pre class="harness-summary">Steps: ${steps.length} (erwartet 8) · Selbsttest ungültige Referenz: ${selfTest}</pre>
+        ${steps.map((s, i) => {
+          const patch = s.apply();
+          const annotations = patch.storyFx?.annotations ?? [];
+          return `<article class="harness-step" style="max-width:640px;border-bottom:1px solid #ddd;padding:10px 0;">
+            <h3 style="margin:0 0 4px;">Step ${i} · ${s.title} <small style="color:#777;">[${s.layout} · ${s.id}]</small></h3>
+            <p style="margin:0 0 6px;">${s.html}</p>
+            ${annotations.length ? `<p style="margin:0;color:#777;font-size:13px;">Annotationen: ${annotations.map((a) => `${a.eventId} → „${a.text}"`).join(' · ')}</p>` : ''}
+            ${s.source ? `<p style="margin:0;color:#999;font-size:12px;">${s.source}</p>` : ''}
+          </article>`;
+        }).join('')}`;
       return { update() {}, destroy() { container.innerHTML = ''; } };
     },
   },
