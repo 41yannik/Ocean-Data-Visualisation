@@ -7,25 +7,11 @@
   <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
-  <div class="app">
-    <aside class="story-col" id="story">
-      <!-- Paket 06 hängt hier die Scrollama-Steps ein; bis dahin Titel + Abstract -->
-      <header class="story-header">
-        <p class="kicker">Pacific Dataviz · 2001–2026</p>
-        <h1>From Track to Toll</h1>
-        <p class="abstract">
-          The strongest cyclone is rarely the deadliest. Across 25 years of Pacific
-          tropical cyclones, measured wind speed barely predicts how many people are
-          affected — where a storm strikes, and how exposed and vulnerable the society
-          in its path is, matters far more.
-        </p>
-        <p class="hint">Hover, brush and click to explore. Toggle between per-capita and absolute impact.</p>
-      </header>
-      <div id="story-steps"><!-- Story-Schritte (Paket 06) --></div>
-    </aside>
-
-    <section class="panel" id="panel">
+  <div class="app" data-layout="intro">
+    <!-- Sticky-Bühne: bleibt beim Scrollen stehen, Layout morpht je Story-Step -->
+    <section class="stage" id="panel">
       <div class="views">
+        <figure id="sst" class="view view-sst" aria-label="Warming stripes: Pacific sea-surface temperature anomalies"></figure>
         <figure id="map" class="view view-map" aria-label="Map of Pacific cyclone tracks"></figure>
         <figure id="scatter" class="view view-scatter" aria-label="Scatterplot: wind speed versus people affected"></figure>
       </div>
@@ -35,6 +21,26 @@
         <div id="legend"></div>
       </div>
     </section>
+
+    <!-- Textkarten scrollen ÜBER der Bühne; Steps rendert der storyRunner (Paket 06 S8) -->
+    <div class="scrolly" id="scrolly">
+      <header class="story-hero step-section">
+        <div class="step-card">
+          <p class="kicker">Pacific Dataviz · 2001–2026</p>
+          <h1>From Track to Toll</h1>
+          <p class="abstract">
+            The strongest cyclone is rarely the deadliest. Across 25 years of Pacific
+            tropical cyclones, measured wind speed barely predicts how many people are
+            affected — where a storm strikes, and how exposed and vulnerable the society
+            in its path is, matters far more.
+          </p>
+          <p class="hint">Scroll to begin ↓</p>
+        </div>
+      </header>
+      <div id="story-steps"><!-- storyRunner --></div>
+    </div>
+
+    <nav id="progress-nav" class="progress-nav" aria-label="Story progress"></nav>
   </div>
 
   <aside id="detail" class="detail-panel" aria-hidden="true"></aside>

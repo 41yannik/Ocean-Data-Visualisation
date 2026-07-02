@@ -22,40 +22,41 @@ body {
   font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* ---------- Layout ---------- */
-.app {
-  display: grid;
-  grid-template-columns: minmax(300px, 380px) 1fr;
-  gap: 24px;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 0 16px;
-}
-.story-col { padding: 32px 8px; }
-.story-header .kicker {
-  text-transform: uppercase; letter-spacing: 0.08em;
-  font-size: 12px; color: var(--muted); margin: 0 0 4px;
-}
-.story-header h1 { font-size: 30px; line-height: 1.15; margin: 0 0 12px; }
-.abstract { color: var(--text); }
-.hint { color: var(--muted); font-size: 13px; }
+/* ---------- Layout: Fullscreen-Morph-Scrollytelling (Paket 06) ----------
+   Sticky-Bühne (.stage, 100vh) + Textkarten (.scrolly), die per negativem
+   margin-top ÜBER der Bühne scrollen. data-layout auf .app steuert, welche
+   Views sichtbar sind und wo sie liegen — der Morph ist reines CSS. */
+.app { position: relative; }
 
-.panel {
+.stage {
   position: sticky; top: 0;
   height: 100vh;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  padding: 12px 0;
+  padding: 12px 24px;
+  z-index: 0;
 }
-.views {
-  display: grid;
-  grid-template-columns: 1.25fr 1fr;
-  gap: 12px;
-  min-height: 0;
-  align-items: center;
+.views { position: relative; min-height: 0; }
+.view {
+  position: absolute; inset: 0;
+  margin: 0; min-width: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s ease, left 0.7s ease, right 0.7s ease,
+    top 0.7s ease, bottom 0.7s ease;
 }
-.view { margin: 0; min-width: 0; }
-.view svg { width: 100%; height: auto; display: block; }
+.view svg { width: 100%; height: 100%; display: block; } /* viewBox + meet zentriert */
+
+/* Sichtbarkeit + Position je Layout-Zustand */
+[data-layout="intro"] .view-sst { opacity: 1; pointer-events: auto; left: 6%; right: 6%; }
+[data-layout="map"] .view-map { opacity: 1; pointer-events: auto; }
+[data-layout="scatter"] .view-scatter { opacity: 1; pointer-events: auto; left: 30%; right: 2%; }
+[data-layout="dual"] .view-map, [data-layout="explore"] .view-map {
+  opacity: 1; pointer-events: auto; left: 0; right: 46%;
+}
+[data-layout="dual"] .view-scatter, [data-layout="explore"] .view-scatter {
+  opacity: 1; pointer-events: auto; left: 56%; right: 0;
+}
 
 .ui-bar {
   display: flex; flex-wrap: wrap; gap: 16px 28px;
@@ -63,12 +64,57 @@ body {
   padding: 10px 4px 2px;
   border-top: 1px solid var(--graticule);
   font-size: 13px;
+  opacity: 0; visibility: hidden;             /* erst Step 7 (explore) blendet ein */
+  transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+}
+[data-layout="explore"] .ui-bar {
+  opacity: 1; visibility: visible;
+  transition: opacity 0.5s ease;
 }
 
+/* Textkarten-Ebene über der Bühne */
+.scrolly {
+  position: relative;
+  z-index: 10;
+  margin-top: -100vh;
+  pointer-events: none;                       /* Bühne bleibt erreichbar … */
+}
+.scrolly::after { content: ''; display: block; height: 55vh; } /* Auslauf: Dashboard frei */
+.step-section {
+  min-height: 90vh;
+  display: flex; align-items: center;
+  padding: 0 0 0 5vw;
+}
+.story-hero { min-height: 96vh; }
+.step-card {
+  pointer-events: auto;                       /* … nur die Karte selbst fängt Events */
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--graticule);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10);
+  padding: 20px 24px;
+}
+.step-card h1 { font-size: 30px; line-height: 1.15; margin: 0 0 12px; }
+.step-card h2 { font-size: 19px; line-height: 1.25; margin: 0 0 8px; }
+.step-card p { margin: 0 0 8px; }
+.step-card p:last-child { margin-bottom: 0; }
+.step-card .kicker {
+  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 12px; color: var(--muted); margin: 0 0 4px;
+}
+.step-card .source { font-size: 12px; color: var(--muted); }
+.abstract { color: var(--text); }
+.hint { color: var(--muted); font-size: 13px; }
+
 @media (max-width: 999px) {
-  .app { display: block; }
-  .panel { position: static; height: auto; }
-  .views { grid-template-columns: 1fr; }
+  .stage { height: 56vh; padding: 8px 10px; background: var(--bg); z-index: 5; }
+  .scrolly { margin-top: 0; }
+  .step-section { min-height: 60vh; padding: 4vh 4vw 0; align-items: flex-start; }
+  .story-hero { min-height: 60vh; }
+  .step-card { max-width: none; }
+  [data-layout="scatter"] .view-scatter { left: 2%; right: 2%; }
 }
 
 /* ---------- SVG-Zustandsklassen (zentral) ---------- */
@@ -273,3 +319,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 .harness-bar button:hover { background: #3a4157; }
 .harness-container { padding: 20px; max-width: 1100px; margin: 0 auto; }
 .harness-summary { font-family: ui-monospace, monospace; font-size: 14px; white-space: pre-wrap; }
+.harness-layout .view .dummy {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; letter-spacing: 0.06em; border-radius: 6px;
+}

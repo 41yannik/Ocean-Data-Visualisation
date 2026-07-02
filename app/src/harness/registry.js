@@ -15,6 +15,7 @@ import { createFilterPanel } from '../ui/filterPanel.js';
 import { buildSteps } from '../story/steps.js';
 import { resolveRefs } from '../story/refs.js';
 import { createSstIntro } from '../story/sstIntro.js';
+import { createLayoutController } from '../story/layoutController.js';
 
 export const REGISTRY = {
   tooltip: {
@@ -66,6 +67,24 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
   },
 
   sst: { title: 'SST-Intro: Warming Stripes (PDH)', mount: (c, ctx) => createSstIntro(c, ctx) },
+
+  layout: {
+    title: 'Layout-Morph: step0–step7 klicken → data-layout wechselt (Dummy-Views)',
+    mount(container, ctx) {
+      container.innerHTML = `
+        <div class="app harness-layout" data-layout="intro">
+          <section class="stage" style="position:static;height:70vh;">
+            <div class="views">
+              <figure class="view view-sst"><div class="dummy" style="background:#c65b4e;">SST</div></figure>
+              <figure class="view view-map"><div class="dummy" style="background:#46688c;">KARTE</div></figure>
+              <figure class="view view-scatter"><div class="dummy" style="background:#2f3640;">SCATTER</div></figure>
+            </div>
+            <div class="ui-bar"><span>UI-Bar — nur bei data-layout="explore" sichtbar</span></div>
+          </section>
+        </div>`;
+      return createLayoutController(container.querySelector('.app'), ctx);
+    },
+  },
 
   'story.text': {
     title: 'Story-Texte: alle Referenzen aufgelöst (GATE: keine {{…}} übrig, Fehler-Selbsttest rot)',
