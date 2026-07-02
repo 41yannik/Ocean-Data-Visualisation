@@ -5,8 +5,14 @@ import { select } from 'd3';
 import { makePacificProjection, makeGeoPath } from '../core/scales.js';
 import { MAP } from '../core/config.js';
 import { isScatterable } from '../core/filters.js';
+import { createMap } from '../map/index.js';
 
 export const REGISTRY = {
+  'map.basemap': { title: 'Basemap solo', mount: (c, ctx) => createMap(c, ctx, { layers: ['basemap'] }) },
+  'map.tracks': { title: 'Tracks solo (auf Basemap)', mount: (c, ctx) => createMap(c, ctx, { layers: ['basemap', 'tracks'] }) },
+  'map.centroids': { title: 'Zentroide solo (auf Basemap)', mount: (c, ctx) => createMap(c, ctx, { layers: ['basemap', 'centroids'] }) },
+  map: { title: 'Karte komplett', mount: (c, ctx) => createMap(c, ctx) },
+
   data: {
     title: 'dataLoader-Summary',
     mount(container, ctx) {
