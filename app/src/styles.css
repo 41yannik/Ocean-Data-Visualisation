@@ -113,6 +113,33 @@ body {
 .trend-median { fill: none; stroke: var(--band); stroke-width: 1; stroke-dasharray: 4 3; }
 .trend-band { fill: var(--band); fill-opacity: 0.18; }
 .trend-annotation { font-size: 12px; fill: var(--trend); }
+
+/* ---------- Story-Choreografie (storyFx) ---------- */
+.point, .connector, .trend-line, .trend-median, .trend-band, .trend-annotation {
+  transition: opacity 0.5s ease;
+}
+.story-hidden { opacity: 0 !important; pointer-events: none; }
+.point.story-faded, .connector.story-faded { opacity: 0.15; pointer-events: none; }
+.point.story-reveal { fill: var(--accent); fill-opacity: 0.95; }
+.point.story-focus { stroke: var(--accent); stroke-width: 1.8; fill-opacity: 0.95; }
+
+.g-story-annotations { pointer-events: none; }
+.anno-ring {
+  fill: none; stroke: var(--accent); stroke-width: 1.6;
+  transform-box: fill-box; transform-origin: center;
+  animation: anno-pulse 1.8s ease-out infinite;
+}
+.anno-leader { stroke: var(--muted); stroke-width: 0.8; }
+.anno-label { font-size: 12px; font-weight: 600; fill: var(--text); paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+@keyframes anno-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  70% { transform: scale(1.35); opacity: 0.35; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .point, .connector, .trend-line, .trend-median, .trend-band, .trend-annotation { transition: none; }
+  .anno-ring { animation: none; }
+}
 .axis text { font-size: 11px; fill: var(--muted); }
 .axis line, .axis path { stroke: var(--graticule); }
 .axis-label { font-size: 12px; fill: var(--muted); }

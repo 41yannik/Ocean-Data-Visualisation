@@ -1,7 +1,7 @@
 // Punkte-Layer: 78 scatterbare Sturm-Land-Paare (data-key = id → Objektkonstanz beim Toggle),
 // Tote = Radius, Fallback = gestrichelt, Multi-Country-Connectors ("ein Sturm, n Länder").
 // 1:n: hover.sid highlightet Geschwister; Punkt ohne SID (2004-0153-FJI) ist nicht klickbar (L4).
-import { DUR_MODE } from '../core/config.js';
+import { DUR_MODE, REVEAL_RESIDUAL_MIN } from '../core/config.js';
 import { matchesFilters, isScatterable } from '../core/filters.js';
 
 export function createPointsLayer(gPoints, gConnectors, layerCtx) {
@@ -64,6 +64,24 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
   function classes(state) {
     const hover = state.hover;
     const sel = state.selectedEventIds;
+
+    // Story-Choreografie (storyFx = null → alles neutral):
+    const fx = state.storyFx;
+    const focusSet = fx?.focusEventIds ? new Set(fx.focusEventIds) : null;
+    let focusSids = null;
+    if (focusSet) {
+      focusSids = new Set();
+      for (const e of events) if (focusSet.has(e.id) && e.sid) focusSids.add(e.sid);
+    }
+    const isReveal = (d) => fx?.residualReveal === true
+      && (d.residual_pc ?? -Infinity) > REVEAL_RESIDUAL_MIN;
+    const isStoryFaded = (d) => {
+      if (!fx) return false;
+      if (fx.residualReveal && !isReveal(d)) return true;
+      if (focusSet && !focusSet.has(d.id)) return true;
+      return false;
+    };
+
     circles
       .classed('filtered-out', (d) => !matchesFilters(d, state.filters))
       .classed('hovered', (d) => hover?.eventId === d.id)
@@ -71,9 +89,17 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
       .classed('detail', (d) => state.detailSid != null && d.sid === state.detailSid)
       .classed('selected', (d) => sel?.has(d.id) ?? false)
       .classed('dimmed', (d) => sel != null && !sel.has(d.id))
-      .attr('tabindex', (d) => (matchesFilters(d, state.filters) ? 0 : -1));
+      .classed('story-hidden', () => fx != null && !fx.showPoints)
+      .classed('story-reveal', isReveal)
+      .classed('story-focus', (d) => focusSet?.has(d.id) ?? false)
+      .classed('story-faded', isStoryFaded)
+      .attr('tabindex', (d) => (matchesFilters(d, state.filters) && state.exploreUnlocked ? 0 : -1));
     gConnectors.selectAll('line')
-      .classed('dimmed', () => sel != null);
+      .classed('dimmed', () => sel != null)
+      .classed('story-hidden', () => fx != null && !fx.showPoints)
+      // Beim Residuen-Reveal treten ALLE Connectors zurück — der Beat gehört den Punkten.
+      .classed('story-faded', (d) => (focusSids != null && !focusSids.has(d.sid))
+        || fx?.residualReveal === true);
   }
 
   return {
@@ -81,7 +107,8 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
       if (!patch) { position(state, false); classes(state); return; }
       if ('mode' in patch) position(state, true);
       if ('filters' in patch) position(state, false);
-      if ('hover' in patch || 'selectedEventIds' in patch || 'detailSid' in patch || 'filters' in patch) {
+      if ('hover' in patch || 'selectedEventIds' in patch || 'detailSid' in patch
+        || 'filters' in patch || 'storyFx' in patch || 'exploreUnlocked' in patch) {
         classes(state);
       }
     },

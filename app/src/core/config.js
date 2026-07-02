@@ -30,6 +30,10 @@ export const R_MAX = 12;
 // Nur Story-relevante Inseln beschriften — Clutter-Regel
 export const LABELED_ISO3 = ['FJI', 'VUT', 'NIU', 'GUM', 'TON', 'WSM', 'TUV'];
 
+// Residuen-Reveal (Story Step 3): leuchtend = mind. 10× mehr Betroffene als die
+// Erwartungslinie vorhersagt (residual_pc ist log10-Abstand → 1.0 = Faktor 10).
+export const REVEAL_RESIDUAL_MIN = 1.0;
+
 export function applyCssVars(root = document.documentElement) {
   const map = {
     '--bg': COLORS.bg, '--land': COLORS.land, '--graticule': COLORS.graticule,

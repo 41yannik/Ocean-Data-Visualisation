@@ -8,8 +8,9 @@ import { createAxesLayer } from './axesLayer.js';
 import { createPointsLayer } from './pointsLayer.js';
 import { createTrendLayer } from './trendLayer.js';
 import { createBrushLayer } from './brushLayer.js';
+import { createAnnotationsLayer } from './annotationsLayer.js';
 
-const ALL_LAYERS = ['axes', 'trend', 'brush', 'points'];
+const ALL_LAYERS = ['axes', 'trend', 'brush', 'points', 'annotations'];
 
 export function createScatter(container, ctx, opts = {}) {
   const layersWanted = opts.layers ?? ALL_LAYERS;
@@ -47,6 +48,7 @@ export function createScatter(container, ctx, opts = {}) {
   if (layersWanted.includes('trend')) children.push(createTrendLayer(gBand, gTrend, gAnnotations, layerCtx));
   if (layersWanted.includes('brush')) children.push(createBrushLayer(gBrush, layerCtx));
   if (layersWanted.includes('points')) children.push(createPointsLayer(gPoints, gConnectors, layerCtx));
+  if (layersWanted.includes('annotations')) children.push(createAnnotationsLayer(gAnnotations, layerCtx));
 
   return {
     update(state, patch) {

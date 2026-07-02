@@ -50,11 +50,20 @@ export function createTrendLayer(gBand, gTrend, gAnnotations, layerCtx) {
     label.text(fitLabel(fit));
   }
 
+  // Story-Sichtbarkeit (storyFx = null → alles sichtbar); Fade via CSS-Transition.
+  function visibility(state) {
+    const fx = state.storyFx;
+    linePath.classed('story-hidden', fx != null && !fx.showTrend);
+    label.classed('story-hidden', fx != null && !fx.showTrend);
+    bandPath.classed('story-hidden', fx != null && !fx.showBand);
+    medianPath.classed('story-hidden', fx != null && !fx.showBand);
+  }
+
   return {
     update(state, patch) {
-      if (!patch) return render(state, false);
+      if (!patch) { render(state, false); visibility(state); return; }
       if ('mode' in patch) render(state, true);
-      // 'step': Sichtbarkeits-Steuerung folgt in Paket 06
+      if ('storyFx' in patch) visibility(state);
     },
     destroy() {
       gBand.selectAll('*').remove();
