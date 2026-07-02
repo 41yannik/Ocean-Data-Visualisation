@@ -16,6 +16,7 @@ import { buildSteps } from '../story/steps.js';
 import { resolveRefs } from '../story/refs.js';
 import { createSstIntro } from '../story/sstIntro.js';
 import { createLayoutController } from '../story/layoutController.js';
+import { createProgressNav } from '../story/progressNav.js';
 
 export const REGISTRY = {
   tooltip: {
@@ -67,6 +68,18 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
   },
 
   sst: { title: 'SST-Intro: Warming Stripes (PDH)', mount: (c, ctx) => createSstIntro(c, ctx) },
+
+  nav: {
+    title: 'Progress-Nav (rechts fixiert): step0–step7/stepOff klicken; Punkte setzen step-Patches',
+    mount(c, ctx) {
+      c.innerHTML = '<p class="harness-summary">Punkte-Leiste rechts am Bildschirmrand — bei step ≥ 0 sichtbar, aktiver Punkt = Akzent.</p>';
+      const nav = document.createElement('nav');
+      nav.className = 'progress-nav';
+      document.body.appendChild(nav);
+      const comp = createProgressNav(nav, ctx);
+      return { update: comp.update, destroy() { comp.destroy(); nav.remove(); } };
+    },
+  },
 
   layout: {
     title: 'Layout-Morph: step0–step7 klicken → data-layout wechselt (Dummy-Views)',

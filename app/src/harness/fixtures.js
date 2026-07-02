@@ -39,6 +39,7 @@ export const FIXTURES = {
   step0: () => ({ step: 0 }), step1: () => ({ step: 1 }), step2: () => ({ step: 2 }),
   step3: () => ({ step: 3 }), step4: () => ({ step: 4 }), step5: () => ({ step: 5 }),
   step6: () => ({ step: 6 }), step7: () => ({ step: 7 }),
+  stepOff: () => ({ step: -1 }), // freie Erkundung ohne Story (?story=off)
 
   // --- storyFx-Choreografie (Paket 06): Spiegel der Step-apply()-Zustände ---
   fxNeutral: () => ({ storyFx: null }),
