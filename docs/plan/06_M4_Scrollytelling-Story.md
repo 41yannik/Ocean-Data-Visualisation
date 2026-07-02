@@ -39,3 +39,17 @@ Die geführte Erzählung (Englisch) läuft als Scroll-Sequenz über dem fixen CM
 - Alle 7 Schritte laufen per Scroll UND per Buttons/Tastatur; Layout funktioniert auch gestapelt (< 1000 px) und mit `prefers-reduced-motion`.
 - Kein Story-Text enthält eine hart getippte Datenzahl; der Referenz-Resolver failt bei unbekannten Events.
 - Die Story enthält keine Beispiele außerhalb des gewählten Zeitfensters und keinen der widerlegten Alt-Fakten (Mawar ~700, „Heta schwächer als Mawar").
+
+## Umsetzungsstand (2026-07-02, Tag `m4-done`) — FERTIG, mit dokumentierten Abweichungen
+
+Umgesetzt in 10 Commits (S1–S10), jede Komponente einzeln im Harness abgenommen. Abweichungen/Präzisierungen gegenüber der Spezifikation oben:
+
+1. **Layout = Fullscreen-Morph** (Nutzer-Entscheidung, inspiriert von der Gemini-Analyse): Sticky-Bühne 100vh, Textkarten scrollen darüber; `data-layout` (`intro|map|scatter|dual|explore`) morpht je Step per CSS. Statt Seitenspalte.
+2. **Step 0 = SST-Intro** (Warming Stripes, PDH-Pflichtdatensatz) vor dem 7-Schritt-Bogen → 8 Steps (0–7), `story/sstIntro.js`.
+3. **Guba-Beat neu in Schritt 3:** Guba 2007/PNG ist real in den Daten (`2007-0557-PNG`: 162.140 Betroffene, 172 Tote = Maximum im Fenster, nur Kat. 1) — der fehlende Quadrant „schwacher Wind, hoher Toll". Heta bleibt Hook (Schritt 1) mit Track-Einzeichnen + Puls-Ringen ASM/NIU.
+4. **Schritt 5 mit Pipeline-finalen Werten:** über der Linie real VUT 80 % (nicht 71 %), FJI nur 53 % (nicht 70 %) → Text fokussiert Vanuatu (inkl. Judy+Kevin 2023, je ~78 % der Bevölkerung, binnen einer Woche); Tuvalu-Median entfiel (n = 2).
+5. **Residuen-Reveal:** Schwelle `residual_pc > 1.0` (= Faktor 10 über der Erwartung) → 9 leuchtende Punkte; `config.REVEAL_RESIDUAL_MIN`.
+6. **Mechanik:** State-Feld `storyFx` (einzige Brücke Steps→Komponenten), `story/steps.js` + Resolver `story/refs.js` (wirft bei unbekannter Referenz; Negativ-Selbsttest in `?mount=story.text`), storyRunner besitzt das `exploreUnlocked`-Gate (Rückwärts-Scrollen sperrt wieder), Deep-Link `?step=N`, Dashboard-Modus `?story=off`.
+7. **Rug-Leiste (Schritt 6):** nur als Flag `storyFx.showRug` vorbereitet — der Layer selbst kommt planmäßig in Paket 07; der Step degradiert sauber (Text + n-Caption).
+8. **Verifikation:** 78 Playwright-Checks grün (46 Story-Durchlauf inkl. rückwärts/Deep-Link/story=off, 20 Explore-Regression, 8 reduced-motion, 4 Preview-Build); dist 356 KB; `git ls-files public/data` = nur tracks/sst/land-110m.
+9. **Offen für Paket 07:** Label-Überlappung Samoa/„Am. Samoa" im Hook, Rug-Layer, finale Palette. Hero-Kicker „2001–2026"/„25 years" ist statisches HTML (Designkonstante des Zeitfensters, keine Pipeline-Zahl).
