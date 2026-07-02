@@ -118,6 +118,12 @@ body {
 .axis-label { font-size: 12px; fill: var(--muted); }
 .n-caption { font-size: 12px; fill: var(--muted); }
 
+/* ---------- SST-Intro (Warming Stripes) ---------- */
+.sst-title { font-size: 15px; font-weight: 600; fill: var(--text); }
+.sst-axis line { stroke: var(--muted); }
+.sst-axis text { font-size: 11px; fill: var(--muted); }
+.sst-latest { font-size: 12px; fill: var(--text); font-variant-numeric: tabular-nums; }
+
 /* ---------- Tooltip ---------- */
 .tooltip {
   position: fixed;

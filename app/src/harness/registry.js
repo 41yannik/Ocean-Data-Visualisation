@@ -14,6 +14,7 @@ import { createLegend } from '../ui/legend.js';
 import { createFilterPanel } from '../ui/filterPanel.js';
 import { buildSteps } from '../story/steps.js';
 import { resolveRefs } from '../story/refs.js';
+import { createSstIntro } from '../story/sstIntro.js';
 
 export const REGISTRY = {
   tooltip: {
@@ -63,6 +64,8 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
       return { update() {}, destroy() { container.innerHTML = ''; } };
     },
   },
+
+  sst: { title: 'SST-Intro: Warming Stripes (PDH)', mount: (c, ctx) => createSstIntro(c, ctx) },
 
   'story.text': {
     title: 'Story-Texte: alle Referenzen aufgelöst (GATE: keine {{…}} übrig, Fehler-Selbsttest rot)',
