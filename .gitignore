@@ -14,3 +14,7 @@ dist/
 # (Challenge-Variante ohne EM-DAT wird separat freigegeben, siehe docs/decisions/)
 app/public/data/events*.json
 app/public/data/meta*.json
+
+# Python
+__pycache__/
+*.pyc
