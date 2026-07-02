@@ -58,6 +58,12 @@ body {
   opacity: 1; pointer-events: auto; left: 56%; right: 0;
 }
 
+/* Offenes Detailpanel: Bühne rückt zusammen, damit nichts verdeckt wird (Step 4!) */
+@media (min-width: 1000px) {
+  .stage { transition: padding-right 0.3s ease; }
+  body:has(.detail-panel.open) .stage { padding-right: calc(min(400px, 92vw) + 36px); }
+}
+
 .ui-bar {
   display: flex; flex-wrap: wrap; gap: 16px 28px;
   align-items: center;
@@ -264,6 +270,7 @@ body {
   z-index: 30;
 }
 .detail-panel.open { transform: translateX(0); }
+.detail-panel:focus { outline: none; } /* Dialog-Container braucht keinen Fokusring */
 @media (prefers-reduced-motion: reduce) {
   .detail-panel { transition: none; }
 }

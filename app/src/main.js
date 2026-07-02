@@ -1,5 +1,7 @@
 // Router + EINZIGER Kompositionspunkt (docs/plan/09 §5).
 // ?mount=<key>[&fixture=<key>] → Dev-Harness mit genau einer Komponente; sonst volle App.
+// App-Modi: Standard = Scrollytelling (storyRunner sperrt Exploration bis Step 7);
+// ?step=N springt per Deep-Link in die Story; ?story=off = reines Dashboard.
 import { loadData } from './core/dataLoader.js';
 import { createStore } from './core/state.js';
 import { makeInitialState } from './core/initialState.js';
@@ -11,6 +13,10 @@ import { createDetailPanel } from './ui/detailPanel.js';
 import { createModeToggle } from './ui/modeToggle.js';
 import { createLegend } from './ui/legend.js';
 import { createFilterPanel } from './ui/filterPanel.js';
+import { createSstIntro } from './story/sstIntro.js';
+import { createLayoutController } from './story/layoutController.js';
+import { createProgressNav } from './story/progressNav.js';
+import { createStoryRunner } from './story/storyRunner.js';
 
 const params = new URLSearchParams(location.search);
 
@@ -30,10 +36,15 @@ async function runApp() {
     const store = createStore(makeInitialState());
     const ctx = { data, meta, bus: store, config: null };
 
-    // Deterministische Update-Reihenfolge (Lücke L14): Views vor UI.
+    const storyOff = params.get('story') === 'off';
+    const deepStep = params.has('step') ? Number(params.get('step')) : null;
+
+    // Deterministische Update-Reihenfolge (Lücke L14): Layout → Views → UI → Story.
     const components = [
+      createLayoutController(document.querySelector('.app'), ctx),
       createMap(document.querySelector('#map'), ctx),
       createScatter(document.querySelector('#scatter'), ctx),
+      createSstIntro(document.querySelector('#sst'), ctx),
       createTooltip(document.body, ctx),
       createDetailPanel(document.querySelector('#detail'), ctx),
       createLegend(document.querySelector('#legend'), ctx),
@@ -41,11 +52,23 @@ async function runApp() {
       createFilterPanel(document.querySelector('#filters'), ctx),
     ];
 
+    if (storyOff) {
+      // Reines Dashboard: keine Textkarten, step -1 → layout "explore", alles frei.
+      document.querySelector('.scrolly').style.display = 'none';
+    } else {
+      components.push(createProgressNav(document.querySelector('#progress-nav'), ctx));
+      // Zuletzt: wendet beim Erzeugen Step 0 (bzw. ?step=N) an und sperrt die Exploration.
+      components.push(createStoryRunner(document.querySelector('#story-steps'), ctx, {
+        initialStep: Number.isFinite(deepStep) ? deepStep : 0,
+      }));
+    }
+
     store.subscribe((state, patch) => {
       for (const c of components) c.update(state, patch);
     });
     const state = store.get();
     for (const c of components) c.update(state, undefined); // Vollrender
+    window.store = store; // Konsole/E2E: store.set({step: 3})
   } catch (err) {
     document.querySelector('.app').innerHTML = `<div class="error-banner">${err.message}</div>`;
   }
