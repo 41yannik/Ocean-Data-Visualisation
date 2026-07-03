@@ -53,3 +53,7 @@ Umgesetzt in 10 Commits (S1–S10), jede Komponente einzeln im Harness abgenomme
 7. **Rug-Leiste (Schritt 6):** nur als Flag `storyFx.showRug` vorbereitet — der Layer selbst kommt planmäßig in Paket 07; der Step degradiert sauber (Text + n-Caption).
 8. **Verifikation:** 78 Playwright-Checks grün (46 Story-Durchlauf inkl. rückwärts/Deep-Link/story=off, 20 Explore-Regression, 8 reduced-motion, 4 Preview-Build); dist 356 KB; `git ls-files public/data` = nur tracks/sst/land-110m.
 9. **Offen für Paket 07:** Label-Überlappung Samoa/„Am. Samoa" im Hook, Rug-Layer, finale Palette. Hero-Kicker „2001–2026"/„25 years" ist statisches HTML (Designkonstante des Zeitfensters, keine Pipeline-Zahl).
+
+### Layout-Revision (2026-07-03, Nutzer-Briefing) — Papier-Bänder statt Overlay-Karten
+
+Nach Sichtung des Overlay-Layouts entschied der Nutzer: keine schwebenden Textkarten über den Diagrammen. Neues Muster **„Papier-Bänder + Viz-Fenster"** (NYT-Stil): je Step ein solides Textband in voller Breite (zentrierte Spalte 640 px, linksbündig, Kicker „Step i of 8") ÜBER einem transparenten Fenster (~85vh), durch das die sticky Bühne als **zentrierter Vollbild-Held** sichtbar ist (map 4 %-Ränder, scatter 14 %, dual 2/51–53/2). Scrollama triggert auf dem Fenster (Step aktiv = Viz frei sichtbar); UI-Leiste weiterhin UNTERHALB der Views, nur im Explore-Modus. Mobile-Sonderfall entfiel (einheitliches Muster). Steps/storyFx/Komponenten/Mechanik unverändert — reiner Umbau von index.html, styles.css, storyRunner-Rendering. Alle 109 Checks nach Selektor-Anpassung grün.
