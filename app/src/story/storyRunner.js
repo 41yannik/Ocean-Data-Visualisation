@@ -13,20 +13,19 @@ export function createStoryRunner(container, ctx, opts = {}) {
   const bus = ctx.bus;
   const steps = buildSteps(ctx);
 
-  // Papier-Bänder + Viz-Fenster (Layout-Revision 2026-07-03): je Step ein solides
-  // Textband ÜBER seinem transparenten Fenster; Scroll-Trigger ist das FENSTER —
-  // der Step ist aktiv, wenn die Viz frei sichtbar in der Bildschirmmitte steht.
+  // Sticky Side-by-Side (Layout v3, 2026-07-03): je Step ein nativer, statischer
+  // Artikel in der linken Textspalte — Scroll-Trigger ist der Artikel selbst;
+  // die sticky Bühne rechts morpht synchron.
   container.innerHTML = steps.map((s, i) => `
-    <section class="step-band" data-step="${i}" data-step-id="${s.id}">
+    <article class="step-article" data-step="${i}" data-step-id="${s.id}">
       <div class="step-text">
         <p class="kicker">Step ${i + 1} of ${steps.length}</p>
         <h2>${s.title}</h2>
         <p>${s.html}</p>
         ${s.source ? `<p class="source">${s.source}</p>` : ''}
       </div>
-    </section>
-    <div class="step-window" data-step="${i}" aria-hidden="true"></div>`).join('');
-  const sections = [...container.querySelectorAll('.step-window')];
+    </article>`).join('');
+  const sections = [...container.querySelectorAll('.step-article')];
 
   let internalStep = null;       // zuletzt von UNS angewandter Step (Loop-Guard)
   let programmaticTarget = null; // Ziel eines programmatischen Scrolls (Zwischensteps ignorieren)

@@ -8,38 +8,39 @@
 </head>
 <body>
   <div class="app" data-layout="intro">
-    <!-- Sticky-Bühne: bleibt beim Scrollen stehen, Layout morpht je Story-Step -->
-    <section class="stage" id="panel">
-      <div class="views">
-        <figure id="sst" class="view view-sst" aria-label="Warming stripes: Pacific sea-surface temperature anomalies"></figure>
-        <figure id="map" class="view view-map" aria-label="Map of Pacific cyclone tracks"></figure>
-        <figure id="scatter" class="view view-scatter" aria-label="Scatterplot: wind speed versus people affected"></figure>
-      </div>
-      <div class="ui-bar" id="uibar">
-        <div id="mode-toggle"></div>
-        <div id="filters"></div>
-        <div id="legend"></div>
-      </div>
-    </section>
-
-    <!-- Papier-Bänder + Viz-Fenster (Layout-Revision 2026-07-03): solide Textbänder
-         wechseln sich mit transparenten Fenstern ab, durch die die sticky Bühne als
-         zentrierter Held sichtbar ist. Steps rendert der storyRunner. -->
+    <!-- Sticky Side-by-Side (Layout 2026-07-03 v3): Textspalte links im normalen
+         Dokumentfluss, rechts die sticky Bühne (100vh, Viz viewport-zentriert).
+         Mobil bricht das Grid um: Text oben, Bühne statisch darunter. -->
     <div class="scrolly" id="scrolly">
-      <header class="story-hero step-band">
-        <div class="step-text">
-          <p class="kicker">Pacific Dataviz · 2001–2026</p>
-          <h1>From Track to Toll</h1>
-          <p class="abstract">
-            The strongest cyclone is rarely the deadliest. Across 25 years of Pacific
-            tropical cyclones, measured wind speed barely predicts how many people are
-            affected — where a storm strikes, and how exposed and vulnerable the society
-            in its path is, matters far more.
-          </p>
-          <p class="hint">Scroll to begin ↓</p>
+      <div class="story-col" id="story-col">
+        <article class="step-article story-hero">
+          <div class="step-text">
+            <p class="kicker">Pacific Dataviz · 2001–2026</p>
+            <h1>From Track to Toll</h1>
+            <p class="abstract">
+              The strongest cyclone is rarely the deadliest. Across 25 years of Pacific
+              tropical cyclones, measured wind speed barely predicts how many people are
+              affected — where a storm strikes, and how exposed and vulnerable the society
+              in its path is, matters far more.
+            </p>
+            <p class="hint">Scroll to begin ↓</p>
+          </div>
+        </article>
+        <div id="story-steps"><!-- storyRunner --></div>
+      </div>
+
+      <section class="stage" id="panel">
+        <div class="views">
+          <figure id="sst" class="view view-sst" aria-label="Warming stripes: Pacific sea-surface temperature anomalies"></figure>
+          <figure id="map" class="view view-map" aria-label="Map of Pacific cyclone tracks"></figure>
+          <figure id="scatter" class="view view-scatter" aria-label="Scatterplot: wind speed versus people affected"></figure>
         </div>
-      </header>
-      <div id="story-steps"><!-- storyRunner --></div>
+        <div class="ui-bar" id="uibar">
+          <div id="mode-toggle"></div>
+          <div id="filters"></div>
+          <div id="legend"></div>
+        </div>
+      </section>
     </div>
 
     <nav id="progress-nav" class="progress-nav" aria-label="Story progress"></nav>

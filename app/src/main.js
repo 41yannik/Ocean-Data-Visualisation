@@ -53,8 +53,9 @@ async function runApp() {
     ];
 
     if (storyOff) {
-      // Reines Dashboard: keine Textkarten, step -1 → layout "explore", alles frei.
-      document.querySelector('.scrolly').style.display = 'none';
+      // Reines Dashboard: Textspalte weg, Grid zur Einzelspalte — Bühne bleibt sichtbar.
+      document.querySelector('#story-col').style.display = 'none';
+      document.querySelector('.scrolly').style.display = 'block';
     } else {
       components.push(createProgressNav(document.querySelector('#progress-nav'), ctx));
       // Zuletzt: wendet beim Erzeugen Step 0 (bzw. ?step=N) an und sperrt die Exploration.
