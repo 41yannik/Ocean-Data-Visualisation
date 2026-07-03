@@ -3,6 +3,14 @@
 import { LABELED_ISO3 } from '../core/config.js';
 import { COUNTRY_LOOKUP } from './countryNames.js';
 
+// Kollisionsvermeidung benachbarter Labels (Samoa liegt direkt westlich von Am. Samoa):
+// WSM links vom Punkt verankern, ASM leicht nach unten versetzen.
+const LABEL_OFFSETS = {
+  WSM: { dx: -5, dy: 3, anchor: 'end' },
+  ASM: { dx: 5, dy: 12, anchor: 'start' },
+};
+const DEFAULT_OFFSET = { dx: 5, dy: 3, anchor: 'start' };
+
 export function createCentroidsLayer(gCentroids, gLabels, layerCtx) {
   const { data, geo } = layerCtx;
   const entries = Object.entries(data.index.centroids)
@@ -39,8 +47,9 @@ export function createCentroidsLayer(gCentroids, gLabels, layerCtx) {
       .join('text')
       .attr('class', 'centroid-label')
       .classed('emphasis', (d) => storyIsos.includes(d.iso3))
-      .attr('x', (d) => d.point[0] + 5)
-      .attr('y', (d) => d.point[1] + 3)
+      .attr('x', (d) => d.point[0] + (LABEL_OFFSETS[d.iso3] ?? DEFAULT_OFFSET).dx)
+      .attr('y', (d) => d.point[1] + (LABEL_OFFSETS[d.iso3] ?? DEFAULT_OFFSET).dy)
+      .attr('text-anchor', (d) => (LABEL_OFFSETS[d.iso3] ?? DEFAULT_OFFSET).anchor)
       .text((d) => COUNTRY_LOOKUP[d.iso3] ?? d.iso3);
   }
 
