@@ -54,7 +54,11 @@ Umgesetzt in 10 Commits (S1–S10), jede Komponente einzeln im Harness abgenomme
 8. **Verifikation:** 78 Playwright-Checks grün (46 Story-Durchlauf inkl. rückwärts/Deep-Link/story=off, 20 Explore-Regression, 8 reduced-motion, 4 Preview-Build); dist 356 KB; `git ls-files public/data` = nur tracks/sst/land-110m.
 9. **Offen für Paket 07:** Label-Überlappung Samoa/„Am. Samoa" im Hook, Rug-Layer, finale Palette. Hero-Kicker „2001–2026"/„25 years" ist statisches HTML (Designkonstante des Zeitfensters, keine Pipeline-Zahl).
 
-### Layout v4 (2026-07-03, „Master-Prompt"-Briefing) — Vollbild-Bühne, FINAL
+### Layout v5 (2026-07-03, Briefing „linearer One-Pager") — FINAL
+
+Fünfte Iteration, Architekturwechsel: **kein Sticky, kein Scrollama** — nativer Dokumentfluss. Je Step eine `<section>` (Text max. 700 px ÜBER der zentrierten Grafik, 11vh Weißraum). Umsetzung über **Mehrfach-Instanziierung** (der Fabrik-Vertrag aus plan/09 zahlt sich aus): je Sektion eigene Map-/Scatter-/SST-Instanzen mit **eingefrorenem Zustand** aus `steps[i].apply()` (lokaler Store, Gate zu); die letzte Sektion ist das voll interaktive Dashboard. **Lazy-Mount per IntersectionObserver** (30 % der Grafikzeile) → Einstiegsanimationen (Stripes, Linien-Draw, Heta-Track-Draw-in, neuer Punkte-Stagger) feuern beim Sichtbarwerden; `.viz-frame` mit `aspect-ratio` = null Layout-Shift. Abweichungen: S4 ohne Detailpanel (Overlay passt nicht in den Fluss), S5/S6 nur Scatter. `?step=N` = Anker, `?story=off` = nur Dashboard. storyRunner/Caption/progressNav/layoutController leben nur noch im Harness. Tag `layout-v4` sichert die Bühnen-Variante. 117 Checks grün; Hauptbundle 139 KB.
+
+### Layout v4 (2026-07-03, „Master-Prompt"-Briefing) — Vollbild-Bühne (abgelöst durch v5)
 
 Vierte und finale Layout-Iteration (v1 Overlay-Karten → v2 Papier-Bänder → v3 Side-by-Side → **v4 Vollbild-Bühne**): großzügige **Hero-Section** ohne Daten (großer Titel, drei sehr einfache Sätze mit `<strong>`-Kernbegriffen), danach je Step ein 100vh-Erlebnis — Grafik groß und mittig, Erklärtext als **Caption fest unten links** (eigene Grid-Zeile der Bühne `[Viz 1fr | Caption | UI-Bar]`, per Konstruktion überschneidungsfrei). Dual/Explore wieder **gleichwertig nebeneinander** (identische 3 %-Ränder), mobil gestapelt. Neue Komponente `story/storyCaption.js` (reine View, Fade-Wechsel des Step-Texts); storyRunner rendert nur noch unsichtbare 100vh-Trigger. Steps/storyFx/Mechanik unverändert; 133 Playwright-Checks grün.
 
