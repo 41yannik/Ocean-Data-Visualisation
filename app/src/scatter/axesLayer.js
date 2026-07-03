@@ -37,8 +37,10 @@ export function createAxesLayer(g, layerCtx) {
     const total = filtered.length;
     const rug = filtered.filter((e) => !isScatterable(e) && e.intensity_kt != null).length;
     const noWind = total - shown - rug;
+    // "(ticks)" nur erwähnen, wenn das Rug gerade sichtbar ist (storyFx-Konvention wie rugLayer)
+    const rugVisible = state.storyFx == null || state.storyFx.showRug === true;
     caption.text(`n = ${shown} of ${total} storm-country pairs shown`
-      + (rug ? ` · ${rug} with wind but no impact count (ticks)` : '')
+      + (rug ? ` · ${rug} with wind but no impact count${rugVisible ? ' (ticks)' : ''}` : '')
       + (noWind ? ` · ${noWind} without wind data` : ''));
   }
 
@@ -46,7 +48,7 @@ export function createAxesLayer(g, layerCtx) {
     update(state, patch) {
       if (!patch) return render(state, false);
       if ('mode' in patch) render(state, true);
-      else if ('filters' in patch) render(state, false);
+      else if ('filters' in patch || 'storyFx' in patch) render(state, false);
     },
     destroy() { g.selectAll('*').remove(); },
   };
