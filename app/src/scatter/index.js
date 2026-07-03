@@ -9,8 +9,9 @@ import { createPointsLayer } from './pointsLayer.js';
 import { createTrendLayer } from './trendLayer.js';
 import { createBrushLayer } from './brushLayer.js';
 import { createAnnotationsLayer } from './annotationsLayer.js';
+import { createRugLayer } from './rugLayer.js';
 
-const ALL_LAYERS = ['axes', 'trend', 'brush', 'points', 'annotations'];
+const ALL_LAYERS = ['axes', 'rug', 'trend', 'brush', 'points', 'annotations'];
 
 export function createScatter(container, ctx, opts = {}) {
   const layersWanted = opts.layers ?? ALL_LAYERS;
@@ -25,6 +26,7 @@ export function createScatter(container, ctx, opts = {}) {
   // Feste <g>-Reihenfolge: band → trend → connectors → BRUSH → points → annotations
   // (Brush-Overlay unter den Punkten, sonst schluckt es die Pointer-Events — Stolperstein 3).
   const gAxes = root.append('g').attr('class', 'g-axes');
+  const gRug = root.append('g').attr('class', 'g-rug');
   const gBand = root.append('g').attr('class', 'g-band');
   const gTrend = root.append('g').attr('class', 'g-trend');
   const gConnectors = root.append('g').attr('class', 'g-connectors');
@@ -45,6 +47,7 @@ export function createScatter(container, ctx, opts = {}) {
 
   const children = [];
   if (layersWanted.includes('axes')) children.push(createAxesLayer(gAxes, layerCtx));
+  if (layersWanted.includes('rug')) children.push(createRugLayer(gRug, layerCtx));
   if (layersWanted.includes('trend')) children.push(createTrendLayer(gBand, gTrend, gAnnotations, layerCtx));
   if (layersWanted.includes('brush')) children.push(createBrushLayer(gBrush, layerCtx));
   if (layersWanted.includes('points')) children.push(createPointsLayer(gPoints, gConnectors, layerCtx));

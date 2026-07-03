@@ -181,6 +181,11 @@ body {
 .land { fill: var(--land); stroke: none; }
 .graticule { fill: none; stroke: var(--graticule); stroke-width: 0.6; }
 
+.rug-tick { fill: var(--muted); fill-opacity: 0.75; cursor: pointer; transition: opacity 0.5s ease; }
+.rug-tick.hovered, .rug-tick.sibling, .rug-tick.detail { fill: var(--accent); fill-opacity: 1; }
+.rug-tick.filtered-out { display: none; }
+.rug-tick:focus-visible { outline: none; fill: var(--accent); }
+
 .trend-line { fill: none; stroke: var(--trend); stroke-width: 1.6; }
 .trend-median { fill: none; stroke: var(--band); stroke-width: 1; stroke-dasharray: 4 3; }
 .trend-band { fill: var(--band); fill-opacity: 0.18; }
@@ -219,7 +224,7 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .point, .connector, .trend-line, .trend-median, .trend-band, .trend-annotation, .track { transition: none; }
+  .point, .connector, .trend-line, .trend-median, .trend-band, .trend-annotation, .track, .rug-tick { transition: none; }
   .anno-ring, .centroid-pulse { animation: none; }
 }
 .axis text { font-size: 11px; fill: var(--muted); }

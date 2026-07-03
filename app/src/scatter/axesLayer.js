@@ -32,9 +32,14 @@ export function createAxesLayer(g, layerCtx) {
     tx(gY).call(axisLeft(y.scale).tickValues(y.ticks).tickFormat(y.tickFormat).tickSizeOuter(0));
     yLabel.text(y.axisLabel);
 
-    const shown = data.events.filter((e) => isScatterable(e) && matchesFilters(e, state.filters)).length;
-    const total = data.events.filter((e) => matchesFilters(e, state.filters)).length;
-    caption.text(`n = ${shown} of ${total} storm-country pairs shown · ${total - shown} lack wind or impact data`);
+    const filtered = data.events.filter((e) => matchesFilters(e, state.filters));
+    const shown = filtered.filter(isScatterable).length;
+    const total = filtered.length;
+    const rug = filtered.filter((e) => !isScatterable(e) && e.intensity_kt != null).length;
+    const noWind = total - shown - rug;
+    caption.text(`n = ${shown} of ${total} storm-country pairs shown`
+      + (rug ? ` · ${rug} with wind but no impact count (ticks)` : '')
+      + (noWind ? ` · ${noWind} without wind data` : ''));
   }
 
   return {

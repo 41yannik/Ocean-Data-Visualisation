@@ -12,6 +12,7 @@ export function createLegend(container, ctx) {
   container.innerHTML = `
     <span>Track width = storm category: ${catSamples}</span>
     <span><svg width="18" height="14"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--point)" stroke-dasharray="3 2"/></svg> converted EM-DAT wind (no track)</span>
+    <span><svg width="20" height="14"><rect x="5" y="2" width="3" height="10" fill="var(--muted)" fill-opacity="0.75"/><rect x="12" y="2" width="3" height="10" fill="var(--muted)" fill-opacity="0.75"/></svg> tick = wind known, impact not reported</span>
     <span>Circle size = deaths
       <svg width="46" height="16">
         <circle cx="8" cy="9" r="2.5" fill="var(--point)" fill-opacity="0.7"/>
