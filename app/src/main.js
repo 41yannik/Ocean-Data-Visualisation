@@ -20,6 +20,7 @@ import { createModeToggle } from './ui/modeToggle.js';
 import { createLegend } from './ui/legend.js';
 import { createFilterPanel } from './ui/filterPanel.js';
 import { createSstIntro } from './story/sstIntro.js';
+import { createImpactBars } from './story/impactBars.js';
 import { buildSteps } from './story/steps.js';
 import { SECTIONS } from './story/sections.js';
 
@@ -105,7 +106,8 @@ async function runApp() {
       for (const v of sec.views) {
         const el = sectionEl.querySelector(`[data-view=${v}]`);
         if (v === 'sst') components.push(createSstIntro(el, ctx));
-        if (v === 'map') components.push(createMap(el, ctx));
+        if (v === 'map') components.push(createMap(el, ctx, sec.mapOpts ?? {}));
+        if (v === 'bars') components.push(createImpactBars(el, ctx));
         // ohne Brush-Layer: gesperrte Sektionen brauchen kein Selektions-Overlay
         if (v === 'scatter') {
           components.push(createScatter(el, ctx, { layers: ['axes', 'rug', 'trend', 'points', 'annotations'] }));

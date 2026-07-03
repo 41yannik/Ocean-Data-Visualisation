@@ -19,6 +19,13 @@ export const SID_GUBA = '2007317S10150';
 // NIU (84 km) beide belegbar im Sturmwindfeld — Grundlage des Wind-Korridors im Hook.
 export const HETA_R34_KM = 370;
 
+// Fokus-Ausschnitt des Hooks: ASM, Niue und die Zugbahn dazwischen (inkl. Korridor-Luft).
+export const HETA_FOCUS = {
+  type: 'MultiPoint',
+  coordinates: [[-176.5, -10.5], [-164.5, -23]],
+};
+export const HETA_FLY_MS = 1600;
+
 // Layout je Step — statisch, damit der layoutController ohne Daten-ctx auskommt.
 export const STEP_LAYOUTS = ['intro', 'map', 'scatter', 'scatter', 'dual', 'dual', 'dual', 'explore'];
 export const STEP_COUNT = STEP_LAYOUTS.length;
@@ -33,6 +40,8 @@ export const makeStoryFx = (over = {}) => ({
   residualReveal: false, annotations: [], focusEventIds: null, showRug: false,
   swath: null,         // { sid, radiusKm } — Wind-Korridor um eine Zugbahn
   impactBubbles: null, // [{ eventId }] — flächenproportionale Betroffenen-Kreise
+  camera: null,        // { flyMs } — Kamera-Einflug auf eine gezoomte Karte (opts.fitTo)
+  focusOnly: false,    // true = Nicht-Fokus-Tracks KOMPLETT ausblenden (statt faden)
   ...over,
 });
 const fx = makeStoryFx;
@@ -83,6 +92,8 @@ export function buildSteps(ctx) {
           focusSids: [SID_HETA], drawSid: SID_HETA, emphasisIso3: ['ASM', 'NIU'],
           swath: { sid: SID_HETA, radiusKm: HETA_R34_KM },
           impactBubbles: [{ eventId: '2004-0004-ASM' }, { eventId: '2004-0004-NIU' }],
+          camera: { flyMs: HETA_FLY_MS },
+          focusOnly: true,
         }),
       }),
     },

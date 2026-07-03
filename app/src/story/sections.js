@@ -5,6 +5,8 @@
 // (viewport-fixes Overlay passt nicht in den Dokumentfluss); S5/S6 nur Scatter
 // (die Karte trüge dort nichts bei). Die letzte Sektion ist das voll interaktive
 // Dashboard (eigener entsperrter Store).
+import { HETA_FOCUS } from './steps.js';
+
 const ARIA = {
   sst: 'Warming stripes with an aligned annual line chart: Pacific sea-surface temperature anomalies since 1850',
   map: 'Map of Pacific tropical-cyclone tracks; track width shows storm category',
@@ -14,8 +16,12 @@ const ARIA = {
 export const SECTIONS = [
   { step: 0, views: ['sst'], aria: { sst: ARIA.sst } },
   {
-    step: 1, views: ['map'],
-    aria: { map: 'Map focused on Cyclone Heta’s track: a shaded corridor shows the gale-force wind field covering both American Samoa and Niue; proportional circles compare people affected' },
+    step: 1, views: ['map', 'bars'],
+    mapOpts: { fitTo: HETA_FOCUS }, // gezoomte Projektion: nur ASM/NIU + Zugbahn
+    aria: {
+      map: 'Map zoomed to American Samoa and Niue: a shaded corridor shows the gale-force wind field covering both islands; proportional circles compare people affected',
+      bars: 'Bar chart comparing people affected: American Samoa versus Niue under the same wind field',
+    },
   },
   {
     step: 2, views: ['scatter'],

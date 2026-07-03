@@ -53,7 +53,8 @@ export function createTracksLayer(g, layerCtx) {
       .classed('selected', (d) => selectedSids?.has(d.sid) ?? false)
       .classed('dimmed', (d) => selectedSids != null && !selectedSids.has(d.sid))
       .classed('story-focus', (d) => focus?.has(d.sid) ?? false)
-      .classed('story-faded', (d) => focus != null && !focus.has(d.sid))
+      .classed('story-faded', (d) => focus != null && !focus.has(d.sid) && !state.storyFx?.focusOnly)
+      .classed('story-hidden', (d) => focus != null && !focus.has(d.sid) && state.storyFx?.focusOnly === true)
       .attr('stroke-width', (d) => {
         const base = strokeForCategory(d.events[0]?.category);
         const lifted = d.sid === hoverSid || d.sid === state.detailSid
@@ -75,12 +76,15 @@ export function createTracksLayer(g, layerCtx) {
       .attr('stroke-dashoffset', null);
     if (!drawSid || state.reducedMotion) return;
 
+    // Läuft ein Kamera-Einflug (storyFx.camera), startet das Einzeichnen erst danach.
+    const flyDelay = state.storyFx?.camera?.flyMs ?? 0;
     paths.filter((d) => d.sid === drawSid).each(function () {
       const len = this.getTotalLength();
       const sel = paths.filter((d) => d.sid === drawSid);
       sel.attr('stroke-dasharray', `${len} ${len}`)
         .attr('stroke-dashoffset', len)
         .transition('story-draw')
+        .delay(flyDelay)
         .duration(DUR_DRAW)
         .attr('stroke-dashoffset', 0)
         .on('end', () => sel.attr('stroke-dasharray', null).attr('stroke-dashoffset', null));

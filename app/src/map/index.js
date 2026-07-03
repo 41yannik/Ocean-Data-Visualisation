@@ -2,14 +2,15 @@
 // Rendert selbst nichts Sichtbares; keine Interaktionslogik (docs/plan/09 §3).
 import { select } from 'd3';
 import { MAP } from '../core/config.js';
-import { makePacificProjection, makeGeoPath } from '../core/scales.js';
+import { makePacificProjection, makeFittedProjection, makeGeoPath } from '../core/scales.js';
 import { createBasemapLayer } from './basemapLayer.js';
 import { createTracksLayer } from './tracksLayer.js';
 import { createCentroidsLayer } from './centroidsLayer.js';
 import { createSwathLayer } from './swathLayer.js';
 import { createImpactLayer } from './impactLayer.js';
+import { createCameraLayer } from './cameraLayer.js';
 
-const ALL_LAYERS = ['basemap', 'swath', 'tracks', 'centroids', 'impact'];
+const ALL_LAYERS = ['basemap', 'swath', 'tracks', 'centroids', 'impact', 'camera'];
 
 export function createMap(container, ctx, opts = {}) {
   const layersWanted = opts.layers ?? ALL_LAYERS;
@@ -18,16 +19,18 @@ export function createMap(container, ctx, opts = {}) {
     .attr('viewBox', `0 0 ${MAP.width} ${MAP.height}`)
     .attr('role', 'img');
 
-  // Feste <g>-Reihenfolge = einzige Stelle, an der Z-Ordnung existiert:
-  const gLand = svg.append('g').attr('class', 'g-land');
-  const gGraticule = svg.append('g').attr('class', 'g-graticule');
-  const gSwath = svg.append('g').attr('class', 'g-swath');
-  const gTracks = svg.append('g').attr('class', 'g-tracks');
-  const gCentroids = svg.append('g').attr('class', 'g-centroids');
-  const gLabels = svg.append('g').attr('class', 'g-labels');
-  const gImpact = svg.append('g').attr('class', 'g-impact');
+  // Kamera-Wrapper (Story-Zoom: Einflug via Transform; sonst Identität) mit fester
+  // <g>-Reihenfolge darin = einzige Stelle, an der Z-Ordnung existiert:
+  const gCamera = svg.append('g').attr('class', 'g-camera');
+  const gLand = gCamera.append('g').attr('class', 'g-land');
+  const gGraticule = gCamera.append('g').attr('class', 'g-graticule');
+  const gSwath = gCamera.append('g').attr('class', 'g-swath');
+  const gTracks = gCamera.append('g').attr('class', 'g-tracks');
+  const gCentroids = gCamera.append('g').attr('class', 'g-centroids');
+  const gLabels = gCamera.append('g').attr('class', 'g-labels');
+  const gImpact = gCamera.append('g').attr('class', 'g-impact');
 
-  const projection = makePacificProjection();
+  const projection = opts.fitTo ? makeFittedProjection(opts.fitTo) : makePacificProjection();
   const layerCtx = {
     ...ctx,
     geo: { projection, path: makeGeoPath(projection), width: MAP.width, height: MAP.height },
@@ -39,6 +42,7 @@ export function createMap(container, ctx, opts = {}) {
   if (layersWanted.includes('tracks')) children.push(createTracksLayer(gTracks, layerCtx));
   if (layersWanted.includes('centroids')) children.push(createCentroidsLayer(gCentroids, gLabels, layerCtx));
   if (layersWanted.includes('impact')) children.push(createImpactLayer(gImpact, layerCtx));
+  if (layersWanted.includes('camera')) children.push(createCameraLayer(gCamera, layerCtx));
 
   return {
     update(state, patch) {

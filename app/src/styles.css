@@ -73,6 +73,9 @@ body {
 .viz-frame--scatter { max-width: 780px; aspect-ratio: 640 / 520; }
 .viz-row--dual .viz-frame--map { flex-basis: 56%; }
 .viz-row--dual .viz-frame--scatter { flex-basis: 40%; }
+/* Hook-Split: gezoomte Karte links (~2/3), Vergleichs-Balken rechts (~1/3) */
+.viz-frame--bars { max-width: 340px; aspect-ratio: 360 / 520; }
+.viz-row--dual .viz-frame--bars { flex-basis: 26%; }
 @media (max-width: 1099px) {
   .viz-row--dual { flex-wrap: wrap; }
   .viz-row--dual .viz-frame--map, .viz-row--dual .viz-frame--scatter { flex-basis: 100%; }
@@ -234,6 +237,18 @@ body {
   font-size: 11px; fill: var(--muted);
   paint-order: stroke; stroke: #fff; stroke-width: 3px;
 }
+
+/* Vergleichs-Balken (Hook, rechte Seite) — gleiche Farbe wie die Karten-Bubbles */
+.impact-bar { fill: var(--point); fill-opacity: 0.9; }
+.ib-title { font-size: 15px; fill: var(--muted); }
+.ib-title-strong { font-size: 19px; font-weight: 700; fill: var(--text); }
+.ib-value { font-size: 15px; font-weight: 700; fill: var(--text); font-variant-numeric: tabular-nums; }
+.ib-name { font-size: 12px; fill: var(--muted); }
+.ib-base { stroke: var(--graticule); stroke-width: 1; }
+
+/* Hook-Sektion: Restkarte leicht verblasst — voller Fokus auf Heta */
+#step-1 .land { fill-opacity: 0.55; }
+#step-1 .graticule { stroke-opacity: 0.5; }
 .centroid-pulse {
   fill: none; stroke: var(--accent); stroke-width: 1.4;
   transform-box: fill-box; transform-origin: center;

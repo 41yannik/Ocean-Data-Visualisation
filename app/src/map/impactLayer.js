@@ -36,8 +36,11 @@ export function createImpactLayer(g, layerCtx) {
 
     const vmax = Math.max(...items.map((d) => d.e.affected));
     const rFor = (d) => R_BUBBLE_MAX * Math.sqrt(d.e.affected / vmax);
-    // Pop erst nach dem Einzeichnen, wenn gerade ein Draw-in läuft
-    const popDelay = state.reducedMotion ? 0 : (state.storyFx?.drawSid ? DUR_DRAW + 150 : 150);
+    // Pop erst nach Einflug (camera) + Einzeichnen (drawSid)
+    const flyDelay = state.storyFx?.camera?.flyMs ?? 0;
+    const popDelay = state.reducedMotion
+      ? 0
+      : flyDelay + (state.storyFx?.drawSid ? DUR_DRAW + 150 : 150);
 
     for (const d of items) {
       const [px, py] = d.point;

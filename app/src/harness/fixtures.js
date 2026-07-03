@@ -48,6 +48,8 @@ export const FIXTURES = {
       focusSids: ['2003359S15177'], drawSid: '2003359S15177', emphasisIso3: ['ASM', 'NIU'],
       swath: { sid: '2003359S15177', radiusKm: 370 },
       impactBubbles: [{ eventId: '2004-0004-ASM' }, { eventId: '2004-0004-NIU' }],
+      camera: { flyMs: 1600 },
+      focusOnly: true,
     }),
   }),
   fxStreuung: () => ({

@@ -38,10 +38,12 @@ export function createSwathLayer(g, layerCtx) {
       .attr('stroke-width', 2 * radiusPx(swath.radiusKm));
 
     if (state.reducedMotion) return;
+    const flyDelay = state.storyFx?.camera?.flyMs ?? 0; // erst der Einflug, dann das Einzeichnen
     const len = path.node().getTotalLength();
     path.attr('stroke-dasharray', `${len} ${len}`)
       .attr('stroke-dashoffset', len)
       .transition('swath-draw')
+      .delay(flyDelay)
       .duration(DUR_DRAW)
       .attr('stroke-dashoffset', 0)
       .on('end', () => path.attr('stroke-dasharray', null).attr('stroke-dashoffset', null));

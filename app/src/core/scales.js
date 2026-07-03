@@ -16,6 +16,14 @@ export function makePacificProjection(width = MAP.width, height = MAP.height, pa
     .fitExtent([[pad, pad], [width - pad, height - pad]], PICT_EXTENT);
 }
 
+// Auf einen Ausschnitt gefittete Projektion (Story-Zoom, z. B. Heta-Fokus):
+// gleiche Rotation (Antimeridian-sicher), aber fitExtent auf das übergebene GeoJSON.
+export function makeFittedProjection(fitGeo, width = MAP.width, height = MAP.height, pad = MAP.pad) {
+  return geoEquirectangular()
+    .rotate([-192, 0])
+    .fitExtent([[pad, pad], [width - pad, height - pad]], fitGeo);
+}
+
 export function makeGeoPath(projection) {
   return geoPath(projection);
 }
