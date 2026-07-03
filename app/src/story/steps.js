@@ -66,8 +66,8 @@ export function buildSteps(ctx) {
       html: r(`In January {{event:2004-0004-NIU.year}}, Cyclone Heta —
         {{event:2004-0004-ASM.category:cat}}, near peak intensity — swept past both
         American Samoa and Niue. In American Samoa it affected
-        {{event:2004-0004-ASM.affected:int}} people. On Niue:
-        {{event:2004-0004-NIU.affected:int}}.
+        <strong>{{event:2004-0004-ASM.affected:int}} people</strong>. On Niue:
+        <strong>{{event:2004-0004-NIU.affected:int}}</strong>.
         <strong>Same storm — different societies.</strong>`),
       source: 'Tracks: IBTrACS (NOAA) · impacts: EM-DAT (CRED)',
       apply: () => base({
@@ -82,9 +82,9 @@ export function buildSteps(ctx) {
         peak wind speed against the share of the population affected. If wind alone decided
         the toll, the dots would climb neatly to the right. They don't: Mawar
         ({{event:2023-0300-GUM.year}}) hit Guam at {{event:2023-0300-GUM.intensity_kt:kt}}
-        and affected {{event:2023-0300-GUM.affected_pc:pct}} of its population, while Percy —
+        and affected <strong>{{event:2023-0300-GUM.affected_pc:pct}} of its population</strong>, while Percy —
         also {{event:2005-0102-TKL.category:cat}} — crossed Tokelau and touched
-        {{event:2005-0102-TKL.affected:int}} people.`),
+        <strong>{{event:2005-0102-TKL.affected:int}} people</strong>.`),
       apply: () => base({
         storyFx: fx({
           showPoints: true,
@@ -99,12 +99,12 @@ export function buildSteps(ctx) {
       id: 'reveal',
       layout: 'scatter',
       title: r('The line is almost flat'),
-      html: r(`Per capita, wind speed explains only {{fit:perCapita.r2pct}} of the variance
+      html: r(`Per capita, wind speed explains <strong>only {{fit:perCapita.r2pct}}</strong> of the variance
         (p = {{fit:perCapita.p}}); in absolute numbers {{fit:absolute.r2pct}} — not
         statistically significant (p = {{fit:absolute.p}}). The deadliest storm between
         {{stat:yearMin}} and {{stat:yearMax}}, Cyclone Guba
-        ({{event:2007-0557-PNG.year}}, {{event:2007-0557-PNG.deaths:int}} deaths in Papua
-        New Guinea), was only a {{event:2007-0557-PNG.category:cat}} storm. What lifts the
+        ({{event:2007-0557-PNG.year}}, <strong>{{event:2007-0557-PNG.deaths:int}} deaths</strong> in Papua
+        New Guinea), was only a <strong>{{event:2007-0557-PNG.category:cat}}</strong> storm. What lifts the
         glowing outliers above the line is not wind — it is how exposed and vulnerable the
         society in the storm's path is.`),
       apply: () => base({
@@ -126,7 +126,7 @@ export function buildSteps(ctx) {
         Islands, {{event:2020-0132-VUT.affected:int}} in Vanuatu,
         {{event:2020-0132-FJI.affected:int}} in Fiji — and
         {{event:2020-0132-TON.affected:int}} in Tonga. One wind speed, outcomes
-        {{stat:affectedRatio.2020-0132-FJI.2020-0132-TON}}× apart.`),
+        <strong>{{stat:affectedRatio.2020-0132-FJI.2020-0132-TON}}× apart</strong>.`),
       apply: () => base({
         detailSid: SID_HAROLD,
         storyFx: fx({
@@ -140,10 +140,10 @@ export function buildSteps(ctx) {
       layout: 'dual',
       title: r('The repeat victims'),
       html: r(`Some countries sit above the line again and again:
-        {{stat:aboveShare.VUT}} of Vanuatu's storms affected more people than wind speed
+        <strong>{{stat:aboveShare.VUT}}</strong> of Vanuatu's storms affected more people than wind speed
         would predict. In {{event:2023-0128-VUT.year}}, cyclones Judy and Kevin struck
         Vanuatu within a single week — each touching about
-        {{event:2023-0128-VUT.affected_pc:pct}} of the population. Gita
+        <strong>{{event:2023-0128-VUT.affected_pc:pct}} of the population</strong>. Gita
         ({{event:2018-0042-TON.year}}) reached {{event:2018-0042-TON.affected_pc:pct}} of
         Tonga. Part of this is exposure — how many people live in a storm's path — not only
         vulnerability.`),
@@ -163,7 +163,7 @@ export function buildSteps(ctx) {
       id: 'honesty',
       layout: 'dual',
       title: r('What the data hides'),
-      html: r(`Honesty matters: only {{stat:scatterCount}} of {{stat:eventCount}}
+      html: r(`Honesty matters: only <strong>{{stat:scatterCount}} of {{stat:eventCount}}</strong>
         storm–country pairs have both a measured wind speed and an impact count. Dashed
         circles mark storms whose wind was reconstructed from disaster records rather than
         satellite tracks, and counts for the most recent seasons may still be revised.

@@ -23,31 +23,44 @@ body {
   font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* ---------- Layout: Sticky Side-by-Side (2026-07-03 v3) ----------
-   Zwei Spalten: links die Textschritte im normalen Dokumentfluss (deckender
-   Grund, je ~100vh), rechts die sticky Bühne (100vh), in der die Viz per
-   Flex exakt viewport-zentriert ist. data-layout steuert Sichtbarkeit/Lage
-   der Views — im Dual-/Explore-Zustand STAPELN sie sich vertikal (die
-   Spaltenbreite trägt kein Nebeneinander). */
+/* ---------- Layout v4: Vollbild-Bühnen-Scrollytelling (2026-07-03) ----------
+   Hero-Section ganz oben (ohne Daten, viel Weißraum). Danach: sticky Bühne
+   (100vh) als Grid [Viz 1fr | Caption auto | UI-Bar auto] — die Grafik ist
+   groß und mittig, der Erklärtext fest UNTEN LINKS in eigener Grid-Zeile
+   (per Konstruktion überschneidungsfrei). Unsichtbare 100vh-Trigger scrollen
+   dahinter; jeder Screen "ersetzt" so den vorigen. */
 .app { position: relative; }
 
-.scrolly {
-  display: grid;
-  grid-template-columns: minmax(320px, 36%) minmax(0, 1fr);
+.hero {
+  min-height: 92vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 10vh 24px;
 }
-.story-col {
-  background: var(--bg);
-  border-right: 1px solid var(--graticule);
-  padding-bottom: 8vh;
+.hero-inner { max-width: 720px; text-align: center; }
+.hero-inner h1 {
+  font-size: clamp(40px, 6vw, 58px);
+  line-height: 1.08;
+  margin: 0 0 26px;
+  letter-spacing: -0.01em;
 }
+.hero-lead { font-size: 19px; line-height: 1.6; margin: 0 0 10px; }
+.hero .kicker { margin-bottom: 14px; }
+.hero .hint { margin-top: 34px; }
+
+.kicker {
+  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 12px; color: var(--muted); margin: 0 0 6px;
+}
+.hint { color: var(--muted); font-size: 13px; }
+
+.scrolly { position: relative; }
 
 .stage {
   position: sticky; top: 0;
-  align-self: start;
   height: 100vh;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  padding: 12px 20px;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  padding: 3vh 3vw 2vh;
 }
 .views { position: relative; min-height: 0; }
 .view {
@@ -60,16 +73,32 @@ body {
 }
 .view svg { width: 100%; height: 100%; display: block; } /* viewBox + meet zentriert */
 
-/* Sichtbarkeit + Position je Layout-Zustand (relativ zur rechten Spalte) */
-[data-layout="intro"] .view-sst { opacity: 1; pointer-events: auto; left: 2%; right: 2%; }
-[data-layout="map"] .view-map { opacity: 1; pointer-events: auto; }
-[data-layout="scatter"] .view-scatter { opacity: 1; pointer-events: auto; left: 4%; right: 4%; }
+/* Sichtbarkeit + Position je Layout-Zustand — großflächig zentriert, nie an den
+   Rand gequetscht; dual/explore GLEICHWERTIG nebeneinander (identische Ränder). */
+[data-layout="intro"] .view-sst { opacity: 1; pointer-events: auto; left: 10%; right: 10%; }
+[data-layout="map"] .view-map { opacity: 1; pointer-events: auto; left: 5%; right: 5%; }
+[data-layout="scatter"] .view-scatter { opacity: 1; pointer-events: auto; left: 16%; right: 16%; }
 [data-layout="dual"] .view-map, [data-layout="explore"] .view-map {
-  opacity: 1; pointer-events: auto; top: 0; bottom: 52%;
+  opacity: 1; pointer-events: auto; left: 3%; right: 52%;
 }
 [data-layout="dual"] .view-scatter, [data-layout="explore"] .view-scatter {
-  opacity: 1; pointer-events: auto; top: 50%; bottom: 0;
+  opacity: 1; pointer-events: auto; left: 52%; right: 3%;
 }
+
+/* Caption: fester Erklärtext unten links (eigene Grid-Zeile, kein Overlay) */
+.step-caption {
+  min-height: 13vh;
+  max-width: 580px;
+  margin-right: auto;
+  padding: 14px 0 4px 1vw;
+  transition: opacity 0.3s ease;
+}
+.step-caption[data-visible="false"] { visibility: hidden; }
+.step-caption.swapping { opacity: 0; }
+.step-caption h2 { font-size: 21px; line-height: 1.25; margin: 0 0 7px; }
+.step-caption p { margin: 0 0 7px; font-size: 15px; }
+.step-caption p:last-child { margin-bottom: 0; }
+.step-caption .source { font-size: 12px; color: var(--muted); }
 
 /* Offenes Detailpanel: Bühne rückt zusammen, damit nichts verdeckt wird (Step 4!) */
 @media (min-width: 1000px) {
@@ -91,36 +120,28 @@ body {
   transition: opacity 0.5s ease;
 }
 
-/* Textschritte: native statische Artikel in der linken Spalte — kein Schweben,
-   kein Wischen; je Schritt viel vertikaler Raum, Inhalt vertikal zentriert. */
-.step-article {
-  min-height: 100vh;
-  display: flex; align-items: center;
-  padding: 6vh 36px;
+/* Unsichtbare Scroll-Trigger: je Step ein 100vh-Screen hinter der Bühne */
+#story-steps {
+  margin-top: -100vh;
+  pointer-events: none;
 }
-.step-text { max-width: 560px; margin: 0 auto; text-align: left; }
-.step-text h1 { font-size: 34px; line-height: 1.15; margin: 0 0 14px; }
-.step-text h2 { font-size: 22px; line-height: 1.25; margin: 0 0 10px; }
-.step-text p { margin: 0 0 10px; }
-.step-text p:last-child { margin-bottom: 0; }
-.step-text .kicker {
-  text-transform: uppercase; letter-spacing: 0.08em;
-  font-size: 12px; color: var(--muted); margin: 0 0 6px;
-}
-.step-text .source { font-size: 12px; color: var(--muted); }
-.abstract { color: var(--text); }
-.hint { color: var(--muted); font-size: 13px; }
+#story-steps::after { content: ''; display: block; height: 18vh; } /* Auslauf */
+.step-screen { height: 100vh; }
 
-.story-hero { min-height: 88vh; }
-
-/* Responsive Fallback: Text ÜBER der Viz, Bühne statisch im Dokumentfluss */
 @media (max-width: 999px) {
-  .scrolly { display: block; }
-  .story-col { border-right: none; padding-bottom: 0; }
-  .step-article { min-height: 0; padding: 7vh 20px; }
-  .story-hero { min-height: 0; padding-top: 12vh; }
-  .stage { position: static; height: auto; padding: 8px 10px 16px; }
-  .views { height: 64vh; }
+  .hero { min-height: 80vh; }
+  .hero-lead { font-size: 16px; }
+  .stage { padding: 2vh 12px 1vh; }
+  .step-caption { max-width: none; min-height: 15vh; padding-left: 4px; }
+  /* schmale Screens: dual/explore stapeln — Nebeneinander trägt hier nicht */
+  [data-layout="dual"] .view-map, [data-layout="explore"] .view-map {
+    left: 1%; right: 1%; top: 0; bottom: 52%;
+  }
+  [data-layout="dual"] .view-scatter, [data-layout="explore"] .view-scatter {
+    left: 1%; right: 1%; top: 50%; bottom: 0;
+  }
+  [data-layout="scatter"] .view-scatter { left: 3%; right: 3%; }
+  [data-layout="map"] .view-map { left: 1%; right: 1%; }
 }
 
 /* ---------- Fortschritts-Navigation ---------- */

@@ -15,6 +15,7 @@ import { createLegend } from './ui/legend.js';
 import { createFilterPanel } from './ui/filterPanel.js';
 import { createSstIntro } from './story/sstIntro.js';
 import { createLayoutController } from './story/layoutController.js';
+import { createStoryCaption } from './story/storyCaption.js';
 import { createProgressNav } from './story/progressNav.js';
 import { createStoryRunner } from './story/storyRunner.js';
 
@@ -45,6 +46,7 @@ async function runApp() {
       createMap(document.querySelector('#map'), ctx),
       createScatter(document.querySelector('#scatter'), ctx),
       createSstIntro(document.querySelector('#sst'), ctx),
+      createStoryCaption(document.querySelector('#step-caption'), ctx),
       createTooltip(document.body, ctx),
       createDetailPanel(document.querySelector('#detail'), ctx),
       createLegend(document.querySelector('#legend'), ctx),
@@ -53,9 +55,10 @@ async function runApp() {
     ];
 
     if (storyOff) {
-      // Reines Dashboard: Textspalte weg, Grid zur Einzelspalte — Bühne bleibt sichtbar.
-      document.querySelector('#story-col').style.display = 'none';
-      document.querySelector('.scrolly').style.display = 'block';
+      // Reines Dashboard: Hero + Trigger + Caption weg — nur die Bühne bleibt.
+      document.querySelector('#hero').style.display = 'none';
+      document.querySelector('#story-steps').style.display = 'none';
+      document.querySelector('#step-caption').style.display = 'none';
     } else {
       components.push(createProgressNav(document.querySelector('#progress-nav'), ctx));
       // Zuletzt: wendet beim Erzeugen Step 0 (bzw. ?step=N) an und sperrt die Exploration.
