@@ -54,6 +54,10 @@ Umgesetzt in 10 Commits (S1–S10), jede Komponente einzeln im Harness abgenomme
 8. **Verifikation:** 78 Playwright-Checks grün (46 Story-Durchlauf inkl. rückwärts/Deep-Link/story=off, 20 Explore-Regression, 8 reduced-motion, 4 Preview-Build); dist 356 KB; `git ls-files public/data` = nur tracks/sst/land-110m.
 9. **Offen für Paket 07:** Label-Überlappung Samoa/„Am. Samoa" im Hook, Rug-Layer, finale Palette. Hero-Kicker „2001–2026"/„25 years" ist statisches HTML (Designkonstante des Zeitfensters, keine Pipeline-Zahl).
 
-### Layout-Revision (2026-07-03, Nutzer-Briefing) — Papier-Bänder statt Overlay-Karten
+### Layout v4 (2026-07-03, „Master-Prompt"-Briefing) — Vollbild-Bühne, FINAL
+
+Vierte und finale Layout-Iteration (v1 Overlay-Karten → v2 Papier-Bänder → v3 Side-by-Side → **v4 Vollbild-Bühne**): großzügige **Hero-Section** ohne Daten (großer Titel, drei sehr einfache Sätze mit `<strong>`-Kernbegriffen), danach je Step ein 100vh-Erlebnis — Grafik groß und mittig, Erklärtext als **Caption fest unten links** (eigene Grid-Zeile der Bühne `[Viz 1fr | Caption | UI-Bar]`, per Konstruktion überschneidungsfrei). Dual/Explore wieder **gleichwertig nebeneinander** (identische 3 %-Ränder), mobil gestapelt. Neue Komponente `story/storyCaption.js` (reine View, Fade-Wechsel des Step-Texts); storyRunner rendert nur noch unsichtbare 100vh-Trigger. Steps/storyFx/Mechanik unverändert; 133 Playwright-Checks grün.
+
+### Layout-Revision v2 (2026-07-03, Nutzer-Briefing) — Papier-Bänder statt Overlay-Karten
 
 Nach Sichtung des Overlay-Layouts entschied der Nutzer: keine schwebenden Textkarten über den Diagrammen. Neues Muster **„Papier-Bänder + Viz-Fenster"** (NYT-Stil): je Step ein solides Textband in voller Breite (zentrierte Spalte 640 px, linksbündig, Kicker „Step i of 8") ÜBER einem transparenten Fenster (~85vh), durch das die sticky Bühne als **zentrierter Vollbild-Held** sichtbar ist (map 4 %-Ränder, scatter 14 %, dual 2/51–53/2). Scrollama triggert auf dem Fenster (Step aktiv = Viz frei sichtbar); UI-Leiste weiterhin UNTERHALB der Views, nur im Explore-Modus. Mobile-Sonderfall entfiel (einheitliches Muster). Steps/storyFx/Komponenten/Mechanik unverändert — reiner Umbau von index.html, styles.css, storyRunner-Rendering. Alle 109 Checks nach Selektor-Anpassung grün.
