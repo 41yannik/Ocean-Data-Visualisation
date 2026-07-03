@@ -23,18 +23,17 @@ body {
   font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* ---------- Layout v4: Vollbild-Bühnen-Scrollytelling (2026-07-03) ----------
-   Hero-Section ganz oben (ohne Daten, viel Weißraum). Danach: sticky Bühne
-   (100vh) als Grid [Viz 1fr | Caption auto | UI-Bar auto] — die Grafik ist
-   groß und mittig, der Erklärtext fest UNTEN LINKS in eigener Grid-Zeile
-   (per Konstruktion überschneidungsfrei). Unsichtbare 100vh-Trigger scrollen
-   dahinter; jeder Screen "ersetzt" so den vorigen. */
+/* ---------- Layout v5: nativer linearer One-Pager (2026-07-03) ----------
+   Kein Sticky, kein Scroll-Hijacking. Strikte vertikale Sektionsfolge:
+   Textblock (max. 700 px Lesebreite) ÜBER der horizontal zentrierten Grafik,
+   sehr großzügiger Weißraum. .viz-frame hat feste Maße (aspect-ratio) —
+   die Seite springt beim Lazy-Mount der D3-Instanzen nicht. */
 .app { position: relative; }
 
 .hero {
-  min-height: 92vh;
+  min-height: 72vh;
   display: flex; align-items: center; justify-content: center;
-  padding: 10vh 24px;
+  padding: 12vh 24px 8vh;
 }
 .hero-inner { max-width: 720px; text-align: center; }
 .hero-inner h1 {
@@ -53,8 +52,36 @@ body {
 }
 .hint { color: var(--muted); font-size: 13px; }
 
-.scrolly { position: relative; }
+/* ----- Sektionen: Text über zentrierter Grafik, viel Luft ----- */
+.section { padding: 11vh 24px; }
+.section-text { max-width: 700px; margin: 0 auto 5vh; text-align: left; }
+.section-text h2 { font-size: 26px; line-height: 1.2; margin: 0 0 10px; }
+.section-text p { margin: 0 0 10px; font-size: 16px; line-height: 1.6; }
+.section-text p:last-child { margin-bottom: 0; }
+.section-text .source { font-size: 12.5px; color: var(--muted); }
 
+.viz-row { display: flex; justify-content: center; align-items: center; gap: 3vw; }
+.viz-frame {
+  margin: 0; min-width: 0; position: relative;
+  flex: 0 1 auto;
+  width: 100%;
+}
+.viz-frame svg { width: 100%; height: 100%; display: block; }
+/* Feste Maße gegen Layout-Sprünge (Briefing v5 §3) */
+.viz-frame--sst { max-width: 1100px; aspect-ratio: 960 / 640; }
+.viz-frame--map { max-width: 1150px; aspect-ratio: 2 / 1; }
+.viz-frame--scatter { max-width: 780px; aspect-ratio: 640 / 520; }
+.viz-row--dual .viz-frame--map { flex-basis: 56%; }
+.viz-row--dual .viz-frame--scatter { flex-basis: 40%; }
+@media (max-width: 1099px) {
+  .viz-row--dual { flex-wrap: wrap; }
+  .viz-row--dual .viz-frame--map, .viz-row--dual .viz-frame--scatter { flex-basis: 100%; }
+}
+
+.section-explore .ui-bar { margin-top: 3vh; max-width: 1150px; margin-left: auto; margin-right: auto; }
+.linear .ui-bar { opacity: 1; visibility: visible; } /* kein Layout-Gating im One-Pager */
+
+/* ----- Bühnen-CSS (nur noch vom Dev-Harness ?mount=layout genutzt) ----- */
 .stage {
   position: sticky; top: 0;
   height: 100vh;
@@ -85,26 +112,6 @@ body {
   opacity: 1; pointer-events: auto; left: 52%; right: 3%;
 }
 
-/* Caption: fester Erklärtext unten links (eigene Grid-Zeile, kein Overlay) */
-.step-caption {
-  min-height: 13vh;
-  max-width: 580px;
-  margin-right: auto;
-  padding: 14px 0 4px 1vw;
-  transition: opacity 0.3s ease;
-}
-.step-caption[data-visible="false"] { visibility: hidden; }
-.step-caption.swapping { opacity: 0; }
-.step-caption h2 { font-size: 21px; line-height: 1.25; margin: 0 0 7px; }
-.step-caption p { margin: 0 0 7px; font-size: 15px; }
-.step-caption p:last-child { margin-bottom: 0; }
-.step-caption .source { font-size: 12px; color: var(--muted); }
-
-/* Offenes Detailpanel: Bühne rückt zusammen, damit nichts verdeckt wird (Step 4!) */
-@media (min-width: 1000px) {
-  .stage { transition: padding-right 0.3s ease; }
-  body:has(.detail-panel.open) .stage { padding-right: calc(min(400px, 92vw) + 36px); }
-}
 
 .ui-bar {
   display: flex; flex-wrap: wrap; gap: 16px 28px;
@@ -120,28 +127,10 @@ body {
   transition: opacity 0.5s ease;
 }
 
-/* Unsichtbare Scroll-Trigger: je Step ein 100vh-Screen hinter der Bühne */
-#story-steps {
-  margin-top: -100vh;
-  pointer-events: none;
-}
-#story-steps::after { content: ''; display: block; height: 18vh; } /* Auslauf */
-.step-screen { height: 100vh; }
-
 @media (max-width: 999px) {
-  .hero { min-height: 80vh; }
+  .hero { min-height: 60vh; padding-top: 9vh; }
   .hero-lead { font-size: 16px; }
-  .stage { padding: 2vh 12px 1vh; }
-  .step-caption { max-width: none; min-height: 15vh; padding-left: 4px; }
-  /* schmale Screens: dual/explore stapeln — Nebeneinander trägt hier nicht */
-  [data-layout="dual"] .view-map, [data-layout="explore"] .view-map {
-    left: 1%; right: 1%; top: 0; bottom: 52%;
-  }
-  [data-layout="dual"] .view-scatter, [data-layout="explore"] .view-scatter {
-    left: 1%; right: 1%; top: 50%; bottom: 0;
-  }
-  [data-layout="scatter"] .view-scatter { left: 3%; right: 3%; }
-  [data-layout="map"] .view-map { left: 1%; right: 1%; }
+  .section { padding: 8vh 16px; }
 }
 
 /* ---------- Fortschritts-Navigation ---------- */

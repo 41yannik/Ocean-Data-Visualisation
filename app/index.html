@@ -7,12 +7,11 @@
   <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
-  <div class="app" data-layout="intro">
-    <!-- Layout v4 (2026-07-03): Vollbild-Bühnen-Scrollytelling. Großzügige Hero-
-         Section ohne Daten, danach je Step ein 100vh-Erlebnis: Grafik zentriert
-         in der Mitte, Erklärtext fest unten links (eigene Grid-Zeile der Bühne,
-         per Konstruktion überschneidungsfrei). Gescrollt wird über unsichtbare
-         100vh-Trigger; die sticky Bühne bleibt das eine Render-Ziel. -->
+  <div class="app">
+    <!-- Layout v5 (2026-07-03): nativer linearer One-Pager. Kein Sticky, kein
+         Scroll-Hijacking — strikte vertikale Sektionsfolge (Text über zentrierter
+         Grafik, viel Weißraum). Sektionen rendert main.js; Instanzen mounten lazy
+         per IntersectionObserver, wenn die Grafik sichtbar wird. -->
     <header class="hero" id="hero">
       <div class="hero-inner">
         <p class="kicker">Pacific Dataviz · 2001–2026</p>
@@ -21,28 +20,11 @@
         <p class="hero-lead">Twenty-five years of Pacific cyclones say: <strong>no</strong>.</p>
         <p class="hero-lead">Where a storm strikes — and how prepared and exposed the
           people there are — matters far more than <strong>wind speed</strong>.</p>
-        <p class="hint">Scroll to begin ↓</p>
+        <p class="hint">Scroll on ↓</p>
       </div>
     </header>
 
-    <div class="scrolly" id="scrolly">
-      <section class="stage" id="panel">
-        <div class="views">
-          <figure id="sst" class="view view-sst" aria-label="Warming stripes: Pacific sea-surface temperature anomalies"></figure>
-          <figure id="map" class="view view-map" aria-label="Map of Pacific cyclone tracks"></figure>
-          <figure id="scatter" class="view view-scatter" aria-label="Scatterplot: wind speed versus people affected"></figure>
-        </div>
-        <div class="step-caption" id="step-caption" aria-live="polite" data-visible="false"></div>
-        <div class="ui-bar" id="uibar">
-          <div id="mode-toggle"></div>
-          <div id="filters"></div>
-          <div id="legend"></div>
-        </div>
-      </section>
-      <div id="story-steps"><!-- unsichtbare 100vh-Trigger (storyRunner) --></div>
-    </div>
-
-    <nav id="progress-nav" class="progress-nav" aria-label="Story progress"></nav>
+    <main id="sections"><!-- Sektionen (main.js, Layout v5) --></main>
   </div>
 
   <aside id="detail" class="detail-panel" aria-hidden="true"></aside>

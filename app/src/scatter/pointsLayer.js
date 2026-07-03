@@ -32,6 +32,16 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
       if (event.key === 'Enter' && d.sid && bus.get().exploreUnlocked) bus.set({ detailSid: d.sid });
     });
 
+  // Einstiegs-Stagger beim Mount — im linearen Layout (v5) mountet die Sektion erst
+  // beim Sichtbarwerden, die Punkte "erscheinen" also genau dann (Aha-Effekt).
+  if (!bus.get?.().reducedMotion) {
+    circles.attr('opacity', 0)
+      .transition('points-intro')
+      .delay((_, i) => i * 4)
+      .duration(300)
+      .attr('opacity', 1);
+  }
+
   function position(state, animate) {
     const { x, y, r } = layerCtx.scales;
     const tx = animate && !state.reducedMotion
