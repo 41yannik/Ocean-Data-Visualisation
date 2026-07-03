@@ -42,3 +42,19 @@ Die Visualisierung ist visuell diszipliniert (eine Farbsemantik), ehrlich (Missi
 - Nur eine bedeutungstragende Farbskala gleichzeitig sichtbar; Akzentton ausschließlich Highlight; Farbenblind-Simulation bestanden.
 - Tote-als-Größe (oder Subregion-Farbe) implementiert; Dimensionsherleitung als Notiz für die Paperwork festgehalten.
 - Rug-Leiste, Fallback-Markierung und n-Angaben sichtbar; Tastatur-/Reduced-Motion-/Kontrast-Checks bestanden; Mini-Evaluation durchgeführt und protokolliert.
+
+## Umsetzungsstand (2026-07-03, Tag `m5-done`) — FERTIG bis auf Think-aloud-Durchführung
+
+**Bereits aus Paketen 04–06 erledigt gewesen:** Punkte 3 (keine permanente Residuen-Farbe; Story-Reveal ist temporäres Akzent-Highlight = Punkt 2), 4 (Tote als Wurzelskala + Legende „smallest = none reported"), 7 (Fallback gestrichelt + Legende), 8 (dynamisches n), 9 (`pop_extrapolated`-Sternchen im Tooltip), 11/13 (Tastatur, reduced-motion), 15 (Explore-Startzustand). Detailpanel hatte bereits `role="dialog"`.
+
+**In diesem Paket umgesetzt (Commits P1–P5):**
+
+1. **Rug-Leiste (Punkt 6):** `scatter/rugLayer.js` — 20 Ticks (Wind bekannt, Impact fehlt; alle mit Track) über der x-Achse, Cluster bei 135–170 kt macht sichtbar, dass gerade starke Stürme oft keine Betroffenenzahl haben. Volle CMV-Interaktion (Hover → Tooltip + Karten-Link, Klick/Enter → Detailpanel) hinter dem exploreUnlocked-Gate; sichtbar im Explore-Modus und bei `storyFx.showRug` (Story-Step 6). n-Caption aufgeschlüsselt (`… · 20 with wind but no impact count (ticks) · 1 without wind data`, „(ticks)" nur bei sichtbarem Rug); Legenden-Eintrag.
+2. **Finale Palette „Pazifik hell" (Punkte 1/2/5, Nutzer-Entscheidung):** nur `config.COLORS` getauscht — bg `#f6f8f9`, point `#2e5f8a`, track `#7a8ea0`, trend/text `#22303c`, muted `#55636f`, Akzent-Koralle `#e4572e` bleibt exklusiv; neu `accentText #c2461f` für Akzent-als-Text (refit-hint). **WCAG-Nachweis: alle 10 Paare grün** (Text ≥ 4,5:1, Grafik ≥ 3:1 — track und refit-hint dafür nachjustiert). **CVD-Nachweis:** Deuteranopie-/Protanopie-Simulationen von Hook/Reveal/Explore in `docs/evaluation/cvd/` — Koralle bleibt via Helligkeit/Sättigung unterscheidbar.
+3. **aria-Labels je Story-Step (Punkt 10):** layoutController hält die Labels der drei Views synchron zum Erzählstand (statische Strings, keine Datenzahlen).
+4. **Label-Kollisionsfix:** `LABEL_OFFSETS` im centroidsLayer — „Samoa"/„Am. Samoa" im Hook disjunkt.
+5. **Kontrast-Audit (Punkt 12)** siehe 2.; **Legenden/Einheiten (14)** ergänzt um Rug-Eintrag; kt/per-capita-Einheiten waren vorhanden.
+6. **Think-aloud (Punkt 16):** Leitfaden + Protokoll-Raster in `docs/evaluation/think-aloud-leitfaden.md`. **Durchführung mit 2–3 Kommilitonen = offene Nutzer-Aufgabe** (einziger offener DoD-Punkt; Befunde → Paperwork Paket 08).
+7. **Mockup t02 (Punkt 17):** → `t02_track_to_toll_SUPERSEDED.png` + `docs/mockups/README.md` mit den widerlegten Alt-Fakten.
+
+**Verifikation:** 109 Playwright-Checks grün (50 Story inkl. Rug-Steps, 20 Explore-Regression `?story=off`, 16 Rug, 11 aria/Labels, 8 reduced-motion, 4 Preview-Build); Build 141 KB JS/gzip 50 KB; `git ls-files app/public/data` unverändert nur offene Daten.
