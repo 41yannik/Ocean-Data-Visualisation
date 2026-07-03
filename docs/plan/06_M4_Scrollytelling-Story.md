@@ -54,7 +54,11 @@ Umgesetzt in 10 Commits (S1–S10), jede Komponente einzeln im Harness abgenomme
 8. **Verifikation:** 78 Playwright-Checks grün (46 Story-Durchlauf inkl. rückwärts/Deep-Link/story=off, 20 Explore-Regression, 8 reduced-motion, 4 Preview-Build); dist 356 KB; `git ls-files public/data` = nur tracks/sst/land-110m.
 9. **Offen für Paket 07:** Label-Überlappung Samoa/„Am. Samoa" im Hook, Rug-Layer, finale Palette. Hero-Kicker „2001–2026"/„25 years" ist statisches HTML (Designkonstante des Zeitfensters, keine Pipeline-Zahl).
 
-### Hook-Upgrade (2026-07-03, nach Layout v5): Wind-Korridor + Impact-Bubbles
+### Hook v3 (2026-07-03): Kamera-Zoom + Vergleichs-Balken
+
+Dritter Ausbau des Hooks: Die Karte der Sektion nutzt eine **eigene, auf ASM/Niue+Zugbahn gefittete Projektion** (`makeFittedProjection`/`opts.fitTo` — Strichstärken bleiben px-ehrlich, der R34-Korridor füllt die Ansicht) mit **Kamera-Einflug** von der Beckensicht (`map/cameraLayer.js`, `storyFx.camera`, gCamera-Wrapper im Kompositor). `storyFx.focusOnly` blendet alle 68 Fremd-Tracks komplett aus; Land/Gitter leicht verblasst. **Sequenz:** Einflug (1,6 s) → Einzeichnen (2 s) → Bubble-Pop → Balken. Rechts flankiert ein **Vergleichs-Balkendiagramm** (`story/impactBars.js`, Höhe ∝ affected, gleiche Bubble-Farbe) mit **generierter** Headline „Same wind field — 33× the people affected" (round(23.060/702)) und Werten direkt an den Balken. 134 Checks grün.
+
+### Hook-Upgrade v2 (2026-07-03, nach Layout v5): Wind-Korridor + Impact-Bubbles
 
 Die Heta-Sektion verknüpft Wind und Betroffenheit jetzt visuell: **Wind-Korridor** (`map/swathLayer.js`, `storyFx.swath`) als halbtransparenter Akzent-Stroke um die Bahn — Radius **datengedeckt 370 km** (IBTrACS USA_R34 max-Quadrant, median; nahe Peak 407 km; ASM liegt 287 km, NIU 84 km vom Track → beide belegbar im Sturmwindfeld, die E2E-Suite prüft die Überdeckung geometrisch). **Impact-Bubbles** (`map/impactLayer.js`, `storyFx.impactBubbles`): Fläche ∝ Betroffene (23.060 vs. 702, generierte Direktlabels), Ozeanblau als Kontrast zum Korridor; ASM/NIU-Namenslabels im Hook unterdrückt (Bubble trägt den Namen). **Sequenz** beim Lazy-Mount: Linie+Korridor zeichnen sich synchron ein (DUR_DRAW), danach poppen die Bubbles (easeBackOut), Labels faden nach; reducedMotion alles instant. Quellenzeile des Steps um „gale-wind radius (R34): IBTrACS" erweitert.
 
