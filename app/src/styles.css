@@ -48,15 +48,16 @@ body {
 }
 .view svg { width: 100%; height: 100%; display: block; } /* viewBox + meet zentriert */
 
-/* Sichtbarkeit + Position je Layout-Zustand */
-[data-layout="intro"] .view-sst { opacity: 1; pointer-events: auto; left: 6%; right: 6%; }
-[data-layout="map"] .view-map { opacity: 1; pointer-events: auto; }
-[data-layout="scatter"] .view-scatter { opacity: 1; pointer-events: auto; left: 34%; right: 2%; }
+/* Sichtbarkeit + Position je Layout-Zustand — zentrierte Heros mit Rändern
+   (Layout-Revision 2026-07-03: kein Card-Ausweichen mehr nötig) */
+[data-layout="intro"] .view-sst { opacity: 1; pointer-events: auto; left: 8%; right: 8%; }
+[data-layout="map"] .view-map { opacity: 1; pointer-events: auto; left: 4%; right: 4%; }
+[data-layout="scatter"] .view-scatter { opacity: 1; pointer-events: auto; left: 14%; right: 14%; }
 [data-layout="dual"] .view-map, [data-layout="explore"] .view-map {
-  opacity: 1; pointer-events: auto; left: 0; right: 46%;
+  opacity: 1; pointer-events: auto; left: 2%; right: 51%;
 }
 [data-layout="dual"] .view-scatter, [data-layout="explore"] .view-scatter {
-  opacity: 1; pointer-events: auto; left: 56%; right: 0;
+  opacity: 1; pointer-events: auto; left: 53%; right: 2%;
 }
 
 /* Offenes Detailpanel: Bühne rückt zusammen, damit nichts verdeckt wird (Step 4!) */
@@ -79,49 +80,47 @@ body {
   transition: opacity 0.5s ease;
 }
 
-/* Textkarten-Ebene über der Bühne */
+/* Papier-Bänder + Viz-Fenster: solide Textbänder in voller Breite schieben sich
+   beim Scrollen über die Bühne; in den transparenten Fenstern dazwischen ist die
+   Viz als zentrierter Held frei sichtbar — nichts überlagert sie im Ruhezustand. */
 .scrolly {
   position: relative;
   z-index: 10;
   margin-top: -100vh;
-  pointer-events: none;                       /* Bühne bleibt erreichbar … */
+  pointer-events: none;                       /* Bühne bleibt in den Fenstern erreichbar … */
 }
 .scrolly::after { content: ''; display: block; height: 55vh; } /* Auslauf: Dashboard frei */
-.step-section {
-  min-height: 90vh;
-  display: flex; align-items: center;
-  padding: 0 0 0 5vw;
+
+.step-band {
+  pointer-events: auto;                       /* … nur die Bänder selbst fangen Events */
+  background: var(--bg);
+  border-top: 1px solid var(--graticule);
+  border-bottom: 1px solid var(--graticule);
+  padding: 8vh 24px;
 }
-.story-hero { min-height: 96vh; }
-.step-card {
-  pointer-events: auto;                       /* … nur die Karte selbst fängt Events */
-  max-width: 400px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid var(--graticule);
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10);
-  padding: 20px 24px;
-}
-.step-card h1 { font-size: 30px; line-height: 1.15; margin: 0 0 12px; }
-.step-card h2 { font-size: 19px; line-height: 1.25; margin: 0 0 8px; }
-.step-card p { margin: 0 0 8px; }
-.step-card p:last-child { margin-bottom: 0; }
-.step-card .kicker {
+.step-text { max-width: 640px; margin: 0 auto; text-align: left; }
+.step-text h1 { font-size: 34px; line-height: 1.15; margin: 0 0 14px; }
+.step-text h2 { font-size: 22px; line-height: 1.25; margin: 0 0 10px; }
+.step-text p { margin: 0 0 10px; }
+.step-text p:last-child { margin-bottom: 0; }
+.step-text .kicker {
   text-transform: uppercase; letter-spacing: 0.08em;
-  font-size: 12px; color: var(--muted); margin: 0 0 4px;
+  font-size: 12px; color: var(--muted); margin: 0 0 6px;
 }
-.step-card .source { font-size: 12px; color: var(--muted); }
+.step-text .source { font-size: 12px; color: var(--muted); }
 .abstract { color: var(--text); }
 .hint { color: var(--muted); font-size: 13px; }
 
+.story-hero { border-top: none; padding: 22vh 24px 12vh; }
+
+.step-window { height: 85vh; pointer-events: none; }
+
 @media (max-width: 999px) {
-  .stage { height: 56vh; padding: 8px 10px; background: var(--bg); z-index: 5; }
-  .scrolly { margin-top: 0; }
-  .step-section { min-height: 60vh; padding: 4vh 4vw 0; align-items: flex-start; }
-  .story-hero { min-height: 60vh; }
-  .step-card { max-width: none; }
-  [data-layout="scatter"] .view-scatter { left: 2%; right: 2%; }
+  .step-band { padding: 6vh 16px; }
+  .story-hero { padding: 14vh 16px 8vh; }
+  .step-window { height: 65vh; }
+  [data-layout="scatter"] .view-scatter { left: 3%; right: 3%; }
+  [data-layout="map"] .view-map { left: 1%; right: 1%; }
 }
 
 /* ---------- Fortschritts-Navigation ---------- */
