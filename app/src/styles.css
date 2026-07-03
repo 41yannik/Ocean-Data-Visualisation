@@ -213,6 +213,27 @@ body {
 .track { transition: stroke-opacity 0.35s ease; }
 .track.story-focus { stroke: var(--accent); stroke-opacity: 0.95; }
 .track.story-faded { stroke-opacity: 0.06; pointer-events: none; }
+
+/* Wind-Korridor (R34) + Impact-Bubbles (Story-Hook) */
+.track-swath {
+  fill: none; stroke: var(--accent); stroke-opacity: 0.14;
+  stroke-linecap: round; stroke-linejoin: round;
+  pointer-events: none;
+}
+.impact-bubble {
+  fill: var(--point); fill-opacity: 0.85;
+  stroke: #ffffff; stroke-width: 1.5;
+  pointer-events: none;
+}
+.impact-label { pointer-events: none; }
+.impact-label .il-name {
+  font-size: 12px; font-weight: 700; fill: var(--text);
+  paint-order: stroke; stroke: #fff; stroke-width: 3px;
+}
+.impact-label .il-value {
+  font-size: 11px; fill: var(--muted);
+  paint-order: stroke; stroke: #fff; stroke-width: 3px;
+}
 .centroid-pulse {
   fill: none; stroke: var(--accent); stroke-width: 1.4;
   transform-box: fill-box; transform-origin: center;

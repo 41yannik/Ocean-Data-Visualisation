@@ -22,6 +22,7 @@ export const COLORS = {
 };
 
 export const DUR_MODE = 750;   // benannte Transition 'mode' (Toggle)
+export const DUR_DRAW = 2000;  // Track-/Korridor-Einzeichnen (Story-Hook)
 export const BREAKPOINT = 1000;
 
 export const MAP = { width: 960, height: 480, pad: 10 };

@@ -15,7 +15,7 @@ export const SECTIONS = [
   { step: 0, views: ['sst'], aria: { sst: ARIA.sst } },
   {
     step: 1, views: ['map'],
-    aria: { map: 'Map focused on Cyclone Heta’s track past American Samoa and Niue; both impact sites pulse' },
+    aria: { map: 'Map focused on Cyclone Heta’s track: a shaded corridor shows the gale-force wind field covering both American Samoa and Niue; proportional circles compare people affected' },
   },
   {
     step: 2, views: ['scatter'],

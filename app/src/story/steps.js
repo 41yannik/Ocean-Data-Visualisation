@@ -14,6 +14,11 @@ export const SID_HETA = '2003359S15177';
 export const SID_HAROLD = '2020092S09155';
 export const SID_GUBA = '2007317S10150';
 
+// Sturmwind-Radius (R34, max. Quadrant) für Heta aus IBTrACS-Rohdaten: median 370 km,
+// nahe Peak 407 km (geprüft 2026-07-03). Damit liegen ASM (287 km Trackabstand) und
+// NIU (84 km) beide belegbar im Sturmwindfeld — Grundlage des Wind-Korridors im Hook.
+export const HETA_R34_KM = 370;
+
 // Layout je Step — statisch, damit der layoutController ohne Daten-ctx auskommt.
 export const STEP_LAYOUTS = ['intro', 'map', 'scatter', 'scatter', 'dual', 'dual', 'dual', 'explore'];
 export const STEP_COUNT = STEP_LAYOUTS.length;
@@ -26,6 +31,8 @@ export const makeStoryFx = (over = {}) => ({
   focusSids: null, drawSid: null, emphasisIso3: [],
   showPoints: false, showTrend: false, showBand: false,
   residualReveal: false, annotations: [], focusEventIds: null, showRug: false,
+  swath: null,         // { sid, radiusKm } — Wind-Korridor um eine Zugbahn
+  impactBubbles: null, // [{ eventId }] — flächenproportionale Betroffenen-Kreise
   ...over,
 });
 const fx = makeStoryFx;
@@ -65,13 +72,18 @@ export function buildSteps(ctx) {
       title: r('One storm, two societies'),
       html: r(`In January {{event:2004-0004-NIU.year}}, Cyclone Heta —
         {{event:2004-0004-ASM.category:cat}}, near peak intensity — swept past both
-        American Samoa and Niue. In American Samoa it affected
+        American Samoa and Niue; its gale-force wind field covered both islands.
+        In American Samoa it affected
         <strong>{{event:2004-0004-ASM.affected:int}} people</strong>. On Niue:
         <strong>{{event:2004-0004-NIU.affected:int}}</strong>.
         <strong>Same storm — different societies.</strong>`),
-      source: 'Tracks: IBTrACS (NOAA) · impacts: EM-DAT (CRED)',
+      source: 'Tracks & gale-wind radius (R34): IBTrACS (NOAA) · impacts: EM-DAT (CRED)',
       apply: () => base({
-        storyFx: fx({ focusSids: [SID_HETA], drawSid: SID_HETA, emphasisIso3: ['ASM', 'NIU'] }),
+        storyFx: fx({
+          focusSids: [SID_HETA], drawSid: SID_HETA, emphasisIso3: ['ASM', 'NIU'],
+          swath: { sid: SID_HETA, radiusKm: HETA_R34_KM },
+          impactBubbles: [{ eventId: '2004-0004-ASM' }, { eventId: '2004-0004-NIU' }],
+        }),
       }),
     },
     {

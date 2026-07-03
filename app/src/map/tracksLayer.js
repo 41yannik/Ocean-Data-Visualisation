@@ -5,8 +5,7 @@
 // einmalig via stroke-dasharray ein (bei reducedMotion instant).
 import { strokeForCategory } from '../core/scales.js';
 import { matchesFilters } from '../core/filters.js';
-
-const DUR_DRAW = 2000;
+import { DUR_DRAW } from '../core/config.js';
 
 export function createTracksLayer(g, layerCtx) {
   const { data, bus, geo } = layerCtx;

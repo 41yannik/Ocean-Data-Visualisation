@@ -28,6 +28,10 @@ export function createCentroidsLayer(gCentroids, gLabels, layerCtx) {
   function render(state) {
     const hoverIsos = hoverCountries(state);
     const storyIsos = state.storyFx?.emphasisIso3 ?? [];
+    // Länder mit Impact-Bubble: deren Namens-Label trägt die Bubble selbst (impactLayer)
+    const bubbleIsos = new Set((state.storyFx?.impactBubbles ?? [])
+      .map((b) => data.index.byId.get(b.eventId)?.iso3)
+      .filter(Boolean));
     dots.classed('emphasis', (d) =>
       (state.filters.countries?.includes(d.iso3) ?? false)
       || hoverIsos.has(d.iso3) || storyIsos.includes(d.iso3));
@@ -43,7 +47,8 @@ export function createCentroidsLayer(gCentroids, gLabels, layerCtx) {
 
     // Labels dynamisch: Story-Inseln (LABELED_ISO3) + aktuell betonte (z. B. ASM im Hook)
     gLabels.selectAll('text')
-      .data(entries.filter((d) => LABELED_ISO3.includes(d.iso3) || storyIsos.includes(d.iso3)), (d) => d.iso3)
+      .data(entries.filter((d) =>
+        (LABELED_ISO3.includes(d.iso3) || storyIsos.includes(d.iso3)) && !bubbleIsos.has(d.iso3)), (d) => d.iso3)
       .join('text')
       .attr('class', 'centroid-label')
       .classed('emphasis', (d) => storyIsos.includes(d.iso3))
