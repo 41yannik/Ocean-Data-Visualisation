@@ -6,7 +6,7 @@
 import { stepLayout } from './steps.js';
 
 const DEFAULT_LABELS = {
-  sst: 'Warming stripes: Pacific sea-surface temperature anomalies since 1850',
+  sst: 'Warming stripes with an aligned annual line chart: Pacific sea-surface temperature anomalies since 1850',
   map: 'Map of Pacific tropical-cyclone tracks; track width shows storm category',
   scatter: 'Scatterplot of peak wind speed against share of national population affected',
 };

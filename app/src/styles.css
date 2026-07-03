@@ -232,11 +232,17 @@ body {
 .axis-label { font-size: 12px; fill: var(--muted); }
 .n-caption { font-size: 12px; fill: var(--muted); }
 
-/* ---------- SST-Intro (Warming Stripes) ---------- */
+/* ---------- SST-Intro (Warming Stripes + Liniendiagramm) ---------- */
 .sst-title { font-size: 15px; font-weight: 600; fill: var(--text); }
 .sst-axis line { stroke: var(--muted); }
-.sst-axis text { font-size: 11px; fill: var(--muted); }
+.sst-axis text { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
 .sst-latest { font-size: 12px; fill: var(--text); font-variant-numeric: tabular-nums; }
+.sst-stripe.hovered { stroke: #ffffff; stroke-width: 1.6; }
+.sst-line { fill: none; stroke: var(--point); stroke-width: 1.4; }
+.sst-zero { stroke: var(--muted); stroke-width: 0.8; stroke-dasharray: 4 3; }
+.sst-cursor line { stroke: var(--text); stroke-width: 0.9; stroke-dasharray: 2 2; }
+.sst-cursor circle { fill: var(--accent); stroke: #ffffff; stroke-width: 1.2; }
+.sst-line-overlay { cursor: crosshair; }
 
 /* ---------- Tooltip ---------- */
 .tooltip {
