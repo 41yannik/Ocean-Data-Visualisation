@@ -1,5 +1,5 @@
 // Detailpanel je STURM (Analyseeinheit: aggregiert über alle Sturm-Land-Zeilen).
-// Mini-Track mit EIGENER Projektions-Instanz (fitExtent mutiert — nie die Haupt-Karte teilen,
+// Mini-Track mit EIGENER Projektions-Instanz (fitExtent mutiert - nie die Haupt-Karte teilen,
 // Stolperstein 5). Esc/× schließen; Fokus-Management für Tastaturpfad.
 import { select, geoEquirectangular, geoPath } from 'd3';
 import { fmtInt, fmtPct, fmtKt, fmtSource, fmtCategory } from '../core/format.js';
@@ -38,11 +38,11 @@ export function createDetailPanel(container, ctx) {
               <td>${e.country}</td>
               <td class="num">${fmtInt(e.affected)}</td>
               <td class="num">${fmtPct(e.affected_pc)}</td>
-              <td class="num">${e.deaths == null ? '—' : fmtInt(e.deaths)}</td>
+              <td class="num">${e.deaths == null ? 'n/a' : fmtInt(e.deaths)}</td>
             </tr>`).join('')}
         </tbody>
       </table>
-      <p class="dp-note">Same storm, same peak intensity — different toll per country (unit: storm-country pair). "—" = not reported.</p>`;
+      <p class="dp-note">Same storm, same peak intensity, different toll per country (unit: storm-country pair). "n/a" = not reported.</p>`;
 
     container.setAttribute('aria-label', `Details for ${first.name ?? 'unnamed storm'} ${first.year}`);
     container.querySelector('.dp-close').addEventListener('click', close);

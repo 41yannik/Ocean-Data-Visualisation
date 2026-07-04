@@ -1,5 +1,5 @@
 // Story-Annotationen im Scatter: Aura-Ring + Label an benannten Events (storyFx.annotations).
-// Positionen kommen aus layerCtx.scales (Besitz beim Kompositor) — Layer rendert nur.
+// Positionen kommen aus layerCtx.scales (Besitz beim Kompositor) - Layer rendert nur.
 // Nicht interaktiv (pointer-events: none via CSS), max. ~3 gleichzeitig (Clutter-Regel).
 import { select } from 'd3';
 import { isScatterable } from '../core/filters.js';

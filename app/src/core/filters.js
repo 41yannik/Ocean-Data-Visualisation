@@ -1,4 +1,4 @@
-// Gemeinsame Filter-/Sichtbarkeits-Prädikate (Lücke L6) — pure Funktionen.
+// Gemeinsame Filter-/Sichtbarkeits-Prädikate (Lücke L6) - pure Funktionen.
 // Format: yearRange inklusiv; categories: null | number[]; countries: null | string[] (iso3).
 // Events mit category: null fallen bei aktivem Kategorie-Filter heraus (dokumentiertes Verhalten).
 

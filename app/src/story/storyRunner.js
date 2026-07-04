@@ -1,7 +1,7 @@
 // Story-Runner: rendert die Steps als Textkarten in den Scroll-Container, verdrahtet
 // Scrollama (IntersectionObserver, natives Scrollen bleibt erhalten) und wendet je
 // Step dessen apply()-Patch an. Zusätzliche Wege (E3-Robustheit): Pfeiltasten/PageUp/
-// PageDown und externe step-Patches (Progress-Nav, Deep-Link) — dann wird der Step
+// PageDown und externe step-Patches (Progress-Nav, Deep-Link) - dann wird der Step
 // sofort angewandt und die passende Karte herangescrollt.
 //
 // Gate-Besitz: beim Start sperrt der Runner die Exploration (exploreUnlocked: false);
@@ -14,7 +14,7 @@ export function createStoryRunner(container, ctx, opts = {}) {
   const steps = buildSteps(ctx);
 
   // Layout v4 (2026-07-03): je Step ein UNSICHTBARER 100vh-Trigger-Screen hinter
-  // der sticky Bühne — jeder Scroll-Screen "ersetzt" den vorigen Zustand. Der
+  // der sticky Bühne - jeder Scroll-Screen "ersetzt" den vorigen Zustand. Der
   // Step-Text lebt in der storyCaption-Komponente (Bühne, unten links).
   container.innerHTML = steps.map((s, i) => `
     <div class="step-screen" data-step="${i}" data-step-id="${s.id}" aria-hidden="true"></div>`).join('');

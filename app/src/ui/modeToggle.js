@@ -1,5 +1,5 @@
 // Modus-Umschalter pro Kopf ↔ absolut. Spiegelt nur den State (aria-pressed) und sendet
-// bus.set({mode}) — die Transition gehört dem Scatter-Kompositor (Stolperstein 2).
+// bus.set({mode}) - die Transition gehört dem Scatter-Kompositor (Stolperstein 2).
 export function createModeToggle(container, ctx) {
   const bus = ctx.bus;
   container.className = 'mode-toggle';

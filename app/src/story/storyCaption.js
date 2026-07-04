@@ -1,4 +1,4 @@
-// Step-Caption (Layout v4): fester Erklärtext unten links in der Bühne — eigene
+// Step-Caption (Layout v4): fester Erklärtext unten links in der Bühne - eigene
 // Grid-Zeile, kein Overlay, kein Wischen. Reine View: konsumiert NUR state.step
 // und rendert Kicker/Titel/Text/Quelle des aktiven Steps mit sanftem Fade-Wechsel
 // (reducedMotion: sofort). Bei step < 0 (Explore ohne Story) unsichtbar.

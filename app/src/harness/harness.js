@@ -1,6 +1,6 @@
 // Dev-Harness: mountet GENAU EINE Komponente mit echten Pipeline-Daten + Patch-Button-Leiste.
 // Abnahmeregel (docs/plan/09 §5): Eine Komponente gilt als fertig, wenn sie hier mit allen
-// relevanten Fixtures korrekt reagiert — erst dann wird sie in runApp() registriert.
+// relevanten Fixtures korrekt reagiert - erst dann wird sie in runApp() registriert.
 import { loadData } from '../core/dataLoader.js';
 import { createStore } from '../core/state.js';
 import { makeInitialState } from '../core/initialState.js';

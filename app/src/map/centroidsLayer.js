@@ -1,4 +1,4 @@
-// PICT-Zentroide: Pflicht-Layer — kleine Atolle (Tuvalu, Niue, Tokelau, …) existieren
+// PICT-Zentroide: Pflicht-Layer - kleine Atolle (Tuvalu, Niue, Tokelau, …) existieren
 // im 110m-Land nicht als Fläche. Labels nur für Story-Inseln (Clutter-Regel).
 import { LABELED_ISO3 } from '../core/config.js';
 import { COUNTRY_LOOKUP } from './countryNames.js';

@@ -1,7 +1,7 @@
 // Kamera-Einflug (Story-Zoom): Wenn storyFx.camera gesetzt ist, startet die Ansicht
 // beim Mount auf der GANZEN Beckensicht (Transform so, dass der PICT-Extent in den
 // viewBox passt) und fährt weich auf die gezoomte Projektion (Identität) heran.
-// Die Karte selbst ist bereits auf den Fokus-Ausschnitt gefittet (opts.fitTo) —
+// Die Karte selbst ist bereits auf den Fokus-Ausschnitt gefittet (opts.fitTo) -
 // dieser Layer animiert NUR den Wrapper-Transform. reducedMotion: sofort Identität.
 import { easeCubicInOut } from 'd3';
 import { MAP } from '../core/config.js';

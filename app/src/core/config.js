@@ -1,4 +1,4 @@
-// Zentrale Konstanten — einzige Quelle für Farben/Dauern/Maße.
+// Zentrale Konstanten - einzige Quelle für Farben/Dauern/Maße.
 // Paket 07 (finale Palette) tauscht NUR diese Datei; styles.css nutzt die CSS-Variablen,
 // die applyCssVars() einmalig aus COLORS auf :root setzt.
 
@@ -33,7 +33,7 @@ export const SCATTER = {
 export const R_MIN = 2.5;      // Punktradius (Tote fehlend/0)
 export const R_MAX = 12;
 
-// Nur Story-relevante Inseln beschriften — Clutter-Regel
+// Nur Story-relevante Inseln beschriften - Clutter-Regel
 export const LABELED_ISO3 = ['FJI', 'VUT', 'NIU', 'GUM', 'TON', 'WSM', 'TUV'];
 
 // Residuen-Reveal (Story Step 3): leuchtend = mind. 10× mehr Betroffene als die

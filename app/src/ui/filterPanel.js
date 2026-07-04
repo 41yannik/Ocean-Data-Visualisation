@@ -1,4 +1,4 @@
-// Filterpanel (freie Erkundung): Jahr-Range, Kategorie, Land — sendet IMMER ein komplettes
+// Filterpanel (freie Erkundung): Jahr-Range, Kategorie, Land - sendet IMMER ein komplettes
 // filters-Objekt (Store-Konvention); gesperrt solange !exploreUnlocked (Story-Gate, Paket 06).
 import { COUNTRY_LOOKUP } from '../map/countryNames.js';
 

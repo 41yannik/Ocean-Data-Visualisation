@@ -1,5 +1,5 @@
 // Referenz-Resolver für Story-Texte: {{ns:pfad[:fmt]}} → formatierter Wert aus echten Daten.
-// Wirft bei unbekannter oder leerer Referenz (Paket-06-DoD: keine hart getippte Datenzahl —
+// Wirft bei unbekannter oder leerer Referenz (Paket-06-DoD: keine hart getippte Datenzahl -
 // ein Fehler soll als Banner knallen, nicht als stilles falsches Faktum durchrutschen).
 //
 // Grammatik:
@@ -22,7 +22,7 @@ export function resolveRefs(template, ctx) {
   return template.replace(/\{\{([a-z]+):([^}\s]+)\}\}/g, (token, ns, rest) => {
     const [path, fmt] = rest.split(':');
     if (ns !== 'event' && fmt) {
-      throw new Error(`Story-Referenz: ${ns}-Werte sind vor-formatiert, ":${fmt}" ist unzulässig — ${token}`);
+      throw new Error(`Story-Referenz: ${ns}-Werte sind vor-formatiert, ":${fmt}" ist unzulässig (${token})`);
     }
     const value = lookup(ns, path.split('.'), fmt ?? 'raw', ctx, token);
     if (value == null) throw new Error(`Story-Referenz ohne Wert: ${token}`);
@@ -62,7 +62,7 @@ function lookupFit([mode, key], ctx, token) {
 
 function lookupSst([which, field], ctx, token) {
   const sst = ctx.data.sst;
-  if (!Array.isArray(sst) || !sst.length) throw new Error(`Story-Referenz: sst-Daten fehlen — ${token}`);
+  if (!Array.isArray(sst) || !sst.length) throw new Error(`Story-Referenz: sst-Daten fehlen (${token})`);
   const row = which === 'latest' ? sst[sst.length - 1] : which === 'first' ? sst[0] : null;
   if (!row) throw new Error(`Story-Referenz auf unbekannten sst-Selektor: ${token}`);
   if (field === 'year') return String(row.year);
@@ -78,7 +78,7 @@ function lookupStat([name, ...args], ctx, token) {
   if (name === 'yearMax') return String(Math.max(...events.map((e) => e.year)));
   if (name === 'aboveShare') {
     const rows = events.filter((e) => e.iso3 === args[0] && isScatterable(e));
-    if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für ${args[0]} — ${token}`);
+    if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für ${args[0]} (${token})`);
     return fmtPct(rows.filter((e) => (e.residual_pc ?? 0) > 0).length / rows.length);
   }
   if (name === 'affectedRatio') {

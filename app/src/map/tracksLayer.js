@@ -1,6 +1,6 @@
 // Zugbahnen-Layer: 69 Pfade (key = SID), Grundzustand entsättigt (CSS opacity .3),
-// Kategorie = Strichstärke (E2 — keine zweite Farbskala).
-// 1:n-Semantik: löst selectedEventIds/hover selbst über ctx.data.index auf — keine Scatter-Kenntnis.
+// Kategorie = Strichstärke (E2 - keine zweite Farbskala).
+// 1:n-Semantik: löst selectedEventIds/hover selbst über ctx.data.index auf - keine Scatter-Kenntnis.
 // Story (storyFx): focusSids hebt Tracks an / fadet den Rest; drawSid zeichnet die Bahn
 // einmalig via stroke-dasharray ein (bei reducedMotion instant).
 import { strokeForCategory } from '../core/scales.js';
@@ -11,7 +11,7 @@ export function createTracksLayer(g, layerCtx) {
   const { data, bus, geo } = layerCtx;
   const { bySid } = data.index;
 
-  // Statische Geometrie einmalig: LineString durch geo.path (Antimeridian-Clipping!) —
+  // Statische Geometrie einmalig: LineString durch geo.path (Antimeridian-Clipping!) -
   // NIEMALS Punkte einzeln projizieren und verbinden (Stolperstein 7).
   const storms = Object.entries(data.tracks).map(([sid, pts]) => ({
     sid,

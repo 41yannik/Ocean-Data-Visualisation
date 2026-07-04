@@ -1,4 +1,4 @@
-// Basemap: Land (Natural Earth 110m) + Graticule — einmaliger Render, ignoriert Patches.
+// Basemap: Land (Natural Earth 110m) + Graticule - einmaliger Render, ignoriert Patches.
 // Kleine Atolle fehlen im 110m-Land bewusst: der centroidsLayer ist dafür Pflicht.
 import { geoGraticule } from 'd3';
 

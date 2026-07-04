@@ -1,4 +1,4 @@
-// Lädt alle Pipeline-JSONs, baut die Indizes — wirft mit klarer Anleitung, wenn die
+// Lädt alle Pipeline-JSONs, baut die Indizes - wirft mit klarer Anleitung, wenn die
 // (gitignorten!) EM-DAT-Derivate fehlen.
 import { feature } from 'topojson-client';
 

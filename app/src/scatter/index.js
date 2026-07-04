@@ -1,5 +1,5 @@
 // Scatter-Kompositor: SVG-Skelett, <g>-Reihenfolge, BESITZT die Skalen.
-// Bei 'mode'-Patch werden layerCtx.scales VOR der Layer-Delegation neu gesetzt —
+// Bei 'mode'-Patch werden layerCtx.scales VOR der Layer-Delegation neu gesetzt -
 // alle Layer transitionieren dann über dieselbe benannte Transition 'mode' (Stolperstein 2).
 import { select } from 'd3';
 import { SCATTER } from '../core/config.js';
@@ -24,7 +24,7 @@ export function createScatter(container, ctx, opts = {}) {
   const root = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
   // Feste <g>-Reihenfolge: band → trend → connectors → BRUSH → points → annotations
-  // (Brush-Overlay unter den Punkten, sonst schluckt es die Pointer-Events — Stolperstein 3).
+  // (Brush-Overlay unter den Punkten, sonst schluckt es die Pointer-Events - Stolperstein 3).
   const gAxes = root.append('g').attr('class', 'g-axes');
   const gRug = root.append('g').attr('class', 'g-rug');
   const gBand = root.append('g').attr('class', 'g-band');

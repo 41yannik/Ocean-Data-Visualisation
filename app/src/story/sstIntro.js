@@ -3,13 +3,13 @@
 // Briefing 2026-07-03: sofortiger Tooltip je Jahr (folgt dem Cursor), gehoverter Streifen
 // mit heller Outline, darunter ein simples Liniendiagramm mit EXAKT bündiger x-Achse und
 // Cross-Highlighting (vertikale Hilfslinie durch beide Charts + Punkt auf der Linie).
-// Alles komponentenintern — kein anderes View kennt SST-Jahre, daher kein bus-Verkehr.
+// Alles komponentenintern - kein anderes View kennt SST-Jahre, daher kein bus-Verkehr.
 // Vertrag: create(container, ctx) → {update, destroy}; Beschriftungen aus data.sst generiert.
 import { select, scaleLinear, interpolateRdBu, max, extent, line as d3line } from 'd3';
 
 const W = 960;
 const H = 640;
-// GEMEINSAME linke/rechte Ränder für beide Charts — das garantiert die bündige x-Achse.
+// GEMEINSAME linke/rechte Ränder für beide Charts - das garantiert die bündige x-Achse.
 const MARGIN = { top: 46, right: 20, bottom: 40, left: 64 };
 const STRIPES_H = 260;
 const GAP = 30;
@@ -71,7 +71,7 @@ export function createSstIntro(container, ctx) {
       .attr('opacity', 1);
   }
 
-  // ---- Chart 2: Liniendiagramm (x-Achse EXAKT bündig — gleiche Skala, gleiche Ränder) ----
+  // ---- Chart 2: Liniendiagramm (x-Achse EXAKT bündig - gleiche Skala, gleiche Ränder) ----
   const zeroY = y(0);
   root.append('line').attr('class', 'sst-zero')
     .attr('x1', 0).attr('x2', innerW).attr('y1', zeroY).attr('y2', zeroY);
@@ -169,7 +169,7 @@ export function createSstIntro(container, ctx) {
   }
 
   return {
-    update() {}, // statisch — Steps blenden die View über das Layout ein/aus
+    update() {}, // statisch - Steps blenden die View über das Layout ein/aus
     destroy() { svg.remove(); tip.remove(); },
   };
 }

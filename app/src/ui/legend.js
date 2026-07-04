@@ -1,5 +1,5 @@
 // Legende: Strichstärke = Kategorie, gestrichelt = umgerechneter EM-DAT-Wind,
-// Kreisgröße = Tote, Akzent = Highlight. Eine Farbsemantik (E2) — keine zweite Farbskala.
+// Kreisgröße = Tote, Akzent = Highlight. Eine Farbsemantik (E2) - keine zweite Farbskala.
 import { strokeForCategory } from '../core/scales.js';
 
 export function createLegend(container, ctx) {

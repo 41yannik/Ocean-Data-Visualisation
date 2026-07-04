@@ -1,5 +1,5 @@
 // Rug-Leiste (Missing-Data-Ehrlichkeit, Paket 07 Punkt 6): Events MIT Windwert aber
-// OHNE Betroffenenzahl als schmale Ticks direkt über der x-Achse — sie verschwinden
+// OHNE Betroffenenzahl als schmale Ticks direkt über der x-Achse - sie verschwinden
 // nicht mehr stillschweigend. 20 von 21 fehlenden Zeilen haben Wind + Track, daher
 // volle CMV-Interaktion (Hover → Tooltip + Karten-Link, Klick → Detailpanel),
 // hinter dem exploreUnlocked-Gate wie im pointsLayer.
@@ -21,7 +21,7 @@ export function createRugLayer(g, layerCtx) {
     .attr('width', TICK_W)
     .attr('height', TICK_H)
     .attr('y', inner.height - TICK_H - 1)
-    .attr('aria-label', (d) => `${d.name ?? 'Unnamed storm'} ${d.year}, ${d.country} — impact not reported`)
+    .attr('aria-label', (d) => `${d.name ?? 'Unnamed storm'} ${d.year}, ${d.country}, impact not reported`)
     .on('mousemove', (event, d) => {
       if (!bus.get().exploreUnlocked) return; // Story-Gate (Konvention aus Paket 06)
       bus.set({ hover: { sid: d.sid, eventId: d.id, x: event.clientX, y: event.clientY, source: 'scatter' } });
@@ -37,7 +37,7 @@ export function createRugLayer(g, layerCtx) {
       if (event.key === 'Enter' && d.sid && bus.get().exploreUnlocked) bus.set({ detailSid: d.sid });
     });
 
-  // x-Position hängt nur an der (modus-unabhängigen) x-Skala — einmalig setzen.
+  // x-Position hängt nur an der (modus-unabhängigen) x-Skala - einmalig setzen.
   ticks.attr('x', (d) => layerCtx.scales.x(d.intensity_kt) - TICK_W / 2);
 
   function classes(state) {

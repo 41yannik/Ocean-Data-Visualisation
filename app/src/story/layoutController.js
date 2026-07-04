@@ -1,8 +1,8 @@
 // Layout-Controller: mappt state.step → data-layout auf der App-Wurzel und hält die
-// aria-Labels der drei Views je Story-Step aktuell (Paket 07 Punkt 10 — Screenreader
+// aria-Labels der drei Views je Story-Step aktuell (Paket 07 Punkt 10 - Screenreader
 // bekommen denselben Erzählstand wie Sehende). Der Morph selbst ist reines CSS
 // (styles.css, [data-layout=…]); Map/Scatter/SST bleiben unberührt (viewBox skaliert).
-// Statische Strings ohne Datenzahlen — Zahlen wären Resolver-Pflicht (Paket-06-Regel).
+// Statische Strings ohne Datenzahlen - Zahlen wären Resolver-Pflicht (Paket-06-Regel).
 import { stepLayout } from './steps.js';
 
 const DEFAULT_LABELS = {
@@ -14,7 +14,7 @@ const DEFAULT_LABELS = {
 // je Step nur die Abweichungen vom Default
 const STEP_LABELS = {
   1: { map: 'Map focused on Cyclone Heta’s track past American Samoa and Niue; both impact sites pulse' },
-  2: { scatter: 'Scatterplot: storm-country pairs appear; no trend line yet — Mawar and Percy annotated' },
+  2: { scatter: 'Scatterplot: storm-country pairs appear; no trend line yet; Mawar and Percy annotated' },
   3: { scatter: 'Scatterplot: nearly flat expectation line with quantile band; high-residual outliers highlighted, Cyclone Guba ringed' },
   4: { map: 'Map focused on Cyclone Harold’s track across four countries', scatter: 'Scatterplot: Harold’s four connected country outcomes highlighted' },
   5: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-line storms highlighted, with Kevin, Judy and Gita annotated' },

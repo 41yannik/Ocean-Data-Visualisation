@@ -1,4 +1,4 @@
-// Pub/Sub-Store — einziger Kommunikationskanal aller Komponenten (docs/plan/09 §2).
+// Pub/Sub-Store - einziger Kommunikationskanal aller Komponenten (docs/plan/09 §2).
 // Nur main.js/Harness subscriben; Komponenten erhalten update(state, patch) vom Kompositor
 // und senden ausschließlich bus.set(patch).
 //

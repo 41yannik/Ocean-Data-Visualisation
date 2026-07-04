@@ -1,5 +1,5 @@
 // Mount-Registry der Dev-Harness: Key → { title, mount(container, ctx) → Komponente }.
-// Einzel-Layer laufen über den jeweiligen Kompositor mit opts.layers — Ownership von
+// Einzel-Layer laufen über den jeweiligen Kompositor mit opts.layers - Ownership von
 // geo/scales bleibt beim Kompositor (docs/plan/09 §1 Regel 4).
 import { select } from 'd3';
 import { makePacificProjection, makeGeoPath } from '../core/scales.js';
@@ -23,14 +23,14 @@ export const REGISTRY = {
   tooltip: {
     title: 'Tooltip (Fixtures = Hover-Zustände)',
     mount(c, ctx) {
-      c.innerHTML = '<p class="harness-summary">Tooltip hängt an &lt;body&gt; — Hover-Fixtures klicken.</p>';
+      c.innerHTML = '<p class="harness-summary">Tooltip hängt an &lt;body&gt;, Hover-Fixtures klicken.</p>';
       return createTooltip(document.body, ctx);
     },
   },
   detail: {
     title: 'Detailpanel',
     mount(c, ctx) {
-      c.innerHTML = '<p class="harness-summary">Detailpanel als Overlay — detailHarold/detailPam/detailHeta klicken, Esc schließt.</p>';
+      c.innerHTML = '<p class="harness-summary">Detailpanel als Overlay: detailHarold/detailPam/detailHeta klicken, Esc schließt.</p>';
       const aside = document.createElement('aside');
       aside.className = 'detail-panel';
       aside.setAttribute('aria-hidden', 'true');
@@ -95,7 +95,7 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
   nav: {
     title: 'Progress-Nav (rechts fixiert): step0–step7/stepOff klicken; Punkte setzen step-Patches',
     mount(c, ctx) {
-      c.innerHTML = '<p class="harness-summary">Punkte-Leiste rechts am Bildschirmrand — bei step ≥ 0 sichtbar, aktiver Punkt = Akzent.</p>';
+      c.innerHTML = '<p class="harness-summary">Punkte-Leiste rechts am Bildschirmrand: bei step ≥ 0 sichtbar, aktiver Punkt = Akzent.</p>';
       const nav = document.createElement('nav');
       nav.className = 'progress-nav';
       document.body.appendChild(nav);
@@ -115,7 +115,7 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
               <figure class="view view-map"><div class="dummy" style="background:#46688c;">KARTE</div></figure>
               <figure class="view view-scatter"><div class="dummy" style="background:#2f3640;">SCATTER</div></figure>
             </div>
-            <div class="ui-bar"><span>UI-Bar — nur bei data-layout="explore" sichtbar</span></div>
+            <div class="ui-bar"><span>UI-Bar: nur bei data-layout="explore" sichtbar</span></div>
           </section>
         </div>`;
       return createLayoutController(container.querySelector('.app'), ctx);
@@ -130,9 +130,9 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
       let selfTest;
       try {
         resolveRefs('{{event:9999-9999-XXX.affected:int}}', ctx);
-        selfTest = 'FAIL — unbekannte Referenz hat NICHT geworfen!';
+        selfTest = 'FAIL: unbekannte Referenz hat NICHT geworfen!';
       } catch (err) {
-        selfTest = `PASS — wirft wie erwartet: „${err.message}"`;
+        selfTest = `PASS: wirft wie erwartet: „${err.message}"`;
       }
       container.innerHTML = `
         <pre class="harness-summary">Steps: ${steps.length} (erwartet 8) · Selbsttest ungültige Referenz: ${selfTest}</pre>
@@ -171,7 +171,7 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
         .attr('stroke-width', 2.5);
 
       svg.append('text').attr('x', 12).attr('y', 20).attr('class', 'axis-label')
-        .text('GATE: Linie muss als durchgehende Kurve erscheinen — KEIN horizontaler Streifen quer über die Karte');
+        .text('GATE: Linie muss als durchgehende Kurve erscheinen, KEIN horizontaler Streifen quer über die Karte');
       return { update() {}, destroy() { svg.remove(); } };
     },
   },

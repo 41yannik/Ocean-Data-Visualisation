@@ -1,4 +1,4 @@
-// Pure Skalen-/Projektions-Fabriken — kein State, kein DOM.
+// Pure Skalen-/Projektions-Fabriken - kein State, kein DOM.
 import { geoEquirectangular, geoPath, scaleLinear, scaleSqrt } from 'd3';
 import { MAP, SCATTER, R_MIN, R_MAX } from './config.js';
 
@@ -8,7 +8,7 @@ const PICT_EXTENT = {
   coordinates: [[130, -27], [130, 25], [-130, -27], [-130, 25]],
 };
 
-// Dateline-Zentrierung AUSSCHLIESSLICH über rotate([-192, 0]) — Daten bleiben [-180, 180];
+// Dateline-Zentrierung AUSSCHLIESSLICH über rotate([-192, 0]) - Daten bleiben [-180, 180];
 // d3.geoPath clippt Antimeridian-Kreuzungen korrekt (Stolperstein 7; 35 echte Crosser).
 export function makePacificProjection(width = MAP.width, height = MAP.height, pad = MAP.pad) {
   return geoEquirectangular()
@@ -33,7 +33,7 @@ export function makeXScale(innerWidth) {
   return scaleLinear().domain([30, 175]).range([0, innerWidth]);
 }
 
-// y = Linearskala über dem log10-transformierten Raum — exakt die y_transform der Fits
+// y = Linearskala über dem log10-transformierten Raum - exakt die y_transform der Fits
 // aus meta.json (Lücke L7): Punkte, Linie und Band teilen dieselbe Mathematik.
 export function makeYScale(mode, innerHeight) {
   const isAbs = mode === 'absolute';

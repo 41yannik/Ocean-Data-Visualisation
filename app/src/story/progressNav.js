@@ -1,4 +1,4 @@
-// Fortschritts-Navigation: ein Punkt je Story-Step, klickbar (Robustheit E3 —
+// Fortschritts-Navigation: ein Punkt je Story-Step, klickbar (Robustheit E3 -
 // Steps müssen auch OHNE Scrollen erreichbar sein). Output nur bus.set({step});
 // das Anwenden des Steps + Scroll-Sync übernimmt der storyRunner.
 import { STEP_COUNT } from './steps.js';
