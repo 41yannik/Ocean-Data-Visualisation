@@ -1,5 +1,5 @@
-// Trend + Quantilband + generierte Annotation (fitLabel — nie getippt, Lücke L8).
-// Fit-Parameter kommen ausschließlich aus meta.fits[mode] (Pipeline) — nie im Frontend fitten.
+// Trend + Quantilband + generierte Annotation (fitLabel - nie getippt, Lücke L8).
+// Fit-Parameter kommen ausschließlich aus meta.fits[mode] (Pipeline) - nie im Frontend fitten.
 // Die fast flache Absolut-Linie ist der BEFUND ("wind alone predicts almost nothing").
 import { line as d3line, area as d3area, curveMonotoneX } from 'd3';
 import { DUR_MODE } from '../core/config.js';
@@ -54,7 +54,11 @@ export function createTrendLayer(gBand, gTrend, gAnnotations, layerCtx) {
   function visibility(state) {
     const fx = state.storyFx;
     linePath.classed('story-hidden', fx != null && !fx.showTrend);
-    label.classed('story-hidden', fx != null && !fx.showTrend);
+    // Reveal-Step (Step 4): die flache Linie trägt die Hauptaussage → präsenter zeichnen.
+    linePath.classed('trend-emphasis', fx?.residualReveal === true);
+    // Das Fit-Label (R²/p) ist die Pointe des Reveal-Steps - es erscheint erst mit dem Band,
+    // nicht schon in Step 3, der nur die Erwartungslinie zeigt.
+    label.classed('story-hidden', fx != null && !fx.showBand);
     bandPath.classed('story-hidden', fx != null && !fx.showBand);
     medianPath.classed('story-hidden', fx != null && !fx.showBand);
   }

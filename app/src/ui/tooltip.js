@@ -21,6 +21,15 @@ export function createTooltip(body, ctx) {
       ${e.pop_extrapolated ? '<div class="tt-sub">* population extrapolated from 2023</div>' : ''}`;
   }
 
+  // Einfache Sprache (Story-Step 3): ein Satz, kein Fachjargon.
+  function contentSimple(e) {
+    if (!e) return '';
+    return `
+      <div class="tt-title">${e.name ?? 'A storm'} · ${e.country} · ${e.year}</div>
+      <div class="tt-simple">At <strong>${fmtKt(e.intensity_kt)}</strong> of wind,
+        <strong>${fmtPct(e.affected_pc)}</strong> of the population was affected.</div>`;
+  }
+
   function contentForStorm(sid) {
     const list = bySid.get(sid) ?? [];
     const first = list[0];
@@ -31,7 +40,7 @@ export function createTooltip(body, ctx) {
       <div class="tt-sub">${list.length} ${list.length === 1 ? 'country' : 'countries'} · ${fmtCategory(first.category)} · ${fmtSource(first.intensity_source)}</div>
       <dl>
         <dt>Peak wind</dt><dd>${fmtKt(first.intensity_kt)}</dd>
-        <dt>People affected</dt><dd>${affectedTotal ? fmtInt(affectedTotal) : '—'}</dd>
+        <dt>People affected</dt><dd>${affectedTotal ? fmtInt(affectedTotal) : 'n/a'}</dd>
         <dt>Countries</dt><dd>${list.map((e) => e.iso3).join(', ')}</dd>
       </dl>
       <div class="tt-sub">click for details</div>`;
@@ -40,9 +49,12 @@ export function createTooltip(body, ctx) {
   function render(state) {
     const h = state.hover;
     if (!h) { el.classList.remove('visible'); return; }
-    el.innerHTML = h.eventId
-      ? contentForEvent(byId.get(h.eventId))
-      : contentForStorm(h.sid);
+    // Text-getriebener Hover (Mawar/Percy im Fließtext) hat keine x/y → kein Tooltip,
+    // nur Punkt-Highlight/Residuum. Der Tooltip erscheint nur bei Zeiger-Hover.
+    if (h.x == null || h.y == null) { el.classList.remove('visible'); return; }
+    el.innerHTML = h.variant === 'simple'
+      ? contentSimple(byId.get(h.eventId))
+      : h.eventId ? contentForEvent(byId.get(h.eventId)) : contentForStorm(h.sid);
     el.classList.add('visible');
 
     // Position + Flip am Viewport-Rand

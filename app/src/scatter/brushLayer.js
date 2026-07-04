@@ -1,4 +1,4 @@
-// Brush-Verhalten: Auswahl-Rechteck → selectedEventIds (Set, immer neu — nie mutieren).
+// Brush-Verhalten: Auswahl-Rechteck → selectedEventIds (Set, immer neu - nie mutieren).
 // Loop-Guard gegen programmatic moves (Lücke L10); Mode-Wechsel resettet den Brush.
 import { brush as d3brush } from 'd3';
 import { matchesFilters, isScatterable } from '../core/filters.js';
@@ -43,6 +43,10 @@ export function createBrushLayer(gBrush, layerCtx) {
       if ('mode' in patch) {
         gBrush.call(brush.move, null); // löst 'end' ohne sourceEvent aus → Guard greift
         if (state.selectedEventIds != null) bus.set({ selectedEventIds: null });
+      }
+      // Externer Reset (Selection-Chip „clear" / andere Views) → Auswahlrechteck wischen.
+      if ('selectedEventIds' in patch && state.selectedEventIds == null) {
+        gBrush.call(brush.move, null);
       }
     },
     destroy() { gBrush.selectAll('*').remove(); },

@@ -25,18 +25,18 @@ export const SECTIONS = [
   },
   {
     step: 2, views: ['scatter'],
-    aria: { scatter: 'Scatterplot: storm-country pairs appear; no trend line yet — Mawar and Percy annotated' },
+    aria: { scatter: 'Scatterplot: storm-country pairs appear; no trend line yet; Mawar and Percy annotated' },
   },
   {
-    step: 3, views: ['scatter'],
-    aria: { scatter: 'Scatterplot: nearly flat expectation line with quantile band; high-residual outliers highlighted, Cyclone Guba ringed' },
+    step: 3, views: ['scatter'], controls: 'revealToggles',
+    aria: { scatter: 'Scatterplot: nearly flat expectation line; high-residual outliers highlighted. Toggle buttons highlight the ten most-affected storms or the ten strongest storms' },
   },
   {
-    step: 4, views: ['map', 'scatter'],
-    overrides: { detailSid: null }, // Panel ist Explore-Feature; der Beat trägt über Fokus-Track + 4 Punkte
+    step: 4, views: ['haroldMorph'],
     aria: {
-      map: 'Map focused on Cyclone Harold’s track across four countries',
-      scatter: 'Scatterplot: Harold’s four connected country outcomes highlighted',
+      haroldMorph: 'Animated sequence: Cyclone Harold’s track is drawn across four countries; '
+        + 'impact bubbles pop at Solomon Islands, Vanuatu, Fiji and Tonga, then fly onto a '
+        + 'scatterplot where all four share the same wind speed but land 7× apart in people affected',
     },
   },
   {
@@ -44,8 +44,9 @@ export const SECTIONS = [
     aria: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-line storms highlighted, with Kevin, Judy and Gita annotated' },
   },
   {
-    step: 6, views: ['scatter'],
-    aria: { scatter: 'Scatterplot with rug ticks along the wind axis marking storms without an impact count' },
+    step: 6, views: ['unitChart'], controls: 'unitSort',
+    aria: { unitChart: 'Unit chart of all 99 storm-country pairs: 78 filled dots are complete records, '
+      + '21 ghost dots are pairs whose human impact was never recorded. A button re-sorts them into two blocks by data quality' },
   },
   {
     step: 7, views: ['map', 'scatter'], explore: true,
