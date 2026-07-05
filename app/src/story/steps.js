@@ -81,13 +81,15 @@ export function buildSteps(ctx) {
       id: 'hook-heta',
       layout: 'map',
       title: r('One storm, two societies'),
-      html: r(`In January {{event:2004-0004-NIU.year}}, Cyclone Heta
+      html: r(`This is that night. In January {{event:2004-0004-NIU.year}}, Cyclone Heta
         ({{event:2004-0004-ASM.category:cat}}, near peak intensity) swept past both
         American Samoa and Niue; its gale-force wind field covered both islands.
         In American Samoa it affected
-        <strong>{{event:2004-0004-ASM.affected:int}} people</strong>. On Niue:
-        <strong>{{event:2004-0004-NIU.affected:int}}</strong>.
-        <strong>Same storm, different societies.</strong>`),
+        <strong>{{event:2004-0004-ASM.affected:int}} people</strong>,
+        {{event:2004-0004-ASM.affected_pc:pct}} of everyone living there. On Niue:
+        <strong>{{event:2004-0004-NIU.affected:int}} people</strong>, on an island so
+        small that this is {{event:2004-0004-NIU.affected_pc:pct}} of the population.
+        <strong>Same storm, same night, different societies.</strong>`),
       source: 'Tracks & gale-wind radius (R34): IBTrACS (NOAA) · impacts: EM-DAT (CRED)',
       apply: () => base({
         storyFx: fx({
@@ -103,7 +105,8 @@ export function buildSteps(ctx) {
       id: 'expectation',
       layout: 'scatter',
       title: r('What wind speed should predict'),
-      html: r(`Each dot is one storm striking one country: {{stat:scatterCount}} of them,
+      html: r(`Now zoom out from that one night to every recorded strike since
+        {{stat:yearMin}}. Each dot is one storm striking one country: {{stat:scatterCount}} of them,
         peak wind speed against the share of the population affected. The dashed line is what
         wind alone would predict; if it decided the toll, the dots would climb neatly along it
         to the right. They don't:
