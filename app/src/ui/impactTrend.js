@@ -25,9 +25,9 @@ const ANNOTATIONS = [
 export function createImpactTrend(container, ctx) {
   const { data } = ctx;
 
-  // Mini-Legende (Lollipops haben keine Linien-Endlabels)
+  // Mini-Legende (freischwebende Punkte haben keine Linien-Endlabels)
   const legend = document.createElement('div');
-  legend.className = 'radar-legend';
+  legend.className = 'tile-legend';
   legend.innerHTML = REGIONS.map((r) =>
     `<span><i style="background:${r.color}"></i>${r.key}</span>`).join('');
   container.appendChild(legend);
@@ -74,20 +74,17 @@ export function createImpactTrend(container, ctx) {
       .text(v >= 1e3 ? `${v / 1e3}k` : String(v));
   }
 
-  // Lollipops: dünner Stiel von der Basislinie + Punkt; Subregionen minimal versetzt
-  // (Dodge), damit gleiche Jahre nicht überplotten.
-  const baseline = H - M.bottom;
+  // Freischwebende Punkte je Subregion (keine Stiele - vertikale Linien von der
+  // log-Achse würden die Größenverhältnisse optisch verzerren). Subregionen minimal
+  // versetzt (Dodge), damit gleiche Jahre nicht überplotten.
   const gMarks = svg.append('g').attr('class', 'trend-tile-marks');
   series.forEach((s, i) => {
     const dodge = (i - 1) * 3.5;
     for (const p of s.points) {
       if (p.sum <= 0) continue;
       const px = x(p.year) + dodge;
-      gMarks.append('line').attr('class', 'tt-stem')
-        .attr('x1', px).attr('x2', px).attr('y1', baseline).attr('y2', y(p.sum))
-        .style('stroke', s.color);
       gMarks.append('circle').attr('class', 'tt-dot')
-        .attr('cx', px).attr('cy', y(p.sum)).attr('r', 3)
+        .attr('cx', px).attr('cy', y(p.sum)).attr('r', 3.5)
         .style('fill', s.color)
         .append('title').text(`${s.key} ${p.year}`);
     }

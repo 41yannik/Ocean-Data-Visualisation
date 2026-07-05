@@ -8,6 +8,7 @@
 // ist (Lazy Loading; Einstiegsanimationen feuern dadurch beim Sichtbarwerden).
 // Die letzte Sektion ist das voll interaktive Dashboard (entsperrter Store).
 // ?step=N springt zur Sektion; ?story=off zeigt nur das Dashboard.
+import '@fontsource-variable/bricolage-grotesque'; // self-hosted, offline (Challenge-Regel)
 import { loadData } from './core/dataLoader.js';
 import { createStore } from './core/state.js';
 import { makeInitialState } from './core/initialState.js';
@@ -31,7 +32,7 @@ import { createChapterNav } from './story/chapterNav.js';
 import { createStageGroup } from './story/stageGroup.js';
 import { createFormationLayer } from './story/formationLayer.js';
 import { createChartControls } from './story/chartControls.js';
-import { createProfileRadar } from './ui/profileRadar.js';
+import { createProfileBars } from './ui/profileBars.js';
 import { createImpactTrend } from './ui/impactTrend.js';
 import { resolveHighlightSpec } from './story/highlightSpecs.js';
 
@@ -61,15 +62,13 @@ function exploreWorkbench(figures) {
         <div class="viz-row viz-row--dual" data-view-mode="split">${figures}</div>
         <div class="selection-chip" hidden><span class="sc-count"></span><button type="button" class="sc-clear">clear</button></div>
         <p class="brush-hint">drag on the chart to select storms</p>
-        <aside class="floating-legend" data-collapsed="false">
-          <header class="fl-head"><span>Legend</span><button type="button" class="fl-toggle" aria-label="Collapse legend">–</button></header>
-          <div class="fl-body"><div id="legend"></div></div>
-        </aside>
       </div>
+      <!-- Legende statisch UNTER den Charts (Datenraum rechts unten bleibt frei) -->
+      <div class="chart-legend"><div id="legend"></div></div>
       <div class="tile-row">
         <section class="tile" aria-label="Radar chart comparing the storm profiles of Mawar, Percy and Cyclone Guba">
           <h3>Storm profiles compared</h3>
-          <div class="tile-body" id="tile-radar"></div>
+          <div class="tile-body" id="tile-profile"></div>
         </section>
         <section class="tile" aria-label="People affected per year by Pacific subregion, log scale">
           <h3>People affected per year</h3>
@@ -77,6 +76,7 @@ function exploreWorkbench(figures) {
         </section>
         <section class="tile" aria-label="Data availability: 78 fully recorded versus 21 unrecorded storm-country pairs">
           <h3>Data availability</h3>
+          <p class="tile-note tile-note--legend"><span class="ul-dot ul-solid"></span> wind + impact recorded &nbsp; <span class="ul-dot ul-ghost"></span> impact never recorded</p>
           <div class="tile-body tile-body--unit" id="tile-unit"></div>
           <div class="tile-controls" id="tile-unit-sort"></div>
         </section>
@@ -257,7 +257,7 @@ async function runApp() {
           createExploreChrome(sectionEl, ctx),
           // Dashboard-Kacheln (Plan delightful-harbor): Radar + Jahres-Trend + Unit Chart
           // laufen auf demselben Explore-Store (Unit-Sort/Hover sofort funktionsfähig).
-          createProfileRadar(sectionEl.querySelector('#tile-radar'), ctx),
+          createProfileBars(sectionEl.querySelector('#tile-profile'), ctx),
           createImpactTrend(sectionEl.querySelector('#tile-trend'), ctx),
           createUnitChart(sectionEl.querySelector('#tile-unit'), ctx),
           createUnitSortControl(sectionEl.querySelector('#tile-unit-sort'), ctx),
