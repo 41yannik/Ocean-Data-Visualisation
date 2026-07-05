@@ -26,11 +26,11 @@ export const SECTIONS = [
     },
   },
   {
-    step: 2, act: 'The evidence', views: ['scatter'],
+    step: 2, act: 'The evidence', stage: 'dots', views: ['scatter'],
     aria: { scatter: 'Scatterplot: storm-country pairs appear; no trend line yet; Mawar and Percy annotated' },
   },
   {
-    step: 3, act: 'The evidence', views: ['scatter'], controls: 'revealToggles',
+    step: 3, act: 'The evidence', stage: 'dots', views: ['scatter'], controls: 'revealToggles',
     aria: { scatter: 'Scatterplot: nearly flat expectation line; high-residual outliers highlighted. Toggle buttons highlight the ten most-affected storms or the ten strongest storms' },
   },
   {

@@ -29,6 +29,7 @@ import { createExploreChrome } from './ui/exploreChrome.js';
 import { buildSteps } from './story/steps.js';
 import { SECTIONS } from './story/sections.js';
 import { createChapterNav } from './story/chapterNav.js';
+import { createStageGroup } from './story/stageGroup.js';
 import { isScatterable } from './core/filters.js';
 import { REVEAL_RESIDUAL_MIN } from './core/config.js';
 
@@ -97,9 +98,18 @@ async function runApp() {
     if (storyOff) document.querySelector('#hero').style.display = 'none';
     const sections = storyOff ? SECTIONS.filter((s) => s.explore) : SECTIONS;
 
+    // Bühnen-Gruppen (Paket 10): aufeinanderfolgende Sektionen mit gleichem stage-Schlüssel
+    // teilen sich EINE sticky Grafik (fließende Übergänge statt harter Schnitte);
+    // alle anderen Sektionen rendern und mounten wie bisher einzeln.
+    const blocks = [];
+    for (const sec of sections) {
+      const last = blocks[blocks.length - 1];
+      if (sec.stage && last?.stage === sec.stage) last.members.push(sec);
+      else blocks.push(sec.stage ? { stage: sec.stage, members: [sec] } : { single: sec });
+    }
+
     // 1) Skelette SOFORT rendern - .viz-frame hat feste CSS-Maße (kein Layout-Sprung).
-    const main = document.querySelector('#sections');
-    main.innerHTML = sections.map((sec) => {
+    const sectionHtml = (sec) => {
       const s = steps[sec.step];
       const figures = sec.views.map((v) =>
         `<figure class="viz-frame viz-frame--${v}" data-view="${v}" aria-label="${sec.aria?.[v] ?? ''}"></figure>`,
@@ -116,10 +126,90 @@ async function runApp() {
           ${sec.controls ? '<div class="story-controls"></div>' : ''}
           <div class="viz-row${sec.views.length > 1 ? ' viz-row--dual' : ''}">${figures}</div>`}
         </section>`;
-    }).join('');
+    };
+
+    // Gruppe: sticky Scatter-Bühne + Textkarten, die darüber scrollen (Text-IDs step-N
+    // bleiben erhalten - Deep-Links und Kapitel-Nav funktionieren unverändert).
+    const groupHtml = (block) => `
+        <div class="stage-group" data-stage="${block.stage}">
+          <div class="stage-sticky">
+            <figure class="viz-frame viz-frame--scatter" data-view="scatter"
+              aria-label="${block.members[0].aria?.scatter ?? ''}"></figure>
+          </div>
+          <div class="stage-steps">
+            ${block.members.map((sec) => {
+              const s = steps[sec.step];
+              return `
+              <div class="stage-step" id="step-${sec.step}" data-step="${sec.step}">
+                <div class="section-text">
+                  <p class="kicker">${sec.act}</p>
+                  <h2>${s.title}</h2>
+                  <p>${s.html}</p>
+                  ${s.source ? `<p class="source">${s.source}</p>` : ''}
+                  ${sec.controls ? '<div class="story-controls"></div>' : ''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+
+    const main = document.querySelector('#sections');
+    main.innerHTML = blocks.map((b) => (b.single ? sectionHtml(b.single) : groupHtml(b))).join('');
 
     // Kapitel-Nav (Paket 10 Task 2): erst nach dem Sektions-Rendering, braucht die IDs.
     if (!storyOff) createChapterNav(document.body, { sections, steps });
+
+    // Text-to-Chart: Signalwörter im Fließtext steuern die Grafik (Einzel-Sektionen
+    // UND Bühnen-Gruppen). data-event-id → einzelner Punkt (Highlight + Residuum-Linie);
+    // data-highlight → ganzes Set.
+    function wireTextLinks(rootEl, store) {
+      for (const linkEl of rootEl.querySelectorAll('.text-link[data-event-id]')) {
+        const id = linkEl.dataset.eventId;
+        const ev = data.index.byId.get(id);
+        const enter = () => store.set({ hover: { sid: ev?.sid ?? null, eventId: id, source: 'text' } });
+        const leave = () => store.set({ hover: null });
+        linkEl.addEventListener('mouseenter', enter);
+        linkEl.addEventListener('mouseleave', leave);
+        linkEl.addEventListener('focus', enter);
+        linkEl.addEventListener('blur', leave);
+        linkEl.setAttribute('tabindex', '0');
+      }
+      for (const linkEl of rootEl.querySelectorAll('.text-link[data-highlight]')) {
+        const spec = resolveHighlightSpec(linkEl.dataset.highlight, data);
+        const enter = () => store.set({ textSet: spec });
+        const leave = () => store.set({ textSet: null });
+        linkEl.addEventListener('mouseenter', enter);
+        linkEl.addEventListener('mouseleave', leave);
+        linkEl.addEventListener('focus', enter);
+        linkEl.addEventListener('blur', leave);
+        linkEl.setAttribute('tabindex', '0');
+      }
+    }
+
+    // Mount einer Bühnen-Gruppe (einmalig): gemeinsame Instanzen + Scrollama-Trigger.
+    function mountGroup(groupEl) {
+      if (groupEl.dataset.mounted) return;
+      groupEl.dataset.mounted = 'true';
+      const members = [...groupEl.querySelectorAll('.stage-step')].map((textEl) => ({
+        sec: sections.find((s) => s.step === Number(textEl.dataset.step)), textEl,
+      }));
+      const group = createStageGroup(groupEl, {
+        ctx: { data, meta, bus: null, config: null },
+        steps,
+        members,
+        buildComponents: (el, groupCtx) => {
+          const comps = [
+            createScatter(el.querySelector('[data-view=scatter]'), groupCtx,
+              { layers: ['axes', 'rug', 'trend', 'points', 'annotations'] }),
+            createTooltip(document.body, groupCtx),
+          ];
+          const ctrl = el.querySelector('.story-controls');
+          if (ctrl) comps.push(createRevealToggles(ctrl, groupCtx));
+          return comps;
+        },
+      });
+      wireTextLinks(groupEl, group.store);
+    }
 
     // 2) Mount je Sektion (einmalig, beim Sichtbarwerden der Grafikzeile)
     function mountSection(sectionEl, sec) {
@@ -178,29 +268,7 @@ async function runApp() {
         components.push(createUnitSortControl(sectionEl.querySelector('.story-controls'), ctx));
       }
 
-      // Text-to-Chart: Signalwörter im Fließtext steuern die Grafik.
-      // data-event-id → einzelner Punkt (Highlight + Residuum-Linie); data-highlight → ganzes Set.
-      for (const linkEl of sectionEl.querySelectorAll('.text-link[data-event-id]')) {
-        const id = linkEl.dataset.eventId;
-        const ev = data.index.byId.get(id);
-        const enter = () => store.set({ hover: { sid: ev?.sid ?? null, eventId: id, source: 'text' } });
-        const leave = () => store.set({ hover: null });
-        linkEl.addEventListener('mouseenter', enter);
-        linkEl.addEventListener('mouseleave', leave);
-        linkEl.addEventListener('focus', enter);
-        linkEl.addEventListener('blur', leave);
-        linkEl.setAttribute('tabindex', '0');
-      }
-      for (const linkEl of sectionEl.querySelectorAll('.text-link[data-highlight]')) {
-        const spec = resolveHighlightSpec(linkEl.dataset.highlight, data);
-        const enter = () => store.set({ textSet: spec });
-        const leave = () => store.set({ textSet: null });
-        linkEl.addEventListener('mouseenter', enter);
-        linkEl.addEventListener('mouseleave', leave);
-        linkEl.addEventListener('focus', enter);
-        linkEl.addEventListener('blur', leave);
-        linkEl.setAttribute('tabindex', '0');
-      }
+      wireTextLinks(sectionEl, store);
 
       // Innerhalb der Sektion propagieren (Heta-Hook Step 2: Windkreis → Pop von Bubble+Balken,
       // Hover-Cross-Highlight Karte↔Balken). Das Story-Gate bleibt zu - nur die vom Hook selbst
@@ -218,14 +286,21 @@ async function runApp() {
         for (const e of entries) {
           if (!e.isIntersecting) continue;
           io.unobserve(e.target);
+          const groupEl = e.target.closest('.stage-group');
+          if (groupEl) { mountGroup(groupEl); continue; }
           const sectionEl = e.target.closest('.section');
-          const sec = sections[[...main.children].indexOf(sectionEl)];
+          const sec = sections.find((s) => s.step === Number(sectionEl?.dataset.step));
           if (sec) mountSection(sectionEl, sec);
         }
       }, { threshold: 0.3 });
       for (const row of main.querySelectorAll('.viz-row')) io.observe(row);
+      for (const sticky of main.querySelectorAll('.stage-sticky')) io.observe(sticky);
     } else {
-      [...main.children].forEach((el, i) => mountSection(el, sections[i]));
+      for (const el of main.querySelectorAll('.section')) {
+        const sec = sections.find((s) => s.step === Number(el.dataset.step));
+        if (sec) mountSection(el, sec);
+      }
+      for (const el of main.querySelectorAll('.stage-group')) mountGroup(el);
     }
 
     // Deep-Link ?step=N → zur Sektion springen (IO mountet bei Ankunft)
