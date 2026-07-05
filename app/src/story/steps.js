@@ -206,11 +206,14 @@ export function buildSteps(ctx) {
       id: 'explore',
       layout: 'explore',
       title: r('From track to toll'),
-      html: r(`A cyclone's track tells you where it goes, not what it costs the people
-        beneath it. Preparedness has to target vulnerability and exposure, not just
-        forecast wind speeds. <strong>Now explore for yourself:</strong> hover tracks and
-        dots, brush the scatter, filter by year, category and country, and switch between
-        per-capita and absolute impact.`),
+      html: r(`Every dot on this page is a night like Heta's. Since {{stat:yearMin}},
+        the storms behind these charts have affected
+        <strong>{{stat:totalAffected}} people</strong> across the Pacific island
+        countries, and a cyclone's track tells you where it goes, not what it costs
+        the people beneath it. Preparedness has to target vulnerability and exposure,
+        not just forecast wind speeds. <strong>Now explore for yourself:</strong>
+        hover tracks and dots, brush the scatter, filter by year, category and country,
+        and switch between per-capita and absolute impact.`),
       apply: () => base({ storyFx: null, exploreUnlocked: true }),
     },
   ];

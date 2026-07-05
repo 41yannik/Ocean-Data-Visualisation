@@ -7,7 +7,7 @@
 //   {{fit:<mode>.<r2|r2pct|p|n>}}            meta.fits, vor-formatiert (kein :fmt erlaubt)
 //   {{sst:<latest|first>.<year|anom>}}       sst.json-Randwerte, vor-formatiert
 //   {{stat:<name>[.<args>]}}                 abgeleitete Statistik, vor-formatiert:
-//       scatterCount · eventCount · yearMin · yearMax
+//       scatterCount · eventCount · yearMin · yearMax · totalAffected
 //       aboveShare.<iso3>                    Anteil der Scatter-Punkte des Landes über der Linie
 //       affectedRatio.<idA>.<idB>            gerundetes Verhältnis affected(A)/affected(B)
 import { fmtInt, fmtPct, fmtKt, fmtCategory } from '../core/format.js';
@@ -80,6 +80,11 @@ function lookupStat([name, ...args], ctx, token) {
     const rows = events.filter((e) => e.iso3 === args[0] && isScatterable(e));
     if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für ${args[0]} (${token})`);
     return fmtPct(rows.filter((e) => (e.residual_pc ?? 0) > 0).length / rows.length);
+  }
+  if (name === 'totalAffected') {
+    const vals = events.map((e) => e.affected).filter((v) => v != null);
+    if (!vals.length) throw new Error(`Story-Referenz: keine affected-Werte (${token})`);
+    return fmtInt(vals.reduce((a, b) => a + b, 0));
   }
   if (name === 'affectedRatio') {
     const [a, b] = args.map((id) => ctx.data.index.byId.get(id));
