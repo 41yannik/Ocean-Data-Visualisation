@@ -19,6 +19,7 @@ import { createSstIntro } from '../story/sstIntro.js';
 import { createLayoutController } from '../story/layoutController.js';
 import { createProgressNav } from '../story/progressNav.js';
 import { createChapterNav } from '../story/chapterNav.js';
+import { createChartControls } from '../story/chartControls.js';
 
 export const REGISTRY = {
   tooltip: {
@@ -90,6 +91,16 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
         },
         destroy: runner.destroy,
       };
+    },
+  },
+
+  chartControls: {
+    title: 'Chart-Controls (Evidence-Panel): 4 Highlight-Buttons + Land-Dropdown',
+    mount(c, ctx) {
+      const bar = document.createElement('div');
+      bar.className = 'chart-controls';
+      c.appendChild(bar);
+      return createChartControls(bar, ctx);
     },
   },
 

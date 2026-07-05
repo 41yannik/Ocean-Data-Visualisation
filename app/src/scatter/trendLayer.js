@@ -56,9 +56,9 @@ export function createTrendLayer(gBand, gTrend, gAnnotations, layerCtx) {
     linePath.classed('story-hidden', fx != null && !fx.showTrend);
     // Reveal-Step (Step 4): die flache Linie trägt die Hauptaussage → präsenter zeichnen.
     linePath.classed('trend-emphasis', fx?.residualReveal === true);
-    // Das Fit-Label (R²/p) ist die Pointe des Reveal-Steps - es erscheint erst mit dem Band,
-    // nicht schon in Step 3, der nur die Erwartungslinie zeigt.
-    label.classed('story-hidden', fx != null && !fx.showBand);
+    // Das Fit-Label (R²/p) erscheint mit dem Band ODER explizit via showFitLabel
+    // (Evidence-Panel: Linie + Label ohne Band).
+    label.classed('story-hidden', fx != null && !fx.showBand && !fx.showFitLabel);
     bandPath.classed('story-hidden', fx != null && !fx.showBand);
     medianPath.classed('story-hidden', fx != null && !fx.showBand);
   }

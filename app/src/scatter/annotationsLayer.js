@@ -9,7 +9,12 @@ export function createAnnotationsLayer(gAnnotations, layerCtx) {
   const { data, inner } = layerCtx;
 
   function render(state) {
-    const annos = (state.storyFx?.annotations ?? [])
+    // Story-Annotationen (storyFx) + Button-Annotationen (highlight.annos, Evidence-Panel);
+    // Dedupe per eventId - das persistente Button-Highlight gewinnt.
+    const raw = [...(state.highlight?.annos ?? []), ...(state.storyFx?.annotations ?? [])];
+    const seen = new Set();
+    const annos = raw
+      .filter((a) => !seen.has(a.eventId) && seen.add(a.eventId))
       .map((a) => ({ ...a, event: data.index.byId.get(a.eventId) }))
       .filter((a) => a.event && isScatterable(a.event));
 
@@ -41,7 +46,7 @@ export function createAnnotationsLayer(gAnnotations, layerCtx) {
 
   return {
     update(state, patch) {
-      if (!patch || 'storyFx' in patch || 'mode' in patch) render(state);
+      if (!patch || 'storyFx' in patch || 'mode' in patch || 'highlight' in patch) render(state);
     },
     destroy() { g.remove(); },
   };

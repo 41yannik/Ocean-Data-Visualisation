@@ -753,3 +753,58 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   .stage-group[data-stage="dots2"] .g-band, .stage-group[data-stage="dots2"] .g-annotations,
   .stage-group[data-stage="dots2"] .g-rug { transition: none; }
 }
+
+/* ----- Evidence-Panel (Plan delightful-harbor): Text links, Chart + Controls rechts ----- */
+.section--split {
+  display: grid;
+  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+  gap: 3vw;
+  align-items: center;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.section--split .section-text { margin: 0; }
+.split-viz { min-width: 0; }
+.split-viz .viz-row { margin-top: 10px; }
+.split-viz .viz-frame--scatter { max-width: 860px; }
+@media (max-width: 1099px) {
+  .section--split { grid-template-columns: 1fr; gap: 4vh; }
+  .section--split .section-text { margin: 0 auto; }
+}
+
+/* Control-Leiste direkt an der Grafik: Pill-Buttons + Land-Select, rechtsbündig.
+   Aktiver Button = Akzent-Orange - Button-Zustand und Daten-Highlight tragen
+   dieselbe Semantik (bewusste Ausnahme von der Toggle-Demotion aus Paket 10 Task 5). */
+.chart-controls {
+  display: flex; flex-wrap: wrap; gap: 8px 10px;
+  justify-content: flex-end; align-items: center;
+  max-width: 860px;
+}
+.cc-buttons { display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.cc-btn {
+  font: inherit; font-size: 13.5px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--graticule);
+  border-radius: 999px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.cc-btn:hover { border-color: var(--muted); }
+.cc-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cc-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cc-filter { display: inline-flex; align-items: center; gap: 7px; }
+.cc-filter-label {
+  text-transform: uppercase; letter-spacing: 0.07em;
+  font-size: 11px; color: var(--muted);
+}
+.cc-select {
+  font: inherit; font-size: 13.5px; color: var(--text);
+  background: #fff;
+  border: 1px solid var(--graticule);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.cc-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

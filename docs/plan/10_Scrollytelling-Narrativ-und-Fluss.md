@@ -841,6 +841,13 @@ git commit -m "Story: Formations-Morph Scatter->Unit-Raster als Buehnen-Gruppe (
 
 ---
 
+> **Nachtrag 2026-07-05 (Evidence-Panel, Plan „delightful-harbor"):** Die Bühnen-Gruppe
+> `dots` (Tasks 7) wurde durch das **Evidence-Panel** ersetzt: die früheren Steps 2+3
+> (expectation/reveal) sind EIN Split-Kapitel (Text links, Chart mit `chartControls`
+> rechts: Buttons Mawar/Percy/Guba/Outliers + Land-Dropdown). Steps sind seitdem
+> **0–6** (2 = evidence, 4–5 = dots2, 6 = explore) — `?step=`-Deep-Links entsprechend
+> verschoben. `revealToggles` wird in der App nicht mehr gemountet (Harness behält sie).
+
 ## Definition of Done (Paket gesamt)
 
 - Kein „Step N of 8" mehr; Akte + Kapiteltitel gliedern die Seite, Kapitel-Nav zeigt Position und springt (E3 erfüllt).

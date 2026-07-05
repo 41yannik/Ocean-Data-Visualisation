@@ -26,15 +26,16 @@ export const SECTIONS = [
     },
   },
   {
-    step: 2, act: 'The evidence', stage: 'dots', views: ['scatter'],
-    aria: { scatter: 'Scatterplot: storm-country pairs appear; no trend line yet; Mawar and Percy annotated' },
+    // Evidence-Panel: EIN interaktives Kapitel (Text links, Chart + Controls rechts) -
+    // ersetzt die frühere Bühnen-Gruppe 'dots' mit zwei Scroll-Beats.
+    step: 2, act: 'The evidence', split: true, views: ['scatter'],
+    aria: { scatter: 'Interactive scatterplot of peak wind speed against share of national '
+      + 'population affected, with an almost flat dashed expectation line. Buttons above the '
+      + 'chart highlight Mawar 2023, Percy, Cyclone Guba or the high-residual outliers; '
+      + 'a dropdown filters the dots by country' },
   },
   {
-    step: 3, act: 'The evidence', stage: 'dots', views: ['scatter'], controls: 'revealToggles',
-    aria: { scatter: 'Scatterplot: nearly flat expectation line; high-residual outliers highlighted. Toggle buttons highlight the ten most-affected storms or the ten strongest storms' },
-  },
-  {
-    step: 4, act: 'The evidence', views: ['haroldMorph'],
+    step: 3, act: 'The evidence', views: ['haroldMorph'],
     aria: {
       haroldMorph: 'Animated sequence: Cyclone Harold’s track is drawn across four countries; '
         + 'impact bubbles pop at Solomon Islands, Vanuatu, Fiji and Tonga, then fly onto a '
@@ -42,16 +43,16 @@ export const SECTIONS = [
     },
   },
   {
-    step: 5, act: 'The evidence', stage: 'dots2', views: ['scatter'],
+    step: 4, act: 'The evidence', stage: 'dots2', views: ['scatter'],
     aria: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-line storms highlighted, with Kevin, Judy and Gita annotated' },
   },
   {
-    step: 6, act: 'The people', stage: 'dots2', views: ['unitChart'], controls: 'unitSort',
+    step: 5, act: 'The people', stage: 'dots2', views: ['unitChart'], controls: 'unitSort',
     aria: { unitChart: 'Unit chart of all 99 storm-country pairs: 78 filled dots are complete records, '
       + '21 ghost dots are pairs whose human impact was never recorded. A button re-sorts them into two blocks by data quality' },
   },
   {
-    step: 7, act: 'Your turn', views: ['map', 'scatter'], explore: true,
+    step: 6, act: 'Your turn', views: ['map', 'scatter'], explore: true,
     aria: { map: ARIA.map, scatter: ARIA.scatter },
   },
 ];

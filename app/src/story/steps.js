@@ -27,7 +27,7 @@ export const HETA_FOCUS = {
 export const HETA_FLY_MS = 1600;
 
 // Layout je Step - statisch, damit der layoutController ohne Daten-ctx auskommt.
-export const STEP_LAYOUTS = ['intro', 'map', 'scatter', 'scatter', 'dual', 'dual', 'dual', 'explore'];
+export const STEP_LAYOUTS = ['intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'explore'];
 export const STEP_COUNT = STEP_LAYOUTS.length;
 export const stepLayout = (step) =>
   step >= 0 && step < STEP_COUNT ? STEP_LAYOUTS[step] : 'explore';
@@ -37,6 +37,7 @@ export const stepLayout = (step) =>
 export const makeStoryFx = (over = {}) => ({
   focusSids: null, drawSid: null, emphasisIso3: [],
   showPoints: false, showTrend: false, showBand: false,
+  showFitLabel: false, // R²/n/p-Label auch OHNE Band zeigen (Evidence-Panel)
   residualReveal: false, annotations: [], focusEventIds: null, showRug: false,
   swath: null,         // { sid, radiusKm } - Wind-Korridor um eine Zugbahn
   impactBubbles: null, // [{ eventId }] - flächenproportionale Betroffenen-Kreise
@@ -102,47 +103,25 @@ export function buildSteps(ctx) {
       }),
     },
     {
-      id: 'expectation',
-      layout: 'scatter',
-      title: r('What wind speed should predict'),
-      html: r(`Now zoom out from that one night to every recorded strike since
-        {{stat:yearMin}}. Each dot is one storm striking one country: {{stat:scatterCount}} of them,
-        peak wind speed against the share of the population affected. The dashed line is what
-        wind alone would predict; if it decided the toll, the dots would climb neatly along it
-        to the right. They don't:
-        <span class="text-link" data-event-id="2023-0300-GUM">Mawar ({{event:2023-0300-GUM.year}})</span>
-        hit Guam at {{event:2023-0300-GUM.intensity_kt:kt}} and affected
-        <strong>{{event:2023-0300-GUM.affected_pc:pct}} of its population</strong>, while
-        <span class="text-link" data-event-id="2005-0102-TKL">Percy</span>,
-        also {{event:2005-0102-TKL.category:cat}}, crossed Tokelau and touched
-        <strong>{{event:2005-0102-TKL.affected:int}} people</strong>.
-        <span class="hint">Hover any dot to see its story and how far it sits from the line.</span>`),
-      apply: () => base({
-        storyFx: fx({
-          showPoints: true, showTrend: true, hideConnectors: true, hoverPoints: true,
-        }),
-      }),
-    },
-    {
-      id: 'reveal',
+      // Evidence-Panel (Plan „delightful-harbor"): die früheren Steps expectation+reveal
+      // als EIN interaktives Kapitel - Text links, Chart mit Controls rechts (chartControls).
+      id: 'evidence',
       layout: 'scatter',
       title: r('The line is almost flat'),
-      html: r(`Per capita, wind speed explains <strong>only {{fit:perCapita.r2pct}}</strong> of the variance
-        (p = {{fit:perCapita.p}}); in absolute numbers {{fit:absolute.r2pct}}, not
-        statistically significant (p = {{fit:absolute.p}}). The deadliest storm between
-        {{stat:yearMin}} and {{stat:yearMax}},
-        <span class="text-link" data-event-id="2007-0557-PNG">Cyclone Guba</span>
-        ({{event:2007-0557-PNG.year}}, <strong>{{event:2007-0557-PNG.deaths:int}} deaths</strong> in Papua
-        New Guinea), was only a
-        <span class="text-link" data-highlight="category:1"><strong>{{event:2007-0557-PNG.category:cat}}</strong></span>
-        storm. What lifts the
-        <span class="text-link" data-highlight="outliers">glowing outliers</span>
-        above the line is not wind: it is how exposed and vulnerable the
-        society in the storm's path is.
-        <span class="hint">Use the toggles above, or hover the highlighted terms.</span>`),
+      html: r(`Now zoom out from that one night. Each dot is one storm striking one
+        country: {{stat:scatterCount}} of them, peak wind speed against the share of
+        the population affected. The dashed line is what wind alone would predict,
+        and it is almost flat: per capita it explains
+        <strong>only {{fit:perCapita.r2pct}}</strong> of the variance
+        (p = {{fit:perCapita.p}}); in absolute numbers {{fit:absolute.r2pct}}
+        (p = {{fit:absolute.p}}). What lifts storms above the line is not wind:
+        it is how exposed and vulnerable the society in the storm's path is.`),
       apply: () => base({
         storyFx: fx({
-          showPoints: true, showTrend: true, showBand: false, residualReveal: true,
+          // Band bewusst aus: die flache gestrichelte Linie IST die Aussage - das
+          // wellige Quantilband würde sie visuell verwässern. R²-Label bleibt.
+          showPoints: true, showTrend: true, showBand: false, showFitLabel: true,
+          hideConnectors: true, hoverPoints: true,
         }),
       }),
     },

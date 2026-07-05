@@ -21,7 +21,6 @@ import { createLegend } from './ui/legend.js';
 import { createFilterPanel } from './ui/filterPanel.js';
 import { createSstIntro } from './story/sstIntro.js';
 import { createImpactBars } from './story/impactBars.js';
-import { createRevealToggles } from './story/revealToggles.js';
 import { createHaroldMorph } from './story/haroldMorph.js';
 import { createUnitChart } from './story/unitChart.js';
 import { createUnitSortControl } from './story/unitSortControl.js';
@@ -31,21 +30,8 @@ import { SECTIONS } from './story/sections.js';
 import { createChapterNav } from './story/chapterNav.js';
 import { createStageGroup } from './story/stageGroup.js';
 import { createFormationLayer } from './story/formationLayer.js';
-import { isScatterable } from './core/filters.js';
-import { REVEAL_RESIDUAL_MIN } from './core/config.js';
-
-// Text-Hover-Set (Step 4): „Category 1" → alle Kat-1-Stürme, „glowing outliers" → hohe Residuen.
-function resolveHighlightSpec(spec, data) {
-  const events = data.events.filter(isScatterable);
-  if (spec === 'outliers') {
-    return { ids: new Set(events.filter((e) => (e.residual_pc ?? -Infinity) > REVEAL_RESIDUAL_MIN).map((e) => e.id)), pulse: true };
-  }
-  if (spec.startsWith('category:')) {
-    const cat = Number(spec.split(':')[1]);
-    return { ids: new Set(events.filter((e) => e.category === cat).map((e) => e.id)), pulse: false };
-  }
-  return { ids: new Set(), pulse: false };
-}
+import { createChartControls } from './story/chartControls.js';
+import { resolveHighlightSpec } from './story/highlightSpecs.js';
 
 const params = new URLSearchParams(location.search);
 
@@ -115,6 +101,22 @@ async function runApp() {
       const figures = sec.views.map((v) =>
         `<figure class="viz-frame viz-frame--${v}" data-view="${v}" aria-label="${sec.aria?.[v] ?? ''}"></figure>`,
       ).join('');
+      // Evidence-Panel: zweispaltig - Text links, Chart mit Control-Leiste rechts.
+      if (sec.split) {
+        return `
+        <section class="section section--split" id="step-${sec.step}" data-step="${sec.step}">
+          <div class="section-text">
+            <p class="kicker">${sec.act}</p>
+            <h2>${s.title}</h2>
+            <p>${s.html}</p>
+            ${s.source ? `<p class="source">${s.source}</p>` : ''}
+          </div>
+          <div class="split-viz">
+            <div class="chart-controls"></div>
+            <div class="viz-row">${figures}</div>
+          </div>
+        </section>`;
+      }
       return `
         <section class="section${sec.explore ? ' section-explore' : ''}" id="step-${sec.step}" data-step="${sec.step}">
           <div class="section-text">
@@ -194,20 +196,9 @@ async function runApp() {
       const members = [...groupEl.querySelectorAll('.stage-step')].map((textEl) => ({
         sec: sections.find((s) => s.step === Number(textEl.dataset.step)), textEl,
       }));
-      // Komposition je Bühne: 'dots' = Scatter mit Punkte-Layer + Reveal-Toggles;
-      // 'dots2' = Scatter OHNE Punkte-Layer + Formations-Layer (99 Kreise morphen
-      // zwischen Scatter- und Unit-Raster-Formation) + Unit-Sort-Umschalter.
+      // Komposition je Bühne: 'dots2' = Scatter OHNE Punkte-Layer + Formations-Layer
+      // (99 Kreise morphen zwischen Scatter- und Unit-Raster-Formation) + Unit-Sort-Umschalter.
       const builders = {
-        dots: (el, groupCtx) => {
-          const comps = [
-            createScatter(el.querySelector('[data-view=scatter]'), groupCtx,
-              { layers: ['axes', 'rug', 'trend', 'points', 'annotations'] }),
-            createTooltip(document.body, groupCtx),
-          ];
-          const ctrl = el.querySelector('.story-controls');
-          if (ctrl) comps.push(createRevealToggles(ctrl, groupCtx));
-          return comps;
-        },
         dots2: (el, groupCtx) => {
           const scatter = createScatter(el.querySelector('[data-view=scatter]'), groupCtx,
             { layers: ['axes', 'trend', 'annotations'] });
@@ -274,14 +265,14 @@ async function runApp() {
           components.push(createScatter(el, ctx, { layers: ['axes', 'rug', 'trend', 'points', 'annotations'] }));
         }
       }
-      // Step 3 gibt Punkt-Hover frei → einfacher Tooltip (die Sektion mountet den globalen nicht).
+      // hoverPoints gibt Punkt-Hover trotz Story-Gate frei → einfacher Tooltip.
       if (frozen.storyFx?.hoverPoints) components.push(createTooltip(document.body, ctx));
 
-      // Step 4: zwei Filter-Toggles unter dem Erklärtext.
-      if (sec.controls === 'revealToggles') {
-        components.push(createRevealToggles(sectionEl.querySelector('.story-controls'), ctx));
+      // Evidence-Panel: Bedienelemente direkt an der Grafik (4 Highlight-Buttons + Land-Dropdown).
+      if (sec.split) {
+        components.push(createChartControls(sectionEl.querySelector('.chart-controls'), ctx));
       }
-      // Step 7: Umschalter chronologisch ↔ Datenqualität.
+      // Umschalter chronologisch ↔ Datenqualität (Unit Chart).
       if (sec.controls === 'unitSort') {
         components.push(createUnitSortControl(sectionEl.querySelector('.story-controls'), ctx));
       }
