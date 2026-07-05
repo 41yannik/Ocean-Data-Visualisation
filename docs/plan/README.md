@@ -23,6 +23,7 @@
 | 06 | [M4: Scrollytelling & Story](06_M4_Scrollytelling-Story.md) | 🟡 MITTEL | 12–20 h | 05 | ☐ |
 | 07 | [M5: Feinschliff & Barrierefreiheit](07_M5_Feinschliff-Barrierefreiheit.md) | 🟡 MITTEL — bei Zeitnot kürzbar | 8–14 h | 06 | ☐ |
 | 08 | [M6: Abgabe, Deployment & Challenge](08_M6_Abgabe-Challenge.md) | 🟢 Kursteil bis 24.07. · Challenge-Teil bis 31.08. | 8–14 h | 07 | ☐ |
+| 10 | [Scrollytelling: Gesamterzählung & Fluss](10_Scrollytelling-Narrativ-und-Fluss.md) | 🟡 MITTEL — nach M4, vor Feinschliff-Abnahme | 10–18 h | 06 | ☐ |
 
 **Summe Phase 1 (00–07 + Kursteil 08):** ≈ 55–90 h auf 22 Tage ≈ **2,5–4 h/Tag — straff, aber machbar.** **Kritischer Pfad:** 00 → 01A → 02 → 03 (Pipeline) → 04 (Dateline-Karte = einziges technisches Neuland) → Rest ist additiv.
 
