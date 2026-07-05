@@ -13,10 +13,12 @@ const ARIA = {
   scatter: 'Scatterplot of peak wind speed against share of national population affected',
 };
 
+// Drei erzählerische Akte statt Schrittzähler (Paket 10 §B1) - der Kicker ist
+// Wegweiser, der h2-Titel der Kapitelname.
 export const SECTIONS = [
-  { step: 0, views: ['sst'], aria: { sst: ARIA.sst } },
+  { step: 0, act: 'The question', views: ['sst'], aria: { sst: ARIA.sst } },
   {
-    step: 1, views: ['map', 'bars'],
+    step: 1, act: 'The question', views: ['map', 'bars'],
     mapOpts: { fitTo: HETA_FOCUS }, // gezoomte Projektion: nur ASM/NIU + Zugbahn
     aria: {
       map: 'Map zoomed to American Samoa and Niue: a shaded corridor shows the gale-force wind field covering both islands; proportional circles compare people affected',
@@ -24,15 +26,15 @@ export const SECTIONS = [
     },
   },
   {
-    step: 2, views: ['scatter'],
+    step: 2, act: 'The evidence', views: ['scatter'],
     aria: { scatter: 'Scatterplot: storm-country pairs appear; no trend line yet; Mawar and Percy annotated' },
   },
   {
-    step: 3, views: ['scatter'], controls: 'revealToggles',
+    step: 3, act: 'The evidence', views: ['scatter'], controls: 'revealToggles',
     aria: { scatter: 'Scatterplot: nearly flat expectation line; high-residual outliers highlighted. Toggle buttons highlight the ten most-affected storms or the ten strongest storms' },
   },
   {
-    step: 4, views: ['haroldMorph'],
+    step: 4, act: 'The evidence', views: ['haroldMorph'],
     aria: {
       haroldMorph: 'Animated sequence: Cyclone Harold’s track is drawn across four countries; '
         + 'impact bubbles pop at Solomon Islands, Vanuatu, Fiji and Tonga, then fly onto a '
@@ -40,16 +42,16 @@ export const SECTIONS = [
     },
   },
   {
-    step: 5, views: ['scatter'],
+    step: 5, act: 'The evidence', views: ['scatter'],
     aria: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-line storms highlighted, with Kevin, Judy and Gita annotated' },
   },
   {
-    step: 6, views: ['unitChart'], controls: 'unitSort',
+    step: 6, act: 'The people', views: ['unitChart'], controls: 'unitSort',
     aria: { unitChart: 'Unit chart of all 99 storm-country pairs: 78 filled dots are complete records, '
       + '21 ghost dots are pairs whose human impact was never recorded. A button re-sorts them into two blocks by data quality' },
   },
   {
-    step: 7, views: ['map', 'scatter'], explore: true,
+    step: 7, act: 'Your turn', views: ['map', 'scatter'], explore: true,
     aria: { map: ARIA.map, scatter: ARIA.scatter },
   },
 ];

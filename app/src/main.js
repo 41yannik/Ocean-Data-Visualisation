@@ -106,7 +106,7 @@ async function runApp() {
       return `
         <section class="section${sec.explore ? ' section-explore' : ''}" id="step-${sec.step}" data-step="${sec.step}">
           <div class="section-text">
-            <p class="kicker">${sec.explore ? 'Explore the data' : `Step ${sec.step + 1} of ${SECTIONS.length}`}</p>
+            <p class="kicker">${sec.act}</p>
             <h2>${s.title}</h2>
             <p>${s.html}</p>
             ${s.source ? `<p class="source">${s.source}</p>` : ''}
