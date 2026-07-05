@@ -18,6 +18,7 @@ import { createStoryRunner } from '../story/storyRunner.js';
 import { createSstIntro } from '../story/sstIntro.js';
 import { createLayoutController } from '../story/layoutController.js';
 import { createProgressNav } from '../story/progressNav.js';
+import { createChapterNav } from '../story/chapterNav.js';
 
 export const REGISTRY = {
   tooltip: {
@@ -89,6 +90,21 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
         },
         destroy: runner.destroy,
       };
+    },
+  },
+
+  chapterNav: {
+    title: 'Kapitel-Nav (rechts fixiert): Scroll-Spy über drei Dummy-Sektionen, Klick springt',
+    mount(c) {
+      c.innerHTML = ['Alpha', 'Beta', 'Gamma'].map((t, i) =>
+        `<section id="step-${i}" style="min-height:100vh"><h2 style="padding-top:40vh">${t}</h2></section>`).join('');
+      const comp = createChapterNav(document.body, {
+        sections: [
+          { step: 0, act: 'The question' }, { step: 1, act: 'The evidence' }, { step: 2, act: 'Your turn' },
+        ],
+        steps: [{ title: 'Alpha' }, { title: 'Beta' }, { title: 'Gamma' }],
+      });
+      return { update() {}, destroy: comp.destroy };
     },
   },
 

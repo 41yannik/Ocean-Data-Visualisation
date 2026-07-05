@@ -28,6 +28,7 @@ import { createUnitSortControl } from './story/unitSortControl.js';
 import { createExploreChrome } from './ui/exploreChrome.js';
 import { buildSteps } from './story/steps.js';
 import { SECTIONS } from './story/sections.js';
+import { createChapterNav } from './story/chapterNav.js';
 import { isScatterable } from './core/filters.js';
 import { REVEAL_RESIDUAL_MIN } from './core/config.js';
 
@@ -116,6 +117,9 @@ async function runApp() {
           <div class="viz-row${sec.views.length > 1 ? ' viz-row--dual' : ''}">${figures}</div>`}
         </section>`;
     }).join('');
+
+    // Kapitel-Nav (Paket 10 Task 2): erst nach dem Sektions-Rendering, braucht die IDs.
+    if (!storyOff) createChapterNav(document.body, { sections, steps });
 
     // 2) Mount je Sektion (einmalig, beim Sichtbarwerden der Grafikzeile)
     function mountSection(sectionEl, sec) {

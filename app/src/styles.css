@@ -156,6 +156,28 @@ body {
   .progress-nav { right: 8px; }
 }
 
+/* ----- Kapitel-Navigation (Paket 10 Task 2) ----- */
+.chapter-nav {
+  position: fixed; right: 18px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 12px; z-index: 30;
+}
+.cn-dot {
+  width: 10px; height: 10px; border-radius: 50%; padding: 0;
+  border: 1.5px solid var(--muted); background: transparent; cursor: pointer;
+  position: relative;
+}
+.cn-dot.active { background: var(--point); border-color: var(--point); }
+.cn-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cn-label {
+  position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+  white-space: nowrap; font-size: 12px; color: var(--text);
+  background: #fff; padding: 3px 9px; border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(34, 48, 60, 0.14);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.cn-dot:hover .cn-label, .cn-dot:focus-visible .cn-label { opacity: 1; }
+@media (max-width: 1099px) { .chapter-nav { display: none; } }
+
 /* ---------- SVG-Zustandsklassen (zentral) ---------- */
 .track {
   fill: none;
