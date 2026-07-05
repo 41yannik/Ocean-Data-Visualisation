@@ -42,11 +42,11 @@ export const SECTIONS = [
     },
   },
   {
-    step: 5, act: 'The evidence', views: ['scatter'],
+    step: 5, act: 'The evidence', stage: 'dots2', views: ['scatter'],
     aria: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-line storms highlighted, with Kevin, Judy and Gita annotated' },
   },
   {
-    step: 6, act: 'The people', views: ['unitChart'], controls: 'unitSort',
+    step: 6, act: 'The people', stage: 'dots2', views: ['unitChart'], controls: 'unitSort',
     aria: { unitChart: 'Unit chart of all 99 storm-country pairs: 78 filled dots are complete records, '
       + '21 ghost dots are pairs whose human impact was never recorded. A button re-sorts them into two blocks by data quality' },
   },

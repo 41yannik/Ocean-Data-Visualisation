@@ -30,6 +30,7 @@ import { buildSteps } from './story/steps.js';
 import { SECTIONS } from './story/sections.js';
 import { createChapterNav } from './story/chapterNav.js';
 import { createStageGroup } from './story/stageGroup.js';
+import { createFormationLayer } from './story/formationLayer.js';
 import { isScatterable } from './core/filters.js';
 import { REVEAL_RESIDUAL_MIN } from './core/config.js';
 
@@ -193,11 +194,11 @@ async function runApp() {
       const members = [...groupEl.querySelectorAll('.stage-step')].map((textEl) => ({
         sec: sections.find((s) => s.step === Number(textEl.dataset.step)), textEl,
       }));
-      const group = createStageGroup(groupEl, {
-        ctx: { data, meta, bus: null, config: null },
-        steps,
-        members,
-        buildComponents: (el, groupCtx) => {
+      // Komposition je Bühne: 'dots' = Scatter mit Punkte-Layer + Reveal-Toggles;
+      // 'dots2' = Scatter OHNE Punkte-Layer + Formations-Layer (99 Kreise morphen
+      // zwischen Scatter- und Unit-Raster-Formation) + Unit-Sort-Umschalter.
+      const builders = {
+        dots: (el, groupCtx) => {
           const comps = [
             createScatter(el.querySelector('[data-view=scatter]'), groupCtx,
               { layers: ['axes', 'rug', 'trend', 'points', 'annotations'] }),
@@ -207,6 +208,23 @@ async function runApp() {
           if (ctrl) comps.push(createRevealToggles(ctrl, groupCtx));
           return comps;
         },
+        dots2: (el, groupCtx) => {
+          const scatter = createScatter(el.querySelector('[data-view=scatter]'), groupCtx,
+            { layers: ['axes', 'trend', 'annotations'] });
+          const gDots = scatter.root.append('g').attr('class', 'g-formation');
+          const formation = createFormationLayer(gDots,
+            { ...groupCtx, scales: scatter.scales, inner: scatter.inner });
+          const comps = [scatter, formation];
+          const ctrl = el.querySelector('.story-controls');
+          if (ctrl) comps.push(createUnitSortControl(ctrl, groupCtx));
+          return comps;
+        },
+      };
+      const group = createStageGroup(groupEl, {
+        ctx: { data, meta, bus: null, config: null },
+        steps,
+        members,
+        buildComponents: builders[groupEl.dataset.stage],
       });
       wireTextLinks(groupEl, group.store);
     }

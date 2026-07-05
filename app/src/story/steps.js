@@ -178,6 +178,7 @@ export function buildSteps(ctx) {
         Tonga. Part of this is exposure (how many people live in a storm's path), not only
         vulnerability.`),
       apply: () => base({
+        formation: 'scatter', // Bühnen-Gruppe dots2 (Paket 10 Task 8)
         storyFx: fx({
           showPoints: true, showTrend: true, showBand: true,
           focusEventIds: [...vutAboveIds, '2018-0042-TON'],
@@ -199,6 +200,7 @@ export function buildSteps(ctx) {
         satellite tracks, and counts for the most recent seasons may still be revised.
         <strong>Missing data is not missing suffering.</strong>`),
       apply: () => base({
+        formation: 'unit', unitSort: 'chrono', // Formations-Morph (Paket 10 Task 8)
         storyFx: fx({ showPoints: true, showTrend: true, showBand: true, showRug: true }),
       }),
     },

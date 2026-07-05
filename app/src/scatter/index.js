@@ -54,6 +54,11 @@ export function createScatter(container, ctx, opts = {}) {
   if (layersWanted.includes('annotations')) children.push(createAnnotationsLayer(gAnnotations, layerCtx));
 
   return {
+    // Skalen/Innenmaße für Zusatz-Layer im selben SVG (Formations-Morph, Paket 10 Task 8);
+    // Ownership bleibt beim Kompositor - Leser dürfen nicht mutieren.
+    get scales() { return layerCtx.scales; },
+    inner,
+    root,
     update(state, patch) {
       if (!patch || 'mode' in patch) setScales(state.mode); // Skalen VOR den Layern
       for (const child of children) child.update(state, patch);
