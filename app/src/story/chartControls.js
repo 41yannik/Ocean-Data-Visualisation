@@ -7,20 +7,16 @@
 import { COUNTRY_LOOKUP } from '../map/countryNames.js';
 import { resolveRefs } from './refs.js';
 import { resolveHighlightSpec } from './highlightSpecs.js';
+import { STORY_STORMS } from './keyStorms.js';
+
+const ANNOS = {
+  mawar: 'Mawar {{event:2023-0300-GUM.year}} · {{event:2023-0300-GUM.affected_pc:pct}} of Guam affected',
+  percy: 'Percy · extreme wind, almost no impact',
+  guba: 'Guba · weak wind, deadly impact ({{event:2007-0557-PNG.deaths:int}} deaths)',
+};
 
 const BUTTONS = [
-  {
-    key: 'mawar', eventId: '2023-0300-GUM', label: 'Mawar 2023',
-    anno: 'Mawar {{event:2023-0300-GUM.year}} · {{event:2023-0300-GUM.affected_pc:pct}} of Guam affected',
-  },
-  {
-    key: 'percy', eventId: '2005-0102-TKL', label: 'Percy',
-    anno: 'Percy · extreme wind, almost no impact',
-  },
-  {
-    key: 'guba', eventId: '2007-0557-PNG', label: 'Cyclone Guba',
-    anno: 'Guba · weak wind, deadly impact ({{event:2007-0557-PNG.deaths:int}} deaths)',
-  },
+  ...STORY_STORMS.map((s) => ({ ...s, anno: ANNOS[s.key] })),
   { key: 'outliers', spec: 'outliers', label: 'Glowing outliers' },
 ];
 

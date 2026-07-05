@@ -194,7 +194,8 @@ export function buildSteps(ctx) {
         the people beneath it. Preparedness has to target vulnerability and exposure,
         not just forecast wind speeds. <strong>Now explore for yourself:</strong>
         hover tracks and dots, brush the scatter, filter by year, category and country,
-        and switch between per-capita and absolute impact.`),
+        switch between per-capita and absolute impact, and compare storm profiles,
+        yearly impact and data coverage in the tiles below.`),
       apply: () => base({ storyFx: null, exploreUnlocked: true }),
     },
   ];

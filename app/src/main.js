@@ -31,6 +31,8 @@ import { createChapterNav } from './story/chapterNav.js';
 import { createStageGroup } from './story/stageGroup.js';
 import { createFormationLayer } from './story/formationLayer.js';
 import { createChartControls } from './story/chartControls.js';
+import { createProfileRadar } from './ui/profileRadar.js';
+import { createImpactTrend } from './ui/impactTrend.js';
 import { resolveHighlightSpec } from './story/highlightSpecs.js';
 
 const params = new URLSearchParams(location.search);
@@ -63,6 +65,21 @@ function exploreWorkbench(figures) {
           <header class="fl-head"><span>Legend</span><button type="button" class="fl-toggle" aria-label="Collapse legend">–</button></header>
           <div class="fl-body"><div id="legend"></div></div>
         </aside>
+      </div>
+      <div class="tile-row">
+        <section class="tile" aria-label="Radar chart comparing the storm profiles of Mawar, Percy and Cyclone Guba">
+          <h3>Storm profiles compared</h3>
+          <div class="tile-body" id="tile-radar"></div>
+        </section>
+        <section class="tile" aria-label="People affected per year by Pacific subregion, log scale">
+          <h3>People affected per year</h3>
+          <div class="tile-body" id="tile-trend"></div>
+        </section>
+        <section class="tile" aria-label="Data availability: 78 fully recorded versus 21 unrecorded storm-country pairs">
+          <h3>Data availability</h3>
+          <div class="tile-body tile-body--unit" id="tile-unit"></div>
+          <div class="tile-controls" id="tile-unit-sort"></div>
+        </section>
       </div>
     </div>
     <button type="button" class="filter-fab" aria-expanded="false">⚙ Filter data</button>
@@ -238,6 +255,12 @@ async function runApp() {
           createModeToggle(sectionEl.querySelector('#mode-toggle'), ctx),
           createFilterPanel(sectionEl.querySelector('#filters'), ctx),
           createExploreChrome(sectionEl, ctx),
+          // Dashboard-Kacheln (Plan delightful-harbor): Radar + Jahres-Trend + Unit Chart
+          // laufen auf demselben Explore-Store (Unit-Sort/Hover sofort funktionsfähig).
+          createProfileRadar(sectionEl.querySelector('#tile-radar'), ctx),
+          createImpactTrend(sectionEl.querySelector('#tile-trend'), ctx),
+          createUnitChart(sectionEl.querySelector('#tile-unit'), ctx),
+          createUnitSortControl(sectionEl.querySelector('#tile-unit-sort'), ctx),
         ];
         store.subscribe((state, patch) => {
           for (const c of components) c.update(state, patch);

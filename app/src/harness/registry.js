@@ -20,6 +20,8 @@ import { createLayoutController } from '../story/layoutController.js';
 import { createProgressNav } from '../story/progressNav.js';
 import { createChapterNav } from '../story/chapterNav.js';
 import { createChartControls } from '../story/chartControls.js';
+import { createProfileRadar } from '../ui/profileRadar.js';
+import { createImpactTrend } from '../ui/impactTrend.js';
 
 export const REGISTRY = {
   tooltip: {
@@ -91,6 +93,29 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
         },
         destroy: runner.destroy,
       };
+    },
+  },
+
+  radar: {
+    title: 'Profil-Radar (Explore-Kachel): Mawar/Percy/Guba als Perzentil-Profile',
+    mount(c, ctx) {
+      const tile = document.createElement('section');
+      tile.className = 'tile';
+      tile.style.maxWidth = '460px';
+      c.appendChild(tile);
+      const comp = createProfileRadar(tile, ctx);
+      return { update: comp.update, destroy() { comp.destroy(); tile.remove(); } };
+    },
+  },
+  trend: {
+    title: 'Jahres-Trend (Explore-Kachel): Betroffene je Subregion, log',
+    mount(c, ctx) {
+      const tile = document.createElement('section');
+      tile.className = 'tile';
+      tile.style.maxWidth = '520px';
+      c.appendChild(tile);
+      const comp = createImpactTrend(tile, ctx);
+      return { update: comp.update, destroy() { comp.destroy(); tile.remove(); } };
     },
   },
 

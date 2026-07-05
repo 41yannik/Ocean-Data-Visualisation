@@ -808,3 +808,55 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   cursor: pointer;
 }
 .cc-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ----- Explore-Dashboard-Kacheln (Plan delightful-harbor) ----- */
+.tile-row {
+  display: grid;
+  /* min(340px, 100%) + min-width: 0 - als Flex-Item der Workbench darf die Reihe
+     nie über ihren Container hinauswachsen (auto-fit zählt sonst zu viele Spalten). */
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+  max-width: 1440px;
+  margin: 28px auto 0;
+}
+.tile {
+  background: #fff;
+  border: 1px solid var(--graticule);
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(34, 48, 60, 0.08);
+  padding: 16px 18px 12px;
+  min-width: 0;
+}
+.tile h3 {
+  margin: 0 0 10px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.tile-body svg { width: 100%; height: auto; display: block; }
+.tile-body--unit svg { max-height: 300px; }
+.tile-controls { margin-top: 6px; }
+.tile-note { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+
+/* Radar */
+.radar-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; margin-bottom: 4px; }
+.radar-legend i {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  margin-right: 5px; vertical-align: -1px;
+}
+.radar-ring { fill: none; stroke: var(--graticule); }
+.radar-axis { stroke: var(--graticule); }
+.radar-axis-label { font-size: 11px; fill: var(--muted); }
+/* pointer-events: stroke - überlappende Füllungen blockieren sich sonst gegenseitig,
+   jedes Profil bleibt über seine Kontur hoverbar. */
+.radar-shape { fill-opacity: 0.12; stroke-width: 2.5; cursor: pointer; pointer-events: stroke; }
+.radar-shape:hover { fill-opacity: 0.24; }
+
+/* Jahres-Trend */
+.tt-gridline { stroke: var(--graticule); }
+.tt-axis-label { font-size: 11px; fill: var(--muted); }
+.tt-stem { stroke-width: 1.4; stroke-opacity: 0.45; }
+.tt-dot { stroke: #fff; stroke-width: 0.8; }
+.tt-anno-dot { fill: none; stroke: var(--trend); stroke-width: 1.4; }
+.tt-anno-label { font-size: 11px; font-weight: 600; fill: var(--text); }
