@@ -17,21 +17,22 @@ async function fetchJson(url) {
 
 function missingMsg(url) {
   return [
-    `Datendatei fehlt oder ist ungültig: ${url}`,
+    `Data file missing or invalid: ${url}`,
     '',
-    'events.json/meta.json sind EM-DAT-Derivate und absichtlich nicht im Repo (Lizenz).',
-    'Einmal lokal erzeugen:',
+    'events.json/meta.json are EM-DAT derivatives and intentionally not in the repo (license).',
+    'Generate them once locally:',
     '  python3 scripts/build_track_to_toll.py --variant kurs',
   ].join('\n');
 }
 
 export async function loadData() {
   const base = `${import.meta.env.BASE_URL}data`;
-  const [events, tracks, meta, sst, world] = await Promise.all([
+  const [events, tracks, meta, sst, trends, world] = await Promise.all([
     fetchJson(`${base}/events.json`),
     fetchJson(`${base}/tracks.json`),
     fetchJson(`${base}/meta.json`),
     fetchJson(`${base}/sst.json`),
+    fetchJson(`${base}/trends.json`),
     fetchJson(`${base}/land-110m.json`),
   ]);
 
@@ -53,6 +54,7 @@ export async function loadData() {
       tracks,
       land,
       sst,
+      trends,
       index: { bySid, byId, centroids: meta.centroids }, // Zentroide liegen in meta.json!
     },
     meta,

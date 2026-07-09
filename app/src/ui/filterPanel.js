@@ -19,7 +19,7 @@ export function createFilterPanel(container, ctx) {
   container.className = 'filter-panel';
   container.innerHTML = `
     <fieldset>
-      <legend>Years</legend>
+      <legend>Play range</legend>
       <input type="number" name="y0" min="2001" max="2026" value="2001" aria-label="from year">
       –
       <input type="number" name="y1" min="2001" max="2026" value="2026" aria-label="to year">

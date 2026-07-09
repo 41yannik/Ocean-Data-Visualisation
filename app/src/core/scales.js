@@ -52,7 +52,7 @@ export function makeYScale(mode, innerHeight) {
       const pct = 10 ** v * 100;
       return pct >= 1 ? `${pct}%` : `${pct.toFixed(pct >= 0.1 ? 1 : 2)}%`;
     },
-    axisLabel: isAbs ? 'people affected (log)' : 'share of population affected (log)',
+    axisLabel: isAbs ? 'people reported affected (log)' : 'share of population affected (log)',
   };
 }
 
@@ -68,7 +68,9 @@ export function strokeForCategory(cat) {
   return CAT_STROKE[cat] ?? 0.7;
 }
 
-export const scatterInner = () => ({
-  width: SCATTER.width - SCATTER.margin.left - SCATTER.margin.right,
-  height: SCATTER.height - SCATTER.margin.top - SCATTER.margin.bottom,
+// Innenmaße aus den übergebenen Scatter-Dims (Default = globales SCATTER). Der Explore-
+// Tile reicht kompakte Dims durch (opts.dims), Story-Instanzen bleiben bei SCATTER.
+export const scatterInner = (s = SCATTER) => ({
+  width: s.width - s.margin.left - s.margin.right,
+  height: s.height - s.margin.top - s.margin.bottom,
 });

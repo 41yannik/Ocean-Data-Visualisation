@@ -11,6 +11,11 @@ export function makeInitialState() {
     detailSid: null,
     mode: 'perCapita',         // C3: pro Kopf = Default
     filters: { yearRange: [2001, 2026], categories: null, countries: null },
+    // Zeit-Scrubber (Explore, Hero-Map): activeYear = null → „Alle Jahre" (Grundzustand,
+    // keine Regression); Zahl → genau dieses Jahr wird auf der Karte gespotlightet, Rest gedimmt.
+    // playing = läuft der Autoplay-Timer. Einziger Schreiber: ui/timeScrubber.js.
+    activeYear: null,
+    playing: false,
     step: -1,                  // -1 = freie Erkundung; 0..7 = Story (Paket 06)
     // Story-Choreografie (Paket 06): null = neutral (alles sichtbar, keine Effekte).
     // Nicht-null nur während der Story; Shape siehe story/steps.js fx().

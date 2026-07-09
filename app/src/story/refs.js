@@ -6,8 +6,14 @@
 //   {{event:<id>.<feld>[:int|pct|kt|cat]}}   Feld einer events.json-Zeile, optional formatiert
 //   {{fit:<mode>.<r2|r2pct|p|n>}}            meta.fits, vor-formatiert (kein :fmt erlaubt)
 //   {{sst:<latest|first>.<year|anom>}}       sst.json-Randwerte, vor-formatiert
+//   {{trend:<pfad>}}                         trends.json (physischer Sturmtrend), vor-formatiert:
+//       yearMin · yearMax
+//       count.<first5|last5|perDecade|r2|p>
+//       windMean.<perDecade|r2|r2pct|p>
+//       genesisWP.<perDecade|p|northKm|latFirst|latLast>
 //   {{stat:<name>[.<args>]}}                 abgeleitete Statistik, vor-formatiert:
-//       scatterCount · eventCount · yearMin · yearMax · totalAffected
+//       scatterCount · eventCount · missingPairs · missingToll · missingWind
+//       yearMin · yearMax · totalAffected
 //       aboveShare.<iso3>                    Anteil der Scatter-Punkte des Landes über der Linie
 //       affectedRatio.<idA>.<idB>            gerundetes Verhältnis affected(A)/affected(B)
 import { fmtInt, fmtPct, fmtKt, fmtCategory } from '../core/format.js';
@@ -34,6 +40,7 @@ function lookup(ns, parts, fmt, ctx, token) {
   if (ns === 'event') return lookupEvent(parts, fmt, ctx, token);
   if (ns === 'fit') return lookupFit(parts, ctx, token);
   if (ns === 'sst') return lookupSst(parts, ctx, token);
+  if (ns === 'trend') return lookupTrend(parts, ctx, token);
   if (ns === 'stat') return lookupStat(parts, ctx, token);
   throw new Error(`Story-Referenz mit unbekanntem Namensraum: ${token}`);
 }
@@ -70,10 +77,48 @@ function lookupSst([which, field], ctx, token) {
   throw new Error(`Story-Referenz auf unbekanntes sst-Feld: ${token}`);
 }
 
+// Physischer Sturmtrend aus trends.json - alle Werte vor-formatiert (kein :fmt).
+function lookupTrend([group, key], ctx, token) {
+  const t = ctx.data.trends;
+  if (!t?.fits || !t?.summary) throw new Error(`Story-Referenz: trends-Daten fehlen (${token})`);
+  const pfmt = (p) => (p < 0.001 ? '< 0.001' : p.toFixed(3));
+  const signed1 = (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}`;
+
+  if (group === 'yearMin') return String(t.window[0]);
+  if (group === 'yearMax') return String(t.window[1]);
+  if (group === 'count') {
+    if (key === 'first5') return String(Math.round(t.summary.count.first5));
+    if (key === 'last5') return String(Math.round(t.summary.count.last5));
+    if (key === 'perDecade') return signed1(t.fits.count.perDecade);
+    if (key === 'r2') return t.fits.count.r2.toFixed(2);
+    if (key === 'p') return pfmt(t.fits.count.p);
+  }
+  if (group === 'windMean') {
+    if (key === 'perDecade') return signed1(t.fits.windMean.perDecade);
+    if (key === 'r2') return t.fits.windMean.r2.toFixed(2);
+    if (key === 'r2pct') return fmtPct(t.fits.windMean.r2);
+    if (key === 'p') return pfmt(t.fits.windMean.p);
+  }
+  if (group === 'genesisWP') {
+    if (key === 'perDecade') return signed1(t.fits.genesisWP.perDecade);
+    if (key === 'p') return pfmt(t.fits.genesisWP.p);
+    if (key === 'northKm') return String(t.summary.genesis.wpNorthKm);
+    if (key === 'latFirst') return t.summary.genesis.wpLatFirst.toFixed(1);
+    if (key === 'latLast') return t.summary.genesis.wpLatLast.toFixed(1);
+  }
+  throw new Error(`Story-Referenz auf unbekannten Trend-Schlüssel: ${token}`);
+}
+
 function lookupStat([name, ...args], ctx, token) {
   const events = ctx.data.events;
   if (name === 'scatterCount') return fmtInt(events.filter(isScatterable).length);
   if (name === 'eventCount') return fmtInt(events.length);
+  if (name === 'missingPairs') return fmtInt(events.length - events.filter(isScatterable).length);
+  // Ehrliche Zerlegung der 21 nicht-scatterbaren Paare: 20 ohne gemeldeten Impact
+  // (Toll nie erfasst) + 1 mit Impact, aber ohne gemessenen Wind. Vermeidet die
+  // falsche Pauschalaussage „21 pairs the human toll was never recorded".
+  if (name === 'missingToll') return fmtInt(events.filter((e) => e.affected == null).length);
+  if (name === 'missingWind') return fmtInt(events.filter((e) => e.affected != null && !isScatterable(e)).length);
   if (name === 'yearMin') return String(Math.min(...events.map((e) => e.year)));
   if (name === 'yearMax') return String(Math.max(...events.map((e) => e.year)));
   if (name === 'aboveShare') {

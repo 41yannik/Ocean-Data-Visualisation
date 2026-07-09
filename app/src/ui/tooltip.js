@@ -13,10 +13,10 @@ export function createTooltip(body, ctx) {
       <div class="tt-title">${e.name ?? 'Unnamed storm'} · ${e.year}</div>
       <div class="tt-sub">${e.country} · ${fmtCategory(e.category)} · ${fmtSource(e.intensity_source)}</div>
       <dl>
-        <dt>Peak wind</dt><dd>${fmtKt(e.intensity_kt)}</dd>
-        <dt>People affected</dt><dd>${fmtInt(e.affected)}</dd>
-        <dt>Share of population</dt><dd>${fmtPct(e.affected_pc)}${e.pop_extrapolated ? ' *' : ''}</dd>
-        <dt>Deaths</dt><dd>${e.deaths == null ? 'not reported' : fmtInt(e.deaths)}</dd>
+        <dt>Max sustained wind</dt><dd>${fmtKt(e.intensity_kt)}</dd>
+        <dt>Reported affected</dt><dd>${fmtInt(e.affected)}</dd>
+        <dt>Share of population affected</dt><dd>${fmtPct(e.affected_pc)}${e.pop_extrapolated ? ' *' : ''}</dd>
+        <dt>Deaths</dt><dd>${fmtInt(e.deaths)}</dd>
       </dl>
       ${e.pop_extrapolated ? '<div class="tt-sub">* population extrapolated from 2023</div>' : ''}`;
   }
@@ -27,7 +27,7 @@ export function createTooltip(body, ctx) {
     return `
       <div class="tt-title">${e.name ?? 'A storm'} · ${e.country} · ${e.year}</div>
       <div class="tt-simple">At <strong>${fmtKt(e.intensity_kt)}</strong> of wind,
-        <strong>${fmtPct(e.affected_pc)}</strong> of the population was affected.</div>`;
+        <strong>${fmtPct(e.affected_pc)}</strong> of the population was reported affected.</div>`;
   }
 
   function contentForStorm(sid) {
@@ -39,8 +39,8 @@ export function createTooltip(body, ctx) {
       <div class="tt-title">${first.name ?? 'Unnamed storm'} · ${first.year}</div>
       <div class="tt-sub">${list.length} ${list.length === 1 ? 'country' : 'countries'} · ${fmtCategory(first.category)} · ${fmtSource(first.intensity_source)}</div>
       <dl>
-        <dt>Peak wind</dt><dd>${fmtKt(first.intensity_kt)}</dd>
-        <dt>People affected</dt><dd>${affectedTotal ? fmtInt(affectedTotal) : 'n/a'}</dd>
+        <dt>Max sustained wind</dt><dd>${fmtKt(first.intensity_kt)}</dd>
+        <dt>Reported affected</dt><dd>${affectedTotal ? fmtInt(affectedTotal) : 'not reported'}</dd>
         <dt>Countries</dt><dd>${list.map((e) => e.iso3).join(', ')}</dd>
       </dl>
       <div class="tt-sub">click for details</div>`;

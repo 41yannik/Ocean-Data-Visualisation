@@ -23,8 +23,9 @@ from pipeline.tracks import build_tracks
 from pipeline.population import join_population
 from pipeline.fits import fit, residuals, quantile_band
 from pipeline.sst import build_sst_series
+from pipeline.trends import build_trends
 from pipeline.outputs import assemble_events, build_meta, write_json
-from pipeline.validate import validate_kurs, validate_challenge, validate_sst
+from pipeline.validate import validate_kurs, validate_challenge, validate_sst, validate_trends
 
 
 def run(variant: str, out_dir: Path) -> None:
@@ -39,6 +40,7 @@ def run(variant: str, out_dir: Path) -> None:
 
     tracks = build_tracks(ib, ev["sid"].dropna().unique())
     sst = build_sst_series()
+    trends = build_trends(ib)   # voller IBTrACS-Record (offen) → beide Varianten
 
     events_out = assemble_events(ev, variant)
     if variant == "challenge":
@@ -51,6 +53,7 @@ def run(variant: str, out_dir: Path) -> None:
         f"meta{suffix}.json": write_json(meta, out_dir / f"meta{suffix}.json"),
         "tracks.json": write_json(tracks, out_dir / "tracks.json"),
         "sst.json": write_json(sst, out_dir / "sst.json"),
+        "trends.json": write_json(trends, out_dir / "trends.json"),
     }
 
     if variant == "kurs":
@@ -58,6 +61,7 @@ def run(variant: str, out_dir: Path) -> None:
     else:
         validate_challenge(events_out, meta, tracks)
     validate_sst(sst)
+    validate_trends(trends)
 
     total = sum(sizes.values())
     for name, size in sizes.items():

@@ -1,10 +1,12 @@
 // Step 7 „What the data hides" - Unit Chart (Dot Matrix) der exakt 99 Sturm-Land-Paare.
-// Jedes Paar = ein Kreis. Dreistufiges Encoding der Datenqualität:
+// Jedes Paar = ein Kreis. Vierstufiges Encoding der Datenqualität:
 //   • solide (blau, gefüllt)        - 78 vollständige Paare (Wind + Impact)
 //   • rekonstruiert (dashed Kontur) - Teilmenge davon: Wind aus Katastrophen-Akten, nicht Satellit
-//   • Ghost (transparent, zarte Kontur) - 21 Paare, deren menschliche Auswirkung nie erfasst wurde
+//   • Ghost (transparent, zarte Kontur) - 20 Paare, deren menschliche Auswirkung nie erfasst wurde
+//   • nowind (halb gefüllt)         - 1 Paar mit erfasstem Impact, aber ohne gemessenen Wind
+//     (ehrliche Zerlegung: 20 ohne Toll + 1 ohne Wind = 21 nicht-scatterbar, NICHT „21 ohne Toll")
 // Sortierung: chronologisch (wann?) ↔ nach Qualität (zwei harte Blöcke, via Store-Feld unitSort).
-// Ghost-Hover trägt die eigentliche Botschaft: „Wind bekannt - Impact nie offiziell erfasst."
+// Ghost-Hover trägt die eigentliche Botschaft: „Impact nie offiziell erfasst - Toll unbekannt, nicht null."
 //
 // Layout-Mathematik + Tooltip-Wortlaut sind exportiert (Paket 10 Task 8): der
 // Formations-Morph (story/formationLayer.js) benutzt exakt dieselben Zielpositionen
@@ -18,8 +20,9 @@ const CELL = 42;
 const R = 13;
 
 export const unitCat = (e) => {
-  if (!isScatterable(e)) return 'ghost';
-  return e.intensity_source === 'emdat_fallback' ? 'recon' : 'solid';
+  if (isScatterable(e)) return e.intensity_source === 'emdat_fallback' ? 'recon' : 'solid';
+  // nicht-scatterbar: Impact erfasst aber Wind fehlt (nowind) ↔ Impact nie erfasst (ghost)
+  return e.affected != null ? 'nowind' : 'ghost';
 };
 
 export function computeUnitLayout(rawEvents, { W: width = W, H: height = H, cell = CELL } = {}) {
@@ -43,9 +46,10 @@ export function computeUnitLayout(rawEvents, { W: width = W, H: height = H, cell
     return [oxC + (i % COLS) * cell + cell / 2, oyC + Math.floor(i / COLS) * cell + cell / 2];
   };
 
-  // Qualitäts-Position: zwei Blöcke nebeneinander
-  const solids = events.filter((e) => unitCat(e) !== 'ghost');
-  const ghosts = events.filter((e) => unitCat(e) === 'ghost');
+  // Qualitäts-Position: zwei Blöcke nebeneinander - vollständig (scatterbar) ↔ unvollständig.
+  // nowind gehört zum unvollständigen Block (nicht scatterbar), bleibt aber visuell eigen.
+  const solids = events.filter((e) => isScatterable(e));
+  const ghosts = events.filter((e) => !isScatterable(e));
   const blockAW = COLS_A * cell;
   const blockBW = COLS_B * cell;
   const totalW = blockAW + GAP + blockBW;
@@ -57,7 +61,7 @@ export function computeUnitLayout(rawEvents, { W: width = W, H: height = H, cell
   const solidIdx = new Map(solids.map((e, i) => [e.id, i]));
   const ghostIdx = new Map(ghosts.map((e, i) => [e.id, i]));
   const quality = (e) => {
-    if (unitCat(e) === 'ghost') {
+    if (!isScatterable(e)) {
       const i = ghostIdx.get(e.id);
       return [bOx + (i % COLS_B) * cell + cell / 2, bOy + Math.floor(i / COLS_B) * cell + cell / 2];
     }
@@ -71,8 +75,8 @@ export function computeUnitLayout(rawEvents, { W: width = W, H: height = H, cell
     chrono,
     quality,
     labels: {
-      a: { x: aOx + blockAW / 2, y: aOy - 16, text: `${solids.length} recorded` },
-      b: { x: bOx + blockBW / 2, y: bOy - 16, text: `${ghosts.length} missing` },
+      a: { x: aOx + blockAW / 2, y: aOy - 16, text: `${solids.length} complete` },
+      b: { x: bOx + blockBW / 2, y: bOy - 16, text: `${ghosts.length} incomplete` },
     },
   };
 }
@@ -81,20 +85,18 @@ export function unitTipContent(d) {
   const name = d.name ?? 'Unnamed storm';
   const country = d.country;
   const cat = unitCat(d);
+  const head = `<div class="tt-title">${name} · ${d.year}</div>`
+    + `<div class="tt-sub">${country}</div>`;
   if (cat === 'ghost') {
-    const msg = d.intensity_kt != null
-      ? 'Wind speed known, but the human impact was never officially recorded.'
-      : (isScatterable(d) ? '' : 'Impact recorded, but the storm’s wind was never measured.');
-    return `<div class="tt-title">${name} · ${d.year}</div>`
-      + `<div class="tt-sub">${country}</div>`
-      + `<div class="tt-emph">${msg}</div>`;
+    return `${head}<div class="tt-emph">Impact never officially recorded — the human toll is unknown, not zero.</div>`;
+  }
+  if (cat === 'nowind') {
+    return `${head}<div class="tt-emph">Impact recorded, but the storm’s wind was never measured — so this pair can’t join the scatter.</div>`;
   }
   const quality = cat === 'recon'
     ? 'Wind reconstructed from disaster records'
     : 'Wind + impact recorded (complete)';
-  return `<div class="tt-title">${name} · ${d.year}</div>`
-    + `<div class="tt-sub">${country}</div>`
-    + `<div class="tt-sub">${quality}</div>`;
+  return `${head}<div class="tt-sub">${quality}</div>`;
 }
 
 export function createUnitChart(container, ctx) {
@@ -116,6 +118,26 @@ export function createUnitChart(container, ctx) {
   gLabels.append('text').attr('class', 'uc-block-label')
     .attr('x', layoutFns.labels.b.x).attr('y', layoutFns.labels.b.y).attr('text-anchor', 'middle')
     .text(layoutFns.labels.b.text);
+
+  // Statische Legende der vier Zustände (Review-Fix: die Zustände waren nur in Prosa,
+  // ARIA und Hover kodiert - jetzt am Chart lesbar). Reused unit-* Klassen, pointer-events
+  // aus (kein Hover-Akzent); horizontal per getBBox zentriert.
+  const gLegend = svg.append('g').attr('class', 'uc-legend');
+  const legItems = [
+    { cls: 'unit-solid', label: 'complete' },
+    { cls: 'unit-nowind', label: 'impact, no wind' },
+    { cls: 'unit-ghost', label: 'impact missing' },
+    { cls: 'unit-recon', label: 'wind reconstructed' },
+  ];
+  let lx = 0;
+  for (const it of legItems) {
+    gLegend.append('circle').attr('class', `unit-dot ${it.cls}`)
+      .attr('cx', lx).attr('cy', 0).attr('r', 8).style('pointer-events', 'none');
+    const t = gLegend.append('text').attr('class', 'uc-legend-label').attr('x', lx + 14).attr('y', 4).text(it.label);
+    lx += 14 + t.node().getComputedTextLength() + 30;
+  }
+  const lbb = gLegend.node().getBBox();
+  gLegend.attr('transform', `translate(${(W - lbb.width) / 2 - lbb.x}, ${H - 18})`);
 
   // Kreise --------------------------------------------------------------------------
   const gDots = svg.append('g').attr('class', 'uc-dots');

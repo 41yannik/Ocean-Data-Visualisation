@@ -73,3 +73,31 @@ def validate_sst(series: list):
     if years[0] != 1850 or years[-1] < 2024 or len(series) < 170:
         _fail(f"SST-Serie unvollständig: {years[0]}–{years[-1]}, n={len(series)}")
     print(f"validate(sst): OK — {len(series)} Jahre")
+
+
+def validate_trends(trends: dict):
+    """Sichert die Kernaussage der no-trend-Sektion ab: Zahl + Mittelwind flach
+    (nicht signifikant), NW-Entstehungsbreite signifikant polwärts."""
+    if trends.get("window") != [2001, 2025]:
+        _fail(f"trends.window {trends.get('window')} statt [2001, 2025]")
+    s = trends["series"]
+    n = len(s["season"])
+    if n != 25:
+        _fail(f"trends: {n} Saisons statt 25")
+    for key in ("count", "meanWind", "genesisWP", "genesisSP"):
+        arr = s[key]
+        if len(arr) != n:
+            _fail(f"trends.series.{key}: {len(arr)} Werte statt {n}")
+        # Lücken nur an den Rändern tolerieren, nie mitten in der Serie
+        idx = [i for i, v in enumerate(arr) if v is not None]
+        if idx and (idx != list(range(idx[0], idx[-1] + 1))):
+            _fail(f"trends.series.{key}: None mitten in der Serie")
+    f = trends["fits"]
+    if f["count"]["p"] < 0.05:
+        _fail(f"Sturmzahl-Trend unerwartet signifikant (p={f['count']['p']}) — Aussage 'flach' verletzt")
+    if f["windMean"]["p"] < 0.05:
+        _fail(f"Mittelwind-Trend unerwartet signifikant (p={f['windMean']['p']}) — Aussage 'flach' verletzt")
+    if not (f["genesisWP"]["p"] < 0.05 and f["genesisWP"]["perDecade"] > 0):
+        _fail(f"NW-Polwärts-Signal fehlt (p={f['genesisWP']['p']}, perDecade={f['genesisWP']['perDecade']})")
+    print(f"validate(trends): OK — 25 Saisons, Zahl/Wind flach, "
+          f"NW +{f['genesisWP']['perDecade']}°/Dekade (p={f['genesisWP']['p']})")

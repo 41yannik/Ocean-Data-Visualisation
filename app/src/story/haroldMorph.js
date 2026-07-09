@@ -1,22 +1,27 @@
 // Step 5 „One storm, four countries" - Map-to-Chart-Morph in EINEM SVG.
 // Phase 1: Harold-Zugbahn zeichnet sich, die Sturmspitze poppt nacheinander vier
-//   Impact-Bubbles (Fläche ∝ Betroffene) an den Zentroiden von Salomonen, Vanuatu,
-//   Fidschi, Tonga - mit Labels „Fiji: 180k".
+//   Impact-Bubbles (Fläche ∝ Betroffene, wie im Heta-Hook) an den Zentroiden von
+//   Salomonen, Vanuatu, Fidschi, Tonga - mit Roh-Labels „Fiji: 180k" (menschlicher Maßstab).
 // Phase 2: Karte verblasst (10 %), andere Tracks verschwinden, Scatter-Achsen blenden ein,
-//   die vier Bubbles FLIEGEN auf ihre exakten Scatterplot-Koordinaten. Gleiche Windstärke
-//   (145 kt) → gleiche X; die Betroffenen streuen massiv auf der Y-Achse (ABSOLUT).
-// Phase 3: eine Klammer zwischen dem höchsten (Fidschi) und niedrigsten (Tonga) Punkt mit
-//   „7× difference in impact"; die restlichen Punkte bleiben stark gedimmt.
+//   die vier Bubbles FLIEGEN auf ihre Scatter-Koordinaten. Gleiche Windstärke (145 kt) →
+//   gleiche X; die Y-Achse ist - wie im ganzen Rest der Story - der BEVÖLKERUNGSANTEIL.
+// Phase 3: eine Klammer zwischen dem höchsten (Vanuatu) und niedrigsten (Fidschi) Anteils-
+//   Punkt; die restlichen bleiben gedimmt.
 // Cross-Hover: Hover über einen der vier Punkte macht die Karte kurz sichtbarer und lässt
 //   das jeweilige Land aufleuchten - die Brücke zwischen Statistik und Geografie bleibt.
 //
-// Bewusst in ABSOLUT-Mode (Menschen, log): nur so trägt „7×" (Fidschi 180k ↔ Tonga 25k) -
-// pro Kopf wäre die Spreizung nur ~2× und die Reihenfolge anders.
+// KOHÄRENZ (Review-Fix): früher lief der Morph im ABSOLUT-Mode, um „7×" zu tragen - das
+// widersprach der Pro-Kopf-These der Steps 1-2 und kehrte sich pro Kopf sogar um. Jetzt
+// ruht der Scatter in PRO KOPF (= Step 2). Die GRÖSSTE Rohblase (Fidschi 180k) landet damit
+// UNTEN (kleinster Anteil ~20 %), Vanuatu oben (~44 %) → genau diese sichtbare Umkehr ist
+// die Pointe: gleiche Windstärke, und die Metrik entscheidet, wer am schlimmsten dasteht.
+// Die Roh-7× nennt der Fließtext ehrlich als menschlichen Maßstab.
 import {
   select, geoPath, timer, easeCubicInOut, easeBackOut, axisBottom, axisLeft,
 } from 'd3';
 import { makeFittedProjection, makeXScale, makeYScale } from '../core/scales.js';
 import { isScatterable } from '../core/filters.js';
+import { fmtPct } from '../core/format.js';
 import { COUNTRY_LOOKUP } from '../map/countryNames.js';
 
 const SID_HAROLD = '2020092S09155';
@@ -70,9 +75,9 @@ export function createHaroldMorph(container, ctx) {
   });
   const track = fullTrack.slice(0, Math.min(fullTrack.length, tonIdx + 2));
 
-  // Scatter-Skalen (ABSOLUT) ----------------------------------------------------------
+  // Scatter-Skalen (PRO KOPF - identisch zur Evidence-Sektion) -------------------------
   const x = makeXScale(innerW);
-  const y = makeYScale('absolute', innerH);
+  const y = makeYScale('perCapita', innerH);
   const sx = (kt) => M.left + x(kt);
   const syE = (e) => M.top + y.scale(y.value(e));
 
@@ -80,6 +85,7 @@ export function createHaroldMorph(container, ctx) {
   const gMap = svg.append('g').attr('class', 'hm-map');
   const gOther = gMap.append('g').attr('class', 'hm-other-tracks');
   const gLand = gMap.append('g');
+  const gCentroids = gMap.append('g').attr('class', 'hm-centroids');
   const gHaroldTrack = gMap.append('g');
   const gFlash = gMap.append('g').attr('class', 'hm-flash');
   const gAxes = svg.append('g').attr('class', 'hm-axes').attr('opacity', 0);
@@ -89,6 +95,16 @@ export function createHaroldMorph(container, ctx) {
 
   // Land ------------------------------------------------------------------------------
   gLand.append('path').datum(data.land).attr('class', 'land').attr('d', path);
+
+  // PICT-Zentroide als geografischer Anker (Review-Fix): die 110m-Basiskarte lässt die
+  // kleinen Inselstaaten fast weg - ohne Referenzpunkte wirken die Bubbles kontextlos
+  // (Deep-Link-/Standbild-Zustand). Nur die im Kartenausschnitt liegenden zeichnen.
+  for (const c of Object.values(data.index.centroids)) {
+    const [px, py] = projection(c);
+    if (px >= 0 && px <= W && py >= 0 && py <= H) {
+      gCentroids.append('circle').attr('class', 'hm-centroid').attr('cx', px).attr('cy', py).attr('r', 1.8);
+    }
+  }
 
   // Andere Tracks (fein) - verschwinden in Phase 2
   gOther.selectAll('path')
@@ -111,10 +127,10 @@ export function createHaroldMorph(container, ctx) {
     .call(axisLeft(y.scale).tickValues(y.ticks).tickFormat(y.tickFormat).tickSizeOuter(0));
   axInner.append('text').attr('class', 'axis-label')
     .attr('x', innerW / 2).attr('y', innerH + 42).attr('text-anchor', 'middle')
-    .text('max. sustained wind (kt)');
+    .text('maximum sustained wind (kt)');
   axInner.append('text').attr('class', 'axis-label')
     .attr('transform', 'rotate(-90)').attr('x', -innerH / 2).attr('y', -48)
-    .attr('text-anchor', 'middle').text('people affected (log)');
+    .attr('text-anchor', 'middle').text('share of population affected (log)');
 
   // Hintergrund-Punkte (alle außer Harold) --------------------------------------------
   const bgEvents = data.events.filter((e) => isScatterable(e) && e.sid !== SID_HAROLD);
@@ -156,7 +172,10 @@ export function createHaroldMorph(container, ctx) {
     bubbles._total = total;
   })();
 
-  const ratio = Math.round(maxAff / Math.min(...events.map((e) => e.affected)));
+  // Klammer-Faktor pro Kopf (Vanuatu ~44 % ↔ Fidschi ~20 % → ~2×), nicht mehr die
+  // absoluten 7× - die nennt der Fließtext als menschlichen Maßstab.
+  const pcs = events.map((e) => e.affected_pc);
+  const ratio = Math.round(Math.max(...pcs) / Math.min(...pcs));
 
   // Bubble-DOM
   for (const b of bubbles) {
@@ -183,8 +202,10 @@ export function createHaroldMorph(container, ctx) {
     tip.style('display', 'none');
     gAxes.transition('morph').duration(instant ? 0 : 600).attr('opacity', 1);
     gBg.transition('morph').duration(instant ? 0 : 600).attr('opacity', 1);
-    // Im Scatter liegen Fiji/Solomon/Vanuatu im Log-Raum dicht → nur die Klammer-Endpunkte
-    // (höchster + niedrigster = Fiji + Tonga) beschriften, damit die 7×-Aussage sauber liest.
+    // Nur die Klammer-Endpunkte (höchster + niedrigster ANTEIL = Vanuatu + Fidschi)
+    // beschriften. Auf der Karte trugen die Bubbles Roh-Zahlen ("Fiji: 180k"); auf dem
+    // Anteils-Scatter wechselt das Label auf den ANTEIL - so wird sichtbar, dass die
+    // größte Rohblase (Fidschi) den KLEINSTEN Anteil hat.
     const byY = [...bubbles].sort((a, b) => a.scatter[1] - b.scatter[1]);
     const labelled = new Set([byY[0], byY[byY.length - 1]]);
     for (const b of bubbles) {
@@ -192,8 +213,12 @@ export function createHaroldMorph(container, ctx) {
       const [tx, ty] = b.scatter;
       const move = instant ? b.circle : b.circle.transition('fly').duration(MORPH).ease(easeCubicInOut);
       move.attr('cx', tx).attr('cy', ty).attr('r', R_SCATTER);
+      // Endpunkt-Labels nach LINKS (anchor end) - die Klammer sitzt rechts der Bubbles,
+      // sonst kollidieren Bubble-Label und Klammer im engen Pro-Kopf-Band (~20-44 %).
+      const isLab = labelled.has(b);
+      if (isLab) b.label.text(`${COUNTRY_LOOKUP[b.e.iso3] ?? b.e.iso3}: ${fmtPct(b.e.affected_pc)}`).attr('text-anchor', 'end');
       const lab = instant ? b.label : b.label.transition('fly').duration(MORPH).ease(easeCubicInOut);
-      lab.attr('x', tx + R_SCATTER + 6).attr('y', ty + 4).attr('opacity', labelled.has(b) ? 1 : 0);
+      lab.attr('x', isLab ? tx - R_SCATTER - 6 : tx + R_SCATTER + 6).attr('y', ty + 4).attr('opacity', isLab ? 1 : 0);
       // Cross-Hover erst nach dem Morph aktiv
       b.circle.on('mouseenter', () => crossHover(b, true)).on('mouseleave', () => crossHover(b, false));
     }
@@ -212,7 +237,7 @@ export function createHaroldMorph(container, ctx) {
       .text(`${ratio}× difference`);
     gBracket.append('text').attr('class', 'hm-bracket-sub')
       .attr('x', bx + 10).attr('y', (yT + yB) / 2 + 13)
-      .text('in impact');
+      .text('in population share');
     gBracket.transition('bracket').duration(instant ? 0 : 500).attr('opacity', 1);
   }
 
@@ -286,7 +311,10 @@ export function createHaroldMorph(container, ctx) {
       b.circle.classed('pulse', false).classed('hm-scatter', false).style('pointer-events', 'none')
         .on('mouseenter', null).on('mouseleave', null)
         .attr('cx', b.map[0]).attr('cy', b.map[1]).attr('r', 0);
-      b.label.attr('x', b.map[0] + 6).attr('y', b.map[1] + 4).attr('opacity', 0);
+      // Map-Phase: Roh-Zahl-Label rechts der Bubble, Standard-Anker (die Scatter-Phase
+      // setzt Text/Anker/Anteil neu).
+      b.label.text(`${COUNTRY_LOOKUP[b.e.iso3] ?? b.e.iso3}: ${shortK(b.e.affected)}`)
+        .attr('text-anchor', null).attr('x', b.map[0] + 6).attr('y', b.map[1] + 4).attr('opacity', 0);
     }
     run();
   }

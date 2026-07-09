@@ -11,7 +11,7 @@ export function createLegend(container, ctx) {
 
   container.innerHTML = `
     <span>Track width = storm category: ${catSamples}</span>
-    <span><svg width="18" height="14"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--point)" stroke-dasharray="3 2"/></svg> converted EM-DAT wind (no track)</span>
+    <span><svg width="18" height="14"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--point)" stroke-dasharray="3 2"/></svg> wind reconstructed from disaster records (no track)</span>
     <span><svg width="20" height="14"><rect x="5" y="2" width="3" height="10" fill="var(--muted)" fill-opacity="0.75"/><rect x="12" y="2" width="3" height="10" fill="var(--muted)" fill-opacity="0.75"/></svg> tick = wind known, impact not reported</span>
     <span>Circle size = deaths
       <svg width="46" height="16">
@@ -26,8 +26,8 @@ export function createLegend(container, ctx) {
 
   function render(state) {
     yNote.textContent = state.mode === 'perCapita'
-      ? 'y-axis: share of national population affected'
-      : 'y-axis: people affected (absolute)';
+      ? 'y-axis: share of national population reported affected'
+      : 'y-axis: people reported affected (absolute)';
   }
 
   return {

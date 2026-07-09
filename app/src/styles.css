@@ -33,20 +33,35 @@ body {
 .app { position: relative; }
 
 .hero {
-  min-height: 72vh;
-  display: flex; align-items: center; justify-content: center;
-  padding: 12vh 24px 8vh;
+  /* Füllt den ganzen Viewport → die nächste Sektion beginnt erst unter dem Fold. */
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  /* Mehr Boden- als Kopfabstand → Inhalt zentriert, sitzt aber etwas oberhalb der Mitte. */
+  padding: 9vh 24px 21vh;
 }
-.hero-inner { max-width: 720px; text-align: center; }
+.hero-inner { max-width: 1080px; text-align: center; }
+/* Großer Website-Hero-Titel: dominiert die Startseite (bricht auf breiten Schirmen
+   ausbalanciert auf zwei Zeilen um). */
 .hero-inner h1 {
-  font-size: clamp(40px, 6vw, 58px);
-  line-height: 1.08;
-  margin: 0 0 26px;
-  letter-spacing: -0.01em;
+  font-size: clamp(3.25rem, 9vw, 7.5rem);
+  line-height: 0.98;
+  margin: 0 0 22px;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
 }
-.hero-lead { font-size: 19px; line-height: 1.6; margin: 0 0 10px; }
-.hero .kicker { margin-bottom: 14px; }
-.hero .hint { margin-top: 34px; }
+/* Frage direkt unter dem Titel - im selben Punch-Stil wie die frühere Tagline (fett, Textfarbe). */
+.hero-tagline {
+  font-size: clamp(22px, 3.2vw, 34px); font-weight: 700; color: var(--text);
+  line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 22px;
+  text-wrap: balance;
+}
+.hero-lead {
+  font-size: clamp(17px, 1.4vw, 20px); line-height: 1.6;
+  max-width: 60ch; margin: 0 auto 10px; color: var(--text);
+}
+.hero .kicker { margin-bottom: 16px; }
+.hero .hint { margin-top: 42px; }
 
 .kicker {
   text-transform: uppercase; letter-spacing: 0.08em;
@@ -62,6 +77,45 @@ body {
 .section-text p:last-child { margin-bottom: 0; }
 .section-text .source { font-size: 12.5px; color: var(--muted); }
 
+/* ----- Editorial-Pass: Übergaben, Lesehilfen, Leitfragen ----- */
+/* Übergabe-Satz an die nächste Sektion (kursiv, leise - schließt das Argument) */
+.section-text .transition { margin-top: 14px; font-style: italic; color: var(--muted); font-size: 15px; }
+/* "How to read": kompakte Dekodier-Hilfe unter dem Sektionstext */
+.section-text .reading-hint {
+  margin-top: 12px; font-size: 13px; color: var(--muted); line-height: 1.5;
+  border-top: 1px solid var(--graticule); padding-top: 10px;
+}
+.section-text .reading-hint::before {
+  content: 'How to read · '; text-transform: uppercase;
+  letter-spacing: 0.07em; font-size: 11px; font-weight: 600;
+}
+/* Methodische Klarstellung / Kontext-Zeile (z. B. Zeitfenster-Abgrenzung) - leise,
+   ohne farbigen Rahmen; die Kernaussage im <strong> tritt hervor. */
+.section-text .section-caveat { margin-top: 12px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.section-text .section-caveat strong { color: var(--text); }
+/* Leitfragen der Explore-Sektion */
+.guide-questions { margin: 14px 0 4px; padding: 0; list-style: none; }
+.guide-questions li { position: relative; padding: 7px 0 7px 22px; font-size: 15.5px; font-weight: 600; }
+.guide-questions li + li { border-top: 1px solid var(--graticule); }
+.guide-questions li::before { content: '→'; position: absolute; left: 0; color: var(--accent-text); }
+/* Interaktions-Konventionen als eine leise, zentrale Zeile direkt über dem 2x2-Raster */
+.dash-help { max-width: 1150px; margin: 0 auto 14px; text-align: center; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+
+/* ----- Methods & data (ausklappbarer Abschluss) ----- */
+.section--methods { padding-top: 4vh; padding-bottom: 14vh; }
+.methods { border-top: 1px solid var(--graticule); padding-top: 14px; }
+.methods summary {
+  cursor: pointer; font-weight: 600; font-size: 14px;
+  text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+}
+.methods summary:hover, .methods summary:focus-visible { color: var(--text); }
+.methods-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; margin: 14px 0 0; font-size: 13.5px; }
+.methods-grid dt { color: var(--muted); }
+.methods-grid dd { margin: 0; }
+.methods-caveats { margin: 12px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
+.methods-caveats li { margin-bottom: 4px; }
+.methods-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+
 .viz-row { display: flex; justify-content: center; align-items: center; gap: 3vw; }
 .viz-frame {
   margin: 0; min-width: 0; position: relative;
@@ -70,14 +124,15 @@ body {
 }
 .viz-frame svg { width: 100%; height: 100%; display: block; }
 /* Feste Maße gegen Layout-Sprünge (Briefing v5 §3) */
-.viz-frame--sst { max-width: 1100px; aspect-ratio: 960 / 640; }
+.viz-frame--sst { max-width: 1100px; aspect-ratio: 960 / 560; }
+.viz-frame--stormTrend { max-width: 1040px; aspect-ratio: 960 / 520; }
 .viz-frame--map { max-width: 1150px; aspect-ratio: 2 / 1; }
 .viz-frame--scatter { max-width: 780px; aspect-ratio: 640 / 520; }
-.viz-row--dual .viz-frame--map { flex-basis: 56%; }
+.viz-row--dual .viz-frame--map { flex-basis: 52%; }
 .viz-row--dual .viz-frame--scatter { flex-basis: 40%; }
 /* Hook-Split: gezoomte Karte links (~2/3), Vergleichs-Balken rechts (~1/3) */
-.viz-frame--bars { max-width: 340px; aspect-ratio: 360 / 520; }
-.viz-row--dual .viz-frame--bars { flex-basis: 26%; }
+.viz-frame--bars { max-width: 460px; aspect-ratio: 360 / 380; }
+.viz-row--dual .viz-frame--bars { flex-basis: 42%; }
 @media (max-width: 1099px) {
   .viz-row--dual { flex-wrap: wrap; }
   .viz-row--dual .viz-frame--map, .viz-row--dual .viz-frame--scatter { flex-basis: 100%; }
@@ -188,6 +243,11 @@ body {
   stroke-linejoin: round;
   stroke-linecap: round;
 }
+/* Zeit-Scrubber: aktives Jahr leuchtet in Datenblau, alle anderen sinken zur Kulisse.
+   stroke-opacity nutzt die bestehende .track-Transition (Crossfade); unter reduced-motion
+   greift der globale transition:none. VOR den Interaktionsklassen → Hover/Selektion gewinnen. */
+.track.year-active { stroke: var(--point); stroke-opacity: 0.95; }
+.track.year-context { stroke-opacity: 0.06; }
 /* Cross-Highlight Scatter→Karte: der korrespondierende Pfad leuchtet orange auf */
 .track.hovered, .track.detail {
   stroke: var(--accent); stroke-opacity: 0.95;
@@ -292,6 +352,7 @@ body {
 .viz-frame--haroldMorph { max-width: 1040px; aspect-ratio: 960 / 560; }
 .hm-map { transition: none; }
 .hm-track-other { fill: none; stroke: var(--track); stroke-opacity: 0.16; stroke-width: 0.7; }
+.hm-centroid { fill: var(--muted); fill-opacity: 0.5; }
 .hm-track-harold { fill: none; stroke: var(--accent); stroke-opacity: 0.95; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .hm-tip { fill: var(--accent); stroke: #fff; stroke-width: 1.4; }
 .hm-bubble-c { fill: var(--accent); fill-opacity: 0.9; stroke: #fff; stroke-width: 1.5; pointer-events: none; }
@@ -324,41 +385,84 @@ body {
 .unit-solid { fill: var(--point); fill-opacity: 0.9; stroke: #fff; stroke-width: 1; cursor: pointer; }
 .unit-recon { fill: var(--point); fill-opacity: 0.9; stroke: var(--trend); stroke-width: 1.6; stroke-dasharray: 3 2; cursor: pointer; }
 .unit-ghost { fill: transparent; stroke: var(--muted); stroke-opacity: 0.42; stroke-width: 1; cursor: pointer; }
+/* nowind: Impact erfasst, aber Wind nie gemessen - halb gefüllt (Impact bekannt), aber
+   nicht das volle Blau der scatterbaren Paare. Ein realer 50%-of-country-Fall (MHL 2024). */
+.unit-nowind { fill: var(--muted); fill-opacity: 0.34; stroke: var(--muted); stroke-opacity: 0.8; stroke-width: 1.3; cursor: pointer; }
 .unit-solid:hover, .unit-recon:hover { fill: var(--accent); stroke: var(--accent); }
+.unit-nowind:hover { fill: var(--accent); fill-opacity: 0.55; stroke: var(--accent); stroke-opacity: 1; }
 .unit-ghost:hover { stroke: var(--accent); stroke-opacity: 1; stroke-width: 1.6; }
 .uc-block-label { font-size: 14px; font-weight: 700; fill: var(--text); }
+.uc-legend-label { font-size: 12px; fill: var(--muted); dominant-baseline: middle; }
 .tooltip .tt-emph { margin-top: 6px; max-width: 240px; color: var(--accent-text); font-weight: 600; line-height: 1.4; }
 
 /* ================= Step 8 - Explore workbench ================= */
 .explore-workbench { display: flex; flex-direction: column; gap: 14px; }
 
-/* View-Toggle (segmentierte Leiste, mittig über den Grafiken) */
-.view-toggle { display: flex; justify-content: center; }
-.view-toggle button {
-  border: 1px solid var(--graticule); background: #fff; color: var(--text);
-  padding: 6px 16px; font-size: 13px; cursor: pointer; margin-left: -1px;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.view-toggle button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
-.view-toggle button:last-child { border-radius: 0 6px 6px 0; }
-.view-toggle button[aria-pressed="true"] { background: var(--trend); color: #fff; border-color: var(--trend); }
-.view-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
-
 /* Bühne = Positionsanker für die Overlays */
 .viz-stage { position: relative; }
 
-/* Layout-Modi - feste viewBox → SVG skaliert nur, kein Redraw */
-.viz-row[data-view-mode] .viz-frame { transition: flex-basis 0.4s ease; max-height: min(72vh, 620px); }
-.viz-row[data-view-mode="split"] .viz-frame--map,
-.viz-row[data-view-mode="split"] .viz-frame--scatter { flex-basis: 49%; }
-.viz-row[data-view-mode="map"] .viz-frame--map { flex-basis: 78%; }
-.viz-row[data-view-mode="map"] .viz-frame--scatter { flex-basis: 20%; }
-.viz-row[data-view-mode="chart"] .viz-frame--map { flex-basis: 20%; }
-.viz-row[data-view-mode="chart"] .viz-frame--scatter { flex-basis: 78%; }
+/* Hero-Map: vollbreiter geografischer Einstieg (2:1 gedeckelt, dominiert kleine
+   Laptops nicht; feste viewBox → SVG skaliert ohne Redraw) */
+.section-explore .viz-frame--map {
+  max-width: 1440px; width: 100%;
+  max-height: min(72vh, 680px);
+  margin-inline: auto;
+}
 
-/* Brush auf der 20%-Mini-Map unbrauchbar → im Map Focus deaktivieren.
-   Wirkt, weil brushLayer.setEnabled(true) nur inline display:null setzt. */
-.viz-row[data-view-mode="map"] .g-brush { display: none !important; }
+/* ---------- Zeit-Scrubber unter der Hero-Map ---------- */
+.map-timeline {
+  display: flex; align-items: center; gap: 14px;
+  max-width: 1040px; width: 100%; margin: 4px auto 0;
+  padding: 7px 16px 6px;
+  background: #fff; border: 1px solid var(--graticule); border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(34, 48, 60, 0.05);
+}
+.map-timeline[data-disabled="true"] { opacity: 0.5; pointer-events: none; }
+.mt-play, .mt-all {
+  flex: 0 0 auto; cursor: pointer; font: inherit;
+  border: 1px solid var(--graticule); background: #fff; color: var(--trend);
+  border-radius: 999px;
+}
+.mt-play { width: 34px; height: 34px; display: grid; place-items: center; font-size: 12px; padding: 0; }
+.mt-play[aria-pressed="true"] { background: var(--point); border-color: var(--point); color: #fff; }
+.mt-all { padding: 6px 13px; font-size: 12.5px; }
+.mt-all[aria-pressed="false"] { color: var(--muted); }
+.mt-play:focus-visible, .mt-all:focus-visible, .mt-range:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.mt-track { position: relative; flex: 1 1 auto; min-width: 140px; height: 40px; display: flex; align-items: center; }
+.mt-range {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 4px; margin: 0 0 14px;
+  border-radius: 2px; background: var(--graticule); cursor: pointer;
+}
+.mt-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--point); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--graticule); cursor: pointer;
+}
+.mt-range::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--point); border: 2px solid #fff; cursor: pointer;
+}
+.map-timeline[data-active="false"] .mt-range::-webkit-slider-thumb { background: var(--muted); opacity: 0.55; }
+.map-timeline[data-active="false"] .mt-range::-moz-range-thumb { background: var(--muted); opacity: 0.55; }
+.mt-ticks { position: absolute; left: 0; right: 0; bottom: 3px; height: 14px; pointer-events: none; }
+.mt-tick { position: absolute; top: 0; width: 1px; height: 4px; background: var(--graticule); transform: translateX(-0.5px); }
+.mt-tick--major { height: 6px; background: var(--muted); }
+.mt-tick--major b {
+  position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+  font-size: 9.5px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.mt-readout {
+  flex: 0 0 auto; min-width: 96px; text-align: right;
+  font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums;
+}
+.mt-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 640px) {
+  .map-timeline { flex-wrap: wrap; border-radius: 18px; }
+  .mt-track { order: 3; flex-basis: 100%; }
+}
+/* Playhead-Linie in der Jahres-Trend-Kachel (folgt dem Scrubber-Jahr) */
+.year-playhead { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; stroke-opacity: 0.7; pointer-events: none; }
 
 /* Schwebender Filter-Button */
 .filter-fab {
@@ -412,27 +516,13 @@ body {
   border-radius: 999px; padding: 2px 10px; cursor: pointer; font-size: 12px;
 }
 .selection-chip .sc-clear:hover { background: rgba(255, 255, 255, 0.4); }
-.brush-hint {
-  position: absolute; bottom: 12px; left: 12px; z-index: 24; margin: 0;
-  font-size: 11px; color: var(--muted); background: rgba(255, 255, 255, 0.75);
-  padding: 3px 8px; border-radius: 4px; pointer-events: none;
-  opacity: 0; transition: opacity 0.3s ease;
-}
-.viz-stage:hover .brush-hint { opacity: 1; }
-.viz-row[data-view-mode="map"] ~ .brush-hint,
-.viz-stage.has-selection .brush-hint { display: none; }
-
 /* Mobile / gestapelt */
 @media (max-width: 1099px) {
-  .viz-row[data-view-mode] { flex-wrap: wrap; }
-  .viz-row[data-view-mode] .viz-frame--map,
-  .viz-row[data-view-mode] .viz-frame--scatter { flex-basis: 100%; max-height: none; }
-  .view-toggle { flex-wrap: wrap; }
   .explore-sidebar { width: 100vw; }
   .floating-legend { position: static; width: 100%; margin-top: 10px; backdrop-filter: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .explore-sidebar, .sidebar-backdrop, .viz-row[data-view-mode] .viz-frame { transition: none; }
+  .explore-sidebar, .sidebar-backdrop { transition: none; }
 }
 
 .track { transition: stroke-opacity 0.35s ease; }
@@ -461,14 +551,24 @@ body {
   font-size: 11px; fill: var(--muted);
   paint-order: stroke; stroke: #fff; stroke-width: 3px;
 }
+.impact-label .il-pct {
+  font-size: 10.5px; fill: var(--muted);
+  paint-order: stroke; stroke: #fff; stroke-width: 3px;
+}
 
 /* Vergleichs-Balken (Hook, rechte Seite) - gleiche Farbe wie die Karten-Bubbles */
 .impact-bar { fill: var(--point); fill-opacity: 0.9; }
 .ib-title { font-size: 15px; fill: var(--muted); }
 .ib-title-strong { font-size: 19px; font-weight: 700; fill: var(--text); }
+.ib-sub { font-size: 11.5px; fill: var(--muted); }
+.ib-caption { font-size: 10.5px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .ib-value { font-size: 15px; font-weight: 700; fill: var(--text); font-variant-numeric: tabular-nums; }
 .ib-name { font-size: 12px; fill: var(--muted); }
 .ib-base { stroke: var(--graticule); stroke-width: 1; }
+/* Relative Ebene: horizontale Anteils-Balken (fast gleich lang → „similar share") */
+.ib-pct-bar { fill: var(--point); fill-opacity: 0.85; }
+.ib-pct-name { font-size: 12px; fill: var(--muted); }
+.ib-pct-value { font-size: 12px; font-weight: 700; fill: var(--text); font-variant-numeric: tabular-nums; }
 
 /* Wandernder Gale-force-Windkreis (Animations-Uhr des Hooks) - Setup wie der Korridor */
 .wind-front {
@@ -493,6 +593,9 @@ body {
 .impact-bar { transition: fill-opacity 0.18s ease, fill 0.18s ease; }
 .impact-bar.hl { fill: var(--accent); fill-opacity: 1; }
 .impact-bar.dim { fill-opacity: 0.3; }
+.ib-pct-bar { transition: fill-opacity 0.18s ease, fill 0.18s ease; }
+.ib-pct-bar.hl { fill: var(--accent); fill-opacity: 1; }
+.ib-pct-bar.dim { fill-opacity: 0.3; }
 
 /* Dezenter Replay-Button unter der Hook-Karte */
 .heta-replay {
@@ -506,7 +609,7 @@ body {
 .heta-replay:hover { color: var(--accent-text); border-color: var(--accent); }
 .heta-replay:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
-  .impact-bubble, .impact-bar { transition: none; }
+  .impact-bubble, .impact-bar, .ib-pct-bar { transition: none; }
 }
 
 /* Hook-Sektion: Restkarte leicht verblasst - voller Fokus auf Heta */
@@ -543,6 +646,10 @@ body {
 
 /* ---------- SST-Intro (Warming Stripes + Liniendiagramm) ---------- */
 .sst-title { font-size: 15px; font-weight: 600; fill: var(--text); }
+.sst-legend-bar { stroke: var(--graticule); stroke-width: 0.5; }
+.sst-legend-zero { stroke: var(--text); stroke-width: 1; }
+.sst-legend-label { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.sst-legend-cap { font-size: 11px; fill: var(--muted); }
 .sst-axis line { stroke: var(--muted); }
 .sst-axis text { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
 .sst-latest { font-size: 12px; fill: var(--text); font-variant-numeric: tabular-nums; }
@@ -551,7 +658,25 @@ body {
 .sst-zero { stroke: var(--muted); stroke-width: 0.8; stroke-dasharray: 4 3; }
 .sst-cursor line { stroke: var(--text); stroke-width: 0.9; stroke-dasharray: 2 2; }
 .sst-cursor circle { fill: var(--accent); stroke: #ffffff; stroke-width: 1.2; }
+/* Statischer 2001-Marker (Start der Impact-Analyse) - dezent, klar von Hover unterschieden */
+/* 2001-Marker: Beginn des Wind-/Impact-Datensatzes - klar sichtbar in Akzent (Story-Highlight) */
+.sst-window { fill: var(--accent); opacity: 0.06; pointer-events: none; }
+.sst-analysis { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 3; stroke-opacity: 0.9; }
+.sst-analysis-dot { fill: var(--accent); }
+.sst-analysis-label {
+  font-size: 11.5px; fill: var(--accent-text); font-weight: 700;
+  paint-order: stroke; stroke: #fff; stroke-width: 3.5px;
+}
 .sst-line-overlay { cursor: crosshair; }
+
+/* ---------- Storm-Trend (3 gestapelte Linien-Panels, Step 1) ---------- */
+.st-panel-title { font-size: 13px; font-weight: 600; fill: var(--text); }
+.st-axis line { stroke: var(--muted); }
+.st-axis text { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.st-line { fill: none; stroke: var(--point); stroke-width: 1.6; }
+.st-line--ctx { stroke: var(--track); stroke-width: 1.6; }
+.st-end-label { font-size: 11px; font-weight: 600; }
+.st-overlay { cursor: crosshair; }
 
 /* ---------- Tooltip ---------- */
 .tooltip {
@@ -805,38 +930,104 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 }
 .cc-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ----- Explore-Dashboard-Kacheln (Plan delightful-harbor) ----- */
-.tile-row {
+/* ----- Explore-Dashboard-Kacheln: deterministisches 2x2-Grid ----- */
+.tile-grid {
   display: grid;
-  /* min(340px, 100%) + min-width: 0 - als Flex-Item der Workbench darf die Reihe
-     nie über ihren Container hinauswachsen (auto-fit zählt sonst zu viele Spalten). */
-  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
-  gap: 34px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
   width: 100%;
   min-width: 0;
   max-width: 1440px;
-  margin: 40px auto 0;
+  margin: 24px auto 0;
+}
+@media (max-width: 1099px) {
+  .tile-grid { grid-template-columns: 1fr; }
 }
 .tile {
   background: #fff;
   border: 1px solid var(--graticule);
   border-radius: 12px;
   box-shadow: 0 1px 6px rgba(34, 48, 60, 0.08);
-  padding: 16px 18px 12px;
+  padding: 12px 16px 8px;
   min-width: 0;
 }
 .tile h3 {
-  margin: 0 0 10px;
+  margin: 0 0 6px;
   text-transform: uppercase; letter-spacing: 0.08em;
   font-size: 12px; font-weight: 600; color: var(--muted);
 }
 .tile-body svg { width: 100%; height: auto; display: block; }
-.tile-body--unit svg { max-height: 300px; }
 .tile-controls { margin-top: 6px; }
-.tile-note { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+.tile-note { margin: 6px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+
+/* Kachel-Kopf: Titel links, Expand-Button rechts */
+.tile-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.tile-head h3 { margin-bottom: 6px; }
+.tile-expand {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0; margin-top: -3px;
+  border: 1px solid transparent; border-radius: 6px;
+  background: none; color: var(--muted); cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.tile-expand:hover { color: var(--trend); border-color: var(--graticule); }
+.tile-expand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Scatter als Grid-Kachel: füllt die Zelle im kompakten Aspect (deckt sich mit
+   EXPLORE_SCATTER 640x337 → kein Letterbox; Basisregel deckelt sonst auf 780px/520). */
+.tile-body--scatter .viz-frame--scatter { max-width: none; aspect-ratio: 640 / 337; }
+
+/* Expand-to-Focus-Modal: Kachel-DOM wird verschoben (Listener/Brush bleiben erhalten) */
+.tile-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.28);
+  z-index: 36; opacity: 0; transition: opacity 0.28s ease;
+}
+.tile-modal-backdrop.show { opacity: 1; }
+.tile-modal {
+  position: fixed; inset: 0; z-index: 38;
+  display: grid; place-items: center; padding: 4vh 4vw;
+}
+.tile-modal-frame {
+  position: relative; width: min(1100px, 100%); max-height: 92vh; overflow: auto;
+  opacity: 0; transform: scale(0.97);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.tile-modal.show .tile-modal-frame { opacity: 1; transform: none; }
+.tile-modal-close {
+  position: absolute; top: 10px; right: 12px; z-index: 2;
+  border: none; background: none; font-size: 26px; line-height: 1;
+  color: var(--muted); cursor: pointer; padding: 2px 6px;
+}
+.tile-modal-close:hover { color: var(--trend); }
+.tile-modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tile--expanded .tile-expand { display: none; }
+.tile--expanded .tile-body svg { max-height: 78vh; }
+.tile--placeholder { border-style: dashed; background: transparent; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .tile-modal-backdrop, .tile-modal-frame { transition: none; }
+}
+
+/* Storm hot zones: Zellraster + Track-Overlay + Dim/Highlight */
+.heat-cell { transition: fill-opacity 0.18s ease; }
+.heat-cell.dim { fill-opacity: 0.2; }
+.heat-cell.hl { stroke: var(--accent); stroke-width: 1; }
+.heat-track-overlay { fill: none; stroke: var(--accent); stroke-width: 2; pointer-events: none; }
+.heat-legend-label { font-size: 10.5px; fill: var(--muted); }
+
+/* Cross-Highlighting der Kacheln: gedimmte Marken auf 20 % (dichter Kontext als
+   die Map, daher Literal statt --dim-opacity) */
+.pb-bar, .pb-value, .tt-dot { transition: fill-opacity 0.18s ease; }
+.pb-bar.dim, .pb-value.dim { fill-opacity: 0.2; }
+.pb-bar.hl { stroke: var(--accent); stroke-width: 1.2; }
+.tt-dot.dim { fill-opacity: 0.2; }
+.tt-dot.hl { stroke: var(--accent); stroke-width: 1.6; }
+
+/* Trend-/Heatmap-Hover auf der Karte spiegeln (textSet = Multi-ID-Kanal) */
+.track.set-hi { stroke: var(--point); stroke-opacity: 0.9; }
+.track.set-dim { stroke-opacity: var(--dim-opacity); }
 
 /* Kachel-Mini-Legende (Serienfarben) - von Profil-Balken und Jahres-Trend genutzt */
-.tile-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; margin-bottom: 6px; }
+.tile-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; margin-bottom: 3px; }
 .tile-legend i {
   display: inline-block; width: 10px; height: 10px; border-radius: 50%;
   margin-right: 5px; vertical-align: -1px;
@@ -849,6 +1040,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 .pb-bar { cursor: pointer; }
 .pb-bar:hover { fill-opacity: 0.82; }
 .pb-value { font-size: 10px; fill: var(--muted); dominant-baseline: middle; }
+.pb-value.pb-na { font-style: italic; fill-opacity: 0.7; }
 
 /* Data availability: typografische Mikro-Legende über dem Punktraster */
 .tile-note--legend { margin: 0 0 8px; display: flex; align-items: center; }

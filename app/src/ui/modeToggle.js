@@ -21,7 +21,7 @@ export function createModeToggle(container, ctx) {
       btn.setAttribute('aria-pressed', String(btn.dataset.mode === state.mode));
     }
     if (announce) {
-      hint.textContent = 'expectation re-fitted for this scale';
+      hint.textContent = 'wind-only baseline re-fitted for this scale';
       hint.classList.add('visible');
       clearTimeout(hintTimer);
       hintTimer = setTimeout(() => hint.classList.remove('visible'), 2200);

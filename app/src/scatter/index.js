@@ -15,11 +15,14 @@ const ALL_LAYERS = ['axes', 'rug', 'trend', 'brush', 'points', 'annotations'];
 
 export function createScatter(container, ctx, opts = {}) {
   const layersWanted = opts.layers ?? ALL_LAYERS;
-  const { margin } = SCATTER;
-  const inner = scatterInner();
+  // Kompakte Dims per Instanz (Explore-Tile) - ohne opts.dims greift das globale SCATTER
+  // (Story-Sektionen bleiben unverändert groß).
+  const S = opts.dims ?? SCATTER;
+  const { margin } = S;
+  const inner = scatterInner(S);
 
   const svg = select(container).append('svg')
-    .attr('viewBox', `0 0 ${SCATTER.width} ${SCATTER.height}`)
+    .attr('viewBox', `0 0 ${S.width} ${S.height}`)
     .attr('role', 'img');
   const root = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 

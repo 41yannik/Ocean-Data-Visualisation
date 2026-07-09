@@ -26,16 +26,29 @@ export function createAnnotationsLayer(gAnnotations, layerCtx) {
     enter.append('text').attr('class', 'anno-label');
 
     const { x, y, r } = layerCtx.scales;
-    enter.merge(sel).each(function (d, i) {
+    // Kollisionsschutz für bis zu 3 Labels: jedem eine EIGENE Reihe geben (nach x-Rang
+    // geordnet, damit die Leader nicht kreuzen). Ringe nahe der Oberkante (Top-Region)
+    // staffeln NACH UNTEN in die dort leere Plotfläche - sonst würden die Labels über
+    // den oberen SVG-Rand hinauslaufen (der frühere 2-Reihen-Stagger ließ die 3
+    // Ausreißer-Labels Judy/Gita/Kevin überlappen).
+    const rank = new Map(
+      [...annos]
+        .sort((a, b) => (a.event.intensity_kt ?? 0) - (b.event.intensity_kt ?? 0))
+        .map((a, k) => [a.eventId, k]),
+    );
+    const ROW = 17;
+    enter.merge(sel).each(function (d) {
       const cx = x(d.event.intensity_kt);
       const cy = y.scale(y.value(d.event));
       const ringR = r(d.event.deaths ?? 0) + 5;
-      const labelY = cy - ringR - 10 - (i % 2) * 16; // Stagger gegen Label-Kollisionen
+      const k = rank.get(d.eventId) ?? 0;
+      const below = cy < inner.height * 0.33; // nahe Oberkante → Labels nach unten
+      const labelY = below ? cy + ringR + 16 + k * ROW : cy - ringR - 10 - k * ROW;
       const node = select(this);
       node.select('.anno-ring').attr('cx', cx).attr('cy', cy).attr('r', ringR);
       node.select('.anno-leader')
-        .attr('x1', cx).attr('y1', cy - ringR)
-        .attr('x2', cx).attr('y2', labelY + 3);
+        .attr('x1', cx).attr('y1', below ? cy + ringR : cy - ringR)
+        .attr('x2', cx).attr('y2', below ? labelY - 11 : labelY + 3);
       node.select('.anno-label')
         .attr('x', Math.max(70, Math.min(inner.width - 70, cx)))
         .attr('y', labelY)

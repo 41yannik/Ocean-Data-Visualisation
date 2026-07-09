@@ -18,3 +18,6 @@ app/public/data/meta*.json
 # Python
 __pycache__/
 *.pyc
+
+# Playwright/Verifikations-Screenshots (lokale Prüfung, nicht ins Repo)
+.playwright-mcp/

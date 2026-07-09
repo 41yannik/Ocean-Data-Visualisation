@@ -85,8 +85,7 @@ export function createSwathLayer(g, layerCtx) {
     if (!best) return;
     marker.style('display', null).attr('cx', best.x).attr('cy', best.y);
     tip.innerHTML = `<div class="tt-title">Cyclone Heta</div>`
-      + `<div class="tt-sub">wind along the track</div>`
-      + `<dl><dt>Wind speed</dt><dd>${best.wind != null ? `${Math.round(best.wind)} kt` : '&lt; 34 kt'}</dd></dl>`;
+      + `<dl><dt>Wind along track</dt><dd>${best.wind != null ? `${Math.round(best.wind)} kt` : '&lt; 34 kt'}</dd></dl>`;
     tip.classList.add('visible');
     const pad = 14;
     const r = tip.getBoundingClientRect();

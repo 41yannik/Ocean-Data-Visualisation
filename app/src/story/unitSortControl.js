@@ -17,7 +17,7 @@ export function createUnitSortControl(container, ctx) {
 
   function render(state) {
     const quality = (state.unitSort ?? 'chrono') === 'quality';
-    btn.textContent = quality ? '↺ Sort chronologically' : 'Sort by data quality';
+    btn.textContent = quality ? '↺ Sort chronologically' : 'Sort by data completeness';
     btn.classList.toggle('active', quality);
     btn.setAttribute('aria-pressed', quality ? 'true' : 'false');
   }

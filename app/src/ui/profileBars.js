@@ -2,36 +2,43 @@
 // gruppiertes horizontales Balkendiagramm - je Metrik eine Gruppe aus drei Balken
 // (Mawar/Percy/Guba) mit dem Perzentil-Rang über alle scatterbaren Events. Ehrlich:
 // nur REALE Felder, kein erfundener Verwundbarkeits-Index. Hover → Rohwert-Tooltip.
+// Cross-Highlighting: Bar-Hover emittiert hover OHNE x/y (globaler Tooltip bleibt
+// stumm, tooltip.js-Guard) → Karte/Scatter/Heatmap heben den Sturm hervor. Empfang:
+// dimmt nur, wenn der gehoverte/selektierte Sturm hier überhaupt vorkommt - Hover
+// auf beliebige Map-Tracks darf die Kachel nicht dauerflackern lassen.
 import { select, scaleLinear } from 'd3';
 import { isScatterable } from '../core/filters.js';
 import { fmtInt, fmtPct, fmtKt } from '../core/format.js';
 import { STORY_STORMS, STORM_COLORS } from '../story/keyStorms.js';
 
 const AXES = [
-  { key: 'intensity_kt', label: 'Wind speed', fmt: fmtKt },
-  { key: 'affected', label: 'People affected', fmt: fmtInt },
-  { key: 'affected_pc', label: 'Share of population', fmt: fmtPct },
+  { key: 'intensity_kt', label: 'Max sustained wind', fmt: fmtKt },
+  { key: 'affected', label: 'Reported affected', fmt: fmtInt },
+  { key: 'affected_pc', label: 'Share of population affected', fmt: fmtPct },
   { key: 'deaths', label: 'Deaths', fmt: fmtInt },
   { key: 'pop', label: 'Population exposed', fmt: fmtInt },
 ];
 
+// Kompakt fürs 2x2-Grid (~1.9:1): dünnere Balken, engere Gruppen → alle vier Kacheln
+// gleich hoch und zusammen in einen Viewport.
 const W = 460;
-const M = { top: 8, right: 44, bottom: 26, left: 12 };
-const GROUP_GAP = 26;   // zwischen Metrik-Gruppen
-const BAR_H = 9;
-const BAR_GAP = 3;
-const LABEL_H = 15;     // Metrik-Label über jeder Gruppe
+const M = { top: 8, right: 44, bottom: 22, left: 12 };
+const GROUP_GAP = 11;   // zwischen Metrik-Gruppen
+const BAR_H = 6;
+const BAR_GAP = 2;
+const LABEL_H = 12;     // Metrik-Label über jeder Gruppe
 const GROUP_H = LABEL_H + 3 * BAR_H + 2 * BAR_GAP;
 const H = M.top + M.bottom + AXES.length * GROUP_H + (AXES.length - 1) * GROUP_GAP;
 
 export function createProfileBars(container, ctx) {
-  const { data } = ctx;
+  const { data, bus } = ctx;
   const events = data.events.filter(isScatterable);
 
-  // Perzentil-Rang je Achse (Anteil der Events mit kleinerem/gleichem Wert)
-  const val = (e, key) => e[key] ?? 0;
+  // Perzentil-Rang je Achse - NUR über Events mit erfasstem Wert. Fehlende Tote NICHT
+  // als 0 werten (Review-Fix): sonst läse ein Sturm ohne gemeldete Tote als ~50. Perzentil
+  // „mittlere Tödlichkeit", wo in Wahrheit keine Daten vorliegen (Missing ≠ Zero).
   const sorted = {};
-  for (const a of AXES) sorted[a.key] = events.map((e) => val(e, a.key)).sort((x, y) => x - y);
+  for (const a of AXES) sorted[a.key] = events.map((e) => e[a.key]).filter((v) => v != null).sort((x, y) => x - y);
   const pct = (v, key) => {
     const arr = sorted[key];
     let lo = 0;
@@ -50,7 +57,7 @@ export function createProfileBars(container, ctx) {
 
   const svg = select(container).append('svg')
     .attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img')
-    .attr('aria-label', 'Grouped horizontal bar chart comparing Mawar, Percy and Cyclone Guba by percentile rank of wind speed, people affected, share of population, deaths and population exposed');
+    .attr('aria-label', 'Grouped horizontal bar chart comparing Mawar, Percy and Cyclone Guba by percentile rank of maximum sustained wind, reported affected people, share of population affected, deaths and population exposed');
 
   const x = scaleLinear().domain([0, 1]).range([M.left, W - M.right]);
 
@@ -59,10 +66,14 @@ export function createProfileBars(container, ctx) {
   tip.className = 'tooltip';
   document.body.appendChild(tip);
   const showTip = (event, s, a) => {
+    const raw = s.event[a.key];
+    const pctLine = raw == null
+      ? '<div class="tt-sub">Percentile: <strong>not reported</strong></div>'
+      : `<div class="tt-sub">Percentile: <strong>${fmtPct(pct(raw, a.key))}</strong></div>`;
     tip.innerHTML = `<div class="tt-title">${s.label}</div>`
       + `<div class="tt-sub">${s.event.country}</div>`
-      + `<div class="tt-sub">${a.label}: <strong>${a.fmt(s.event[a.key] ?? 0)}</strong></div>`
-      + `<div class="tt-sub">Percentile: <strong>${fmtPct(pct(val(s.event, a.key), a.key))}</strong></div>`;
+      + `<div class="tt-sub">${a.label}: <strong>${a.fmt(raw)}</strong></div>`
+      + pctLine;
     tip.classList.add('visible');
     moveTip(event);
   };
@@ -88,35 +99,68 @@ export function createProfileBars(container, ctx) {
       .text(`${t * 100}%`);
   }
 
-  // Metrik-Gruppen
+  // Metrik-Gruppen; Balken + Wertlabels je Sturm einsammeln (Cross-Highlighting)
+  const marksByStorm = new Map(storms.map((s) => [s.key, []]));
   AXES.forEach((a, gi) => {
     const gy = M.top + gi * (GROUP_H + GROUP_GAP);
     const g = svg.append('g');
     g.append('text').attr('class', 'pb-group-label')
       .attr('x', M.left).attr('y', gy + 11).text(a.label);
     storms.forEach((s, si) => {
-      const v = pct(val(s.event, a.key), a.key);
+      const raw = s.event[a.key];
+      const has = raw != null;                 // fehlender Wert (z. B. Percy-Tote) → kein Balken
+      const v = has ? pct(raw, a.key) : 0;
       const by = gy + LABEL_H + si * (BAR_H + BAR_GAP);
-      g.append('rect').attr('class', 'pb-bar')
+      const bar = g.append('rect').attr('class', 'pb-bar')
         .attr('x', x(0)).attr('y', by).attr('height', BAR_H)
-        .attr('width', Math.max(1, x(v) - x(0)))
+        .attr('width', has ? Math.max(1, x(v) - x(0)) : 0)
         .style('fill', STORM_COLORS[s.key])
-        .on('mouseenter', (event) => showTip(event, s, a))
+        .on('mouseenter', (event) => {
+          showTip(event, s, a);
+          // hover ohne x/y: Highlight überall, globaler Tooltip bleibt aus
+          bus.set({ hover: { sid: s.event.sid, eventId: s.event.id, source: 'profile' } });
+        })
         .on('mousemove', moveTip)
-        .on('mouseleave', hideTip);
-      g.append('text').attr('class', 'pb-value')
-        .attr('x', x(v) + 5).attr('y', by + BAR_H - 1)
-        .text(fmtPct(v));
+        .on('mouseleave', () => { hideTip(); bus.set({ hover: null }); });
+      const label = g.append('text').attr('class', has ? 'pb-value' : 'pb-value pb-na')
+        .attr('x', (has ? x(v) : x(0)) + 5).attr('y', by + BAR_H - 1)
+        .text(has ? fmtPct(v) : 'not reported');
+      marksByStorm.get(s.key).push(bar, label);
     });
   });
 
   const note = document.createElement('p');
   note.className = 'tile-note';
-  note.textContent = `Each bar: percentile rank among the ${events.length} fully recorded storm-country strikes.`;
+  note.textContent = 'Bars show percentile rank among complete storm-country pairs.';
   container.appendChild(note);
 
+  const storySids = new Set(storms.map((s) => s.event?.sid).filter(Boolean));
+
   return {
-    update() {}, // statische Vergleichskachel
+    update(state, patch) {
+      if (patch && !('hover' in patch) && !('selectedEventIds' in patch) && !('textSet' in patch)) return;
+      const hoverSid = state.hover?.sid ?? null;
+      const sel = state.selectedEventIds;
+      const textSet = state.textSet?.ids ?? null;
+
+      // Ein Sturm „leuchtet", wenn er gehovert, im textSet oder selektiert ist.
+      const lit = (s) => s.event.sid === hoverSid
+        || (textSet?.has(s.event.id) ?? false)
+        || (sel?.has(s.event.id) ?? false);
+      // Dimmen nur, wenn die Interaktion diese Kachel betrifft: gehoverter Sturm ist
+      // einer der drei, ODER Selektion/textSet aktiv (dann treten Nicht-Mitglieder zurück).
+      const dimActive = (hoverSid != null && storySids.has(hoverSid))
+        || (sel != null && sel.size > 0)
+        || (textSet != null && storms.some((s) => textSet.has(s.event.id)));
+
+      for (const s of storms) {
+        const isLit = lit(s);
+        for (const mark of marksByStorm.get(s.key)) {
+          mark.classed('hl', isLit && s.event.sid === hoverSid)
+            .classed('dim', dimActive && !isLit);
+        }
+      }
+    },
     destroy() { tip.remove(); legend.remove(); note.remove(); svg.remove(); },
   };
 }

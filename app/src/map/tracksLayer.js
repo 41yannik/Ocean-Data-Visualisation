@@ -13,11 +13,17 @@ export function createTracksLayer(g, layerCtx) {
 
   // Statische Geometrie einmalig: LineString durch geo.path (Antimeridian-Clipping!) -
   // NIEMALS Punkte einzeln projizieren und verbinden (Stolperstein 7).
-  const storms = Object.entries(data.tracks).map(([sid, pts]) => ({
-    sid,
-    events: bySid.get(sid) ?? [],
-    lineString: { type: 'LineString', coordinates: pts.map((p) => [p[0], p[1]]) },
-  }));
+  const storms = Object.entries(data.tracks).map(([sid, pts]) => {
+    const events = bySid.get(sid) ?? [];
+    return {
+      sid,
+      events,
+      // Ein kanonischer Jahr-Slot je Sturm für den Zeit-Scrubber: frühestes Impact-Jahr
+      // (löst die wenigen SID-Saison≠Impact-/Mehr-Jahr-Fälle deterministisch auf).
+      year: events.length ? Math.min(...events.map((e) => e.year)) : null,
+      lineString: { type: 'LineString', coordinates: pts.map((p) => [p[0], p[1]]) },
+    };
+  });
 
   const paths = g.selectAll('path')
     .data(storms, (d) => d.sid)
@@ -45,20 +51,32 @@ export function createTracksLayer(g, layerCtx) {
       : null;
     const hoverSid = state.hover?.sid ?? null;
     const focus = state.storyFx?.focusSids ? new Set(state.storyFx.focusSids) : null;
+    // textSet (Trend-Dot-/Heatmap-Zellen-Hover): 1:n-Kanal, Mitglieder heben sich,
+    // Rest dimmt - nur in der Erkundung relevant, Story nutzt eigene storyFx-Felder.
+    const textSet = state.textSet?.ids ?? null;
+    const inTextSet = (d) => d.events.some((e) => textSet.has(e.id));
+    // Zeit-Scrubber: aktives Jahr leuchtet, alle anderen werden zur Kontext-Kulisse gedimmt.
+    // null = „Alle Jahre" → beide Klassen aus, heutiges Verhalten. filtered-out behält Vorrang.
+    const activeYear = state.activeYear ?? null;
 
     paths
       .classed('filtered-out', (d) => !d.events.some((e) => matchesFilters(e, state.filters)))
+      .classed('year-active', (d) => activeYear != null && d.year === activeYear)
+      .classed('year-context', (d) => activeYear != null && d.year !== activeYear)
       .classed('hovered', (d) => d.sid === hoverSid)
       .classed('detail', (d) => d.sid === state.detailSid)
       .classed('selected', (d) => selectedSids?.has(d.sid) ?? false)
       .classed('dimmed', (d) => selectedSids != null && !selectedSids.has(d.sid))
+      .classed('set-hi', (d) => (textSet ? inTextSet(d) : false))
+      .classed('set-dim', (d) => (textSet ? !inTextSet(d) : false))
       .classed('story-focus', (d) => focus?.has(d.sid) ?? false)
       .classed('story-faded', (d) => focus != null && !focus.has(d.sid) && !state.storyFx?.focusOnly)
       .classed('story-hidden', (d) => focus != null && !focus.has(d.sid) && state.storyFx?.focusOnly === true)
       .attr('stroke-width', (d) => {
         const base = strokeForCategory(d.events[0]?.category);
         const lifted = d.sid === hoverSid || d.sid === state.detailSid
-          || (selectedSids?.has(d.sid) ?? false) || (focus?.has(d.sid) ?? false);
+          || (selectedSids?.has(d.sid) ?? false) || (focus?.has(d.sid) ?? false)
+          || (activeYear != null && d.year === activeYear);
         return lifted ? base + 0.8 : base;
       });
   }
@@ -95,7 +113,8 @@ export function createTracksLayer(g, layerCtx) {
     update(state, patch) {
       if (!patch) { render(state); drawIn(state); return; } // Vollrender (Mount/Harness)
       if ('hover' in patch || 'selectedEventIds' in patch || 'detailSid' in patch
-        || 'filters' in patch || 'storyFx' in patch) {
+        || 'filters' in patch || 'storyFx' in patch || 'textSet' in patch
+        || 'activeYear' in patch) {
         render(state);
       }
       if ('storyFx' in patch) drawIn(state);

@@ -36,6 +36,26 @@ export function createFormationLayer(gDots, layerCtx) {
       .attr('text-anchor', 'middle').text(unit.labels[key].text);
   }
 
+  // Statische Zustandslegende - nur in der Unit-Formation sichtbar (Review-Fix: die vier
+  // Zustände waren nur in Prosa/ARIA/Hover kodiert). Reused unit-* Klassen, per getBBox
+  // unten zentriert; Fade zusammen mit der Formation.
+  const gLegend = gDots.append('g').attr('class', 'uc-legend').attr('opacity', 0);
+  const legItems = [
+    { cls: 'unit-solid', label: 'complete' },
+    { cls: 'unit-nowind', label: 'impact, no wind' },
+    { cls: 'unit-ghost', label: 'impact missing' },
+    { cls: 'unit-recon', label: 'wind reconstructed' },
+  ];
+  let lx = 0;
+  for (const it of legItems) {
+    gLegend.append('circle').attr('class', `unit-dot ${it.cls}`)
+      .attr('cx', lx).attr('cy', 0).attr('r', 7).style('pointer-events', 'none');
+    const t = gLegend.append('text').attr('class', 'uc-legend-label').attr('x', lx + 12).attr('y', 4).text(it.label);
+    lx += 12 + (t.node().getComputedTextLength() || it.label.length * 6.5) + 24;
+  }
+  const lbb = gLegend.node().getBBox();
+  gLegend.attr('transform', `translate(${(inner.width - lbb.width) / 2 - lbb.x}, ${inner.height - 6})`);
+
   // Lokaler Tooltip - Wortlaut identisch zum eigenständigen Unit Chart
   const tip = document.createElement('div');
   tip.className = 'tooltip';
@@ -90,6 +110,7 @@ export function createFormationLayer(gDots, layerCtx) {
     gDots.classed('fm-unit', toUnit);
     gLabels.transition('fm-lab').duration(400)
       .attr('opacity', toUnit && (state.unitSort ?? 'chrono') === 'quality' ? 1 : 0);
+    gLegend.transition('fm-leg').duration(400).attr('opacity', toUnit ? 1 : 0);
   }
 
   // Story-Klassen der Scatter-Formation (Teilmenge von pointsLayer.classes - der

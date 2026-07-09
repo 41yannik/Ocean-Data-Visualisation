@@ -12,7 +12,7 @@ export function createAxesLayer(g, layerCtx) {
   g.append('text').attr('class', 'axis-label')
     .attr('x', inner.width / 2).attr('y', inner.height + 40)
     .attr('text-anchor', 'middle')
-    .text('max. sustained wind (USA agency, kt)');
+    .text('maximum sustained wind (USA agency, kt)');
 
   const yLabel = g.append('text').attr('class', 'axis-label')
     .attr('transform', 'rotate(-90)')
@@ -37,11 +37,10 @@ export function createAxesLayer(g, layerCtx) {
     const total = filtered.length;
     const rug = filtered.filter((e) => !isScatterable(e) && e.intensity_kt != null).length;
     const noWind = total - shown - rug;
-    // "(ticks)" nur erwähnen, wenn das Rug gerade sichtbar ist (storyFx-Konvention wie rugLayer)
-    const rugVisible = state.storyFx == null || state.storyFx.showRug === true;
-    caption.text(`n = ${shown} of ${total} storm-country pairs shown`
-      + (rug ? ` · ${rug} with wind but no impact count${rugVisible ? ' (ticks)' : ''}` : '')
-      + (noWind ? ` · ${noWind} without wind data` : ''));
+    // Kurze, datengetriebene Caption: vollständige Paare · Wind-only-Ticks · fehlender Wind.
+    caption.text(`n = ${shown} complete storm-country pairs`
+      + (rug ? ` · ${rug} wind-only records` : '')
+      + (noWind ? ` · ${noWind} missing wind record${noWind > 1 ? 's' : ''}` : ''));
   }
 
   return {

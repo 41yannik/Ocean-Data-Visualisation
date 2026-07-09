@@ -12,7 +12,7 @@ const LABEL_OFFSETS = {
 const DEFAULT_OFFSET = { dx: 5, dy: 3, anchor: 'start' };
 
 export function createCentroidsLayer(gCentroids, gLabels, layerCtx) {
-  const { data, geo } = layerCtx;
+  const { data, geo, labelScope } = layerCtx;
   const entries = Object.entries(data.index.centroids)
     .map(([iso3, [lon, lat]]) => ({ iso3, point: geo.projection([lon, lat]) }))
     .filter((d) => d.point);
@@ -45,10 +45,14 @@ export function createCentroidsLayer(gCentroids, gLabels, layerCtx) {
       .attr('cy', (d) => d.point[1])
       .attr('r', 9);
 
-    // Labels dynamisch: Story-Inseln (LABELED_ISO3) + aktuell betonte (z. B. ASM im Hook)
+    // Labels dynamisch: Story-Inseln (LABELED_ISO3) + aktuell betonte (z. B. ASM im Hook).
+    // labelScope 'story' beschränkt auf die betonten Inseln → im Heta-Hook tragen die
+    // Impact-Bubbles ASM/NIU, ablenkende Nachbarn (Tonga/Samoa) bleiben unbeschriftet.
+    const labelable = labelScope === 'story'
+      ? (d) => storyIsos.includes(d.iso3)
+      : (d) => LABELED_ISO3.includes(d.iso3) || storyIsos.includes(d.iso3);
     gLabels.selectAll('text')
-      .data(entries.filter((d) =>
-        (LABELED_ISO3.includes(d.iso3) || storyIsos.includes(d.iso3)) && !bubbleIsos.has(d.iso3)), (d) => d.iso3)
+      .data(entries.filter((d) => labelable(d) && !bubbleIsos.has(d.iso3)), (d) => d.iso3)
       .join('text')
       .attr('class', 'centroid-label')
       .classed('emphasis', (d) => storyIsos.includes(d.iso3))

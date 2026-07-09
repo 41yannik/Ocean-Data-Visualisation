@@ -6,7 +6,7 @@
 // Hover spiegelt sich in den Balken rechts (state.hetaFocusIso3 = Cross-Highlight).
 // Werte kommen ausschließlich aus events.json (byId); reducedMotion: sofort voll.
 import { easeBackOut } from 'd3';
-import { fmtInt } from '../core/format.js';
+import { fmtInt, fmtPct } from '../core/format.js';
 import { COUNTRY_LOOKUP } from './countryNames.js';
 
 const R_BUBBLE_MAX = 46;
@@ -52,12 +52,17 @@ export function createImpactLayer(g, layerCtx) {
 
       const label = node.append('text')
         .attr('class', 'impact-label').attr('opacity', 0);
+      // Direktlabel mit BEIDEN Perspektiven: absolute Betroffene (Kreisfläche) UND
+      // Bevölkerungsanteil (relativ) - die zentrale Kontrast-Erkenntnis direkt an der Karte.
       label.append('tspan').attr('class', 'il-name')
-        .attr('x', px + r + 8).attr('y', py - 2)
+        .attr('x', px + r + 8).attr('y', py - 8)
         .text(COUNTRY_LOOKUP[d.e.iso3] ?? d.e.iso3);
       label.append('tspan').attr('class', 'il-value')
         .attr('x', px + r + 8).attr('dy', 14)
         .text(`${fmtInt(d.e.affected)} affected`);
+      label.append('tspan').attr('class', 'il-pct')
+        .attr('x', px + r + 8).attr('dy', 13)
+        .text(`${fmtPct(d.e.affected_pc)} of population`);
 
       bubbles.set(d.e.iso3, { circle, label, r, popped: false });
     }

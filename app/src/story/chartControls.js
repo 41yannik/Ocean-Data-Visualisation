@@ -11,8 +11,8 @@ import { STORY_STORMS } from './keyStorms.js';
 
 const ANNOS = {
   mawar: 'Mawar {{event:2023-0300-GUM.year}} · {{event:2023-0300-GUM.affected_pc:pct}} of Guam affected',
-  percy: 'Percy · extreme wind, almost no impact',
-  guba: 'Guba · weak wind, deadly impact ({{event:2007-0557-PNG.deaths:int}} deaths)',
+  percy: 'Percy · extreme wind, almost no reported impact',
+  guba: 'Guba · weak wind, {{event:2007-0557-PNG.deaths:int}} reported deaths',
 };
 
 const BUTTONS = [

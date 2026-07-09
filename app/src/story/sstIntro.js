@@ -8,11 +8,12 @@
 import { select, scaleLinear, interpolateRdBu, max, extent, line as d3line } from 'd3';
 
 const W = 960;
-const H = 640;
+const H = 520; // verdichtet (Kontext-Layer, kein Hauptbeweis)
+const LEGEND_H = 40; // eigene Zeile unter den Charts für die divergierende Farbskala
 // GEMEINSAME linke/rechte Ränder für beide Charts - das garantiert die bündige x-Achse.
-const MARGIN = { top: 46, right: 20, bottom: 40, left: 64 };
-const STRIPES_H = 260;
-const GAP = 30;
+const MARGIN = { top: 40, right: 20, bottom: 36, left: 64 };
+const STRIPES_H = 200;
+const GAP = 20;
 
 const fmtAnom = (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)} °C`;
 
@@ -36,7 +37,7 @@ export function createSstIntro(container, ctx) {
   const y = scaleLinear().domain([minA, maxA]).nice().range([lineTop + lineH, lineTop]);
 
   const svg = select(container).append('svg')
-    .attr('viewBox', `0 0 ${W} ${H}`)
+    .attr('viewBox', `0 0 ${W} ${H + LEGEND_H}`)
     .attr('role', 'img')
     .attr('aria-label', 'Warming stripes and annual line chart: Pacific sea-surface temperature anomalies by year');
   const root = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
@@ -109,6 +110,49 @@ export function createSstIntro(container, ctx) {
     .attr('transform', (yr) => `translate(${x(yr) + bandW / 2},${lineTop + lineH})`)
     .call((g) => g.append('line').attr('y2', 6))
     .call((g) => g.append('text').attr('y', 22).attr('text-anchor', 'middle').text((yr) => yr));
+
+  // ---- Story-Marker: Start des Wind-/Schaden-Datensatzes (2001) im langen Klimakontext ----
+  // Akzent-Marker durch BEIDE Charts + getöntes Fenster rechts der Kante: macht klar, dass die
+  // SST-Reihe bis 1850 zurückreicht, die von der Story analysierten Wind-/Impact-Daten aber
+  // erst 2001 beginnen. (Akzent = bewusster Story-Highlight, konform zur Farbregel.)
+  const analysisX = x(2001) + bandW / 2;
+  const markerBottom = lineTop + lineH;
+  root.append('rect').attr('class', 'sst-window')
+    .attr('x', analysisX).attr('y', 0)
+    .attr('width', innerW - analysisX).attr('height', markerBottom);
+  root.append('line').attr('class', 'sst-analysis')
+    .attr('x1', analysisX).attr('x2', analysisX).attr('y1', 0).attr('y2', markerBottom);
+  root.append('circle').attr('class', 'sst-analysis-dot').attr('cx', analysisX).attr('cy', 0).attr('r', 4);
+  root.append('text').attr('class', 'sst-analysis-label')
+    .attr('x', analysisX - 10).attr('y', 14).attr('text-anchor', 'end')
+    .text('2001 · wind & impact data begin');
+
+  // ---- Farbskalen-Legende (Review-Fix: die divergierende Stripe-Rampe ist die
+  // Primärkodierung des oberen Charts und brauchte eine Skala). Eigene Zeile unter den
+  // Charts; Endpunkte in °C, neutraler 0-Marker (divergierend = zwei Pole + Grau-Mitte). ----
+  const legW = 240;
+  const legX = (W - legW) / 2;
+  const legY = H + 6;
+  const defs = svg.append('defs');
+  const grad = defs.append('linearGradient').attr('id', 'sst-legend-grad')
+    .attr('x1', '0%').attr('x2', '100%');
+  const STOPS = 12;
+  for (let i = 0; i <= STOPS; i += 1) {
+    const anom = minA + ((maxA - minA) * i) / STOPS;
+    grad.append('stop').attr('offset', `${Math.round((i / STOPS) * 100)}%`).attr('stop-color', color(anom));
+  }
+  const gLeg = svg.append('g').attr('class', 'sst-legend');
+  gLeg.append('rect').attr('class', 'sst-legend-bar')
+    .attr('x', legX).attr('y', legY).attr('width', legW).attr('height', 10)
+    .attr('fill', 'url(#sst-legend-grad)');
+  // neutraler 0-Marker
+  const zeroFrac = (0 - minA) / (maxA - minA);
+  gLeg.append('line').attr('class', 'sst-legend-zero')
+    .attr('x1', legX + zeroFrac * legW).attr('x2', legX + zeroFrac * legW)
+    .attr('y1', legY - 2).attr('y2', legY + 12);
+  gLeg.append('text').attr('class', 'sst-legend-label').attr('x', legX - 8).attr('y', legY + 9).attr('text-anchor', 'end').text(fmtAnom(minA));
+  gLeg.append('text').attr('class', 'sst-legend-label').attr('x', legX + legW + 8).attr('y', legY + 9).attr('text-anchor', 'start').text(fmtAnom(maxA));
+  gLeg.append('text').attr('class', 'sst-legend-cap').attr('x', W / 2).attr('y', legY + 24).attr('text-anchor', 'middle').text('cooler ← anomaly vs. long-term average → warmer');
 
   // ---- Cross-Highlighting: Hilfslinie durch BEIDE Charts + Punkt auf der Linie ----
   const cursor = root.append('g').attr('class', 'sst-cursor').style('display', 'none');

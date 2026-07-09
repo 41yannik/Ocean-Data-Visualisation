@@ -34,6 +34,7 @@ export function createMap(container, ctx, opts = {}) {
   const layerCtx = {
     ...ctx,
     geo: { projection, path: makeGeoPath(projection), width: MAP.width, height: MAP.height },
+    labelScope: opts.labelScope, // 'story' = nur betonte/Bubble-Inseln beschriften (Clutter im Hook)
   };
 
   const children = [];

@@ -6,6 +6,10 @@ import { fmtInt, fmtPct, fmtKt, fmtSource, fmtCategory } from '../core/format.js
 
 const MINI = { width: 340, height: 190, pad: 14 };
 
+// Fehlwerte in der dichten 4-Spalten-Tabelle als "—" (die Fußnote erklärt die
+// Bedeutung) - der lange globale Fallback "not reported" würde die Spalten sprengen.
+const cell = (v, fmt) => (v == null ? '—' : fmt(v));
+
 export function createDetailPanel(container, ctx) {
   const { bySid } = ctx.data.index;
   const { tracks, index } = ctx.data;
@@ -28,7 +32,7 @@ export function createDetailPanel(container, ctx) {
     container.innerHTML = `
       <button class="dp-close" aria-label="Close details">×</button>
       <h2>${first.name ?? 'Unnamed storm'} · ${first.year}</h2>
-      <p class="dp-sub">${fmtCategory(first.category)} · peak ${fmtKt(first.intensity_kt)} · ${fmtSource(first.intensity_source)}</p>
+      <p class="dp-sub">${fmtCategory(first.category)} · max sustained wind ${fmtKt(first.intensity_kt)} · ${fmtSource(first.intensity_source)}</p>
       <div class="dp-map"></div>
       <table>
         <thead><tr><th>Country</th><th class="num">Affected</th><th class="num">Share</th><th class="num">Deaths</th></tr></thead>
@@ -36,13 +40,13 @@ export function createDetailPanel(container, ctx) {
           ${events.map((e) => `
             <tr>
               <td>${e.country}</td>
-              <td class="num">${fmtInt(e.affected)}</td>
-              <td class="num">${fmtPct(e.affected_pc)}</td>
-              <td class="num">${e.deaths == null ? 'n/a' : fmtInt(e.deaths)}</td>
+              <td class="num">${cell(e.affected, fmtInt)}</td>
+              <td class="num">${cell(e.affected_pc, fmtPct)}</td>
+              <td class="num">${cell(e.deaths, fmtInt)}</td>
             </tr>`).join('')}
         </tbody>
       </table>
-      <p class="dp-note">Same storm, same peak intensity, different toll per country (unit: storm-country pair). "n/a" = not reported.</p>`;
+      <p class="dp-note">Same storm, same maximum sustained wind, different reported toll per country (unit: storm-country pair). "—" = not reported.</p>`;
 
     container.setAttribute('aria-label', `Details for ${first.name ?? 'unnamed storm'} ${first.year}`);
     container.querySelector('.dp-close').addEventListener('click', close);
