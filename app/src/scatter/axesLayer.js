@@ -12,7 +12,7 @@ export function createAxesLayer(g, layerCtx) {
   g.append('text').attr('class', 'axis-label')
     .attr('x', inner.width / 2).attr('y', inner.height + 40)
     .attr('text-anchor', 'middle')
-    .text('maximum sustained wind (USA agency, kt)');
+    .text('peak wind speed (kt)');
 
   const yLabel = g.append('text').attr('class', 'axis-label')
     .attr('transform', 'rotate(-90)')
@@ -34,13 +34,9 @@ export function createAxesLayer(g, layerCtx) {
 
     const filtered = data.events.filter((e) => matchesFilters(e, state.filters));
     const shown = filtered.filter(isScatterable).length;
-    const total = filtered.length;
-    const rug = filtered.filter((e) => !isScatterable(e) && e.intensity_kt != null).length;
-    const noWind = total - shown - rug;
-    // Kurze, datengetriebene Caption: vollständige Paare · Wind-only-Ticks · fehlender Wind.
-    caption.text(`n = ${shown} complete storm-country pairs`
-      + (rug ? ` · ${rug} wind-only records` : '')
-      + (noWind ? ` · ${noWind} missing wind record${noWind > 1 ? 's' : ''}` : ''));
+    // Klartext statt Statistik-Kürzel: die Missing-Data-Ehrlichkeit trägt ausführlich die
+    // Sektion „What the data hides" - hier reicht die einfache, verständliche Zählung.
+    caption.text(`${shown} storm–country pairs, each with a measured wind and a reported toll`);
   }
 
   return {

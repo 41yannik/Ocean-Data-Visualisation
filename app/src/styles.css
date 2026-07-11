@@ -643,6 +643,11 @@ body {
 .axis line, .axis path { stroke: var(--graticule); }
 .axis-label { font-size: 12px; fill: var(--muted); }
 .n-caption { font-size: 12px; fill: var(--muted); }
+/* Größen-Legende (Evidenz-Scatter): Punktradius = gemeldete Todesfälle */
+.size-legend .sl-bg { fill: #ffffff; fill-opacity: 0.82; stroke: var(--graticule); stroke-width: 1; }
+.size-legend .sl-title { font-size: 10px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.size-legend .sl-dot { fill: var(--point); fill-opacity: 0.85; }
+.size-legend .sl-label { font-size: 11px; fill: var(--muted); }
 
 /* ---------- SST-Intro (Warming Stripes + Liniendiagramm) ---------- */
 .sst-title { font-size: 15px; font-weight: 600; fill: var(--text); }

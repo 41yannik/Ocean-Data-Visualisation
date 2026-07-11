@@ -3,7 +3,6 @@
 // Die fast flache Absolut-Linie ist der BEFUND ("wind alone predicts almost nothing").
 import { line as d3line, area as d3area, curveMonotoneX } from 'd3';
 import { DUR_MODE } from '../core/config.js';
-import { fitLabel } from '../core/format.js';
 
 const X_CLAMP = [45, 172]; // Datenbereich der Linie (Punkte: 35–170 kt)
 
@@ -47,7 +46,8 @@ export function createTrendLayer(gBand, gTrend, gAnnotations, layerCtx) {
     tx(label)
       .attr('x', x(X_CLAMP[1]))
       .attr('y', Math.max(12, yEnd - 10));
-    label.text(fitLabel(fit));
+    // Klartext-Linienname statt R²/p-Jargon (die exakten Fit-Werte stehen im Methoden-Block).
+    label.text('wind-only line');
   }
 
   // Story-Sichtbarkeit (storyFx = null → alles sichtbar); Fade via CSS-Transition.

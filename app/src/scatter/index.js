@@ -10,6 +10,7 @@ import { createTrendLayer } from './trendLayer.js';
 import { createBrushLayer } from './brushLayer.js';
 import { createAnnotationsLayer } from './annotationsLayer.js';
 import { createRugLayer } from './rugLayer.js';
+import { createSizeLegendLayer } from './sizeLegendLayer.js';
 
 const ALL_LAYERS = ['axes', 'rug', 'trend', 'brush', 'points', 'annotations'];
 
@@ -55,6 +56,7 @@ export function createScatter(container, ctx, opts = {}) {
   if (layersWanted.includes('brush')) children.push(createBrushLayer(gBrush, layerCtx));
   if (layersWanted.includes('points')) children.push(createPointsLayer(gPoints, gConnectors, layerCtx));
   if (layersWanted.includes('annotations')) children.push(createAnnotationsLayer(gAnnotations, layerCtx));
+  if (layersWanted.includes('sizeLegend')) children.push(createSizeLegendLayer(gAnnotations, layerCtx));
 
   return {
     // Skalen/Innenmaße für Zusatz-Layer im selben SVG (Formations-Morph, Paket 10 Task 8);

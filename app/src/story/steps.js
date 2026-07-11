@@ -130,18 +130,15 @@ export function buildSteps(ctx) {
       id: 'evidence',
       layout: 'scatter',
       title: r('The line is almost flat'),
-      html: r(`Now zoom out from that one night. Each dot is one storm-country pair:
-        {{stat:scatterCount}} of them, maximum sustained wind against the share of
-        the national population reported affected. The dashed line is the
-        <strong>wind-only baseline</strong> — what wind alone would predict — and it
-        is almost flat: per capita, wind explains only
-        <strong>{{fit:perCapita.r2pct}}</strong> of the variance
-        (p = {{fit:perCapita.p}}); in absolute numbers {{fit:absolute.r2pct}}
-        (p = {{fit:absolute.p}}). Reported impacts vary far more than wind speed alone
-        suggests. Exposure and vulnerability likely shape the toll — and so does the
-        reporting itself.`),
-      transition: 'If wind explains only a small part of the outcome, the most important cases are the deviations.',
-      hint: 'Right = stronger wind; higher = larger reported share of the population affected; dot size = reported deaths. A dot above the wind-only baseline means more reported impact than wind alone would suggest; a dashed outline marks a wind reconstructed from disaster records. Hover any dot for details.',
+      html: r(`Now zoom out from that one night. Each dot is one storm hitting one country —
+        {{stat:scatterCount}} in all — placed by how strong its wind was (left to right) against
+        the share of that country's people reported affected (bottom to top). If wind decided the
+        toll, the dots would climb one clear line. Instead the dashed <strong>wind-only line stays
+        almost flat</strong>: a much stronger storm barely lifts the share of people affected.
+        What a storm does to a population depends far more on who is exposed and how prepared they
+        are — and on who does the counting.`),
+      transition: 'If wind explains only a small part of the outcome, the most telling cases are the exceptions.',
+      hint: 'Right = stronger wind; higher = a larger share of people reported affected; bigger dot = more reported deaths. A dot above the dashed line took a heavier toll than its wind alone would predict. Hover any dot for the storm and country.',
       apply: () => base({
         storyFx: fx({
           // Band bewusst aus: die flache gestrichelte Linie IST die Aussage - das
@@ -155,19 +152,17 @@ export function buildSteps(ctx) {
       id: 'harold',
       layout: 'dual',
       title: r('One storm, four countries'),
-      html: r(`Cyclone Harold ({{event:2020-0132-FJI.year}},
-        {{event:2020-0132-FJI.category:cat}}) crossed four countries at the same measured
-        intensity. By raw count the toll ran from
-        <strong>{{event:2020-0132-FJI.affected:int}}</strong> reported affected in Fiji
-        down to <strong>{{event:2020-0132-TON.affected:int}}</strong> in Tonga —
-        {{stat:affectedRatio.2020-0132-FJI.2020-0132-TON}}× apart. But Fiji has far more
-        people. Measured against each population — the lens the rest of this story uses —
-        the ranking <strong>flips</strong>: Vanuatu ({{event:2020-0132-VUT.affected_pc:pct}})
-        and Tonga ({{event:2020-0132-TON.affected_pc:pct}}) were hit hardest, Fiji
-        ({{event:2020-0132-FJI.affected_pc:pct}}) least. One wind speed — and the metric
-        decides who looks worst hit.`),
+      html: r(`Cyclone Harold ({{event:2020-0132-FJI.year}}, {{event:2020-0132-FJI.category:cat}})
+        crossed four countries at the same measured intensity — a rare natural experiment, with
+        the wind held constant. By raw count Fiji looks worst hit:
+        <strong>{{event:2020-0132-FJI.affected:int}}</strong> reported affected, the most of the
+        four. But Fiji also has the most people. Measured against each population — the metric
+        this story uses — the ranking <strong>flips</strong>: Fiji falls to the smallest share
+        ({{event:2020-0132-FJI.affected_pc:pct}}), while Vanuatu tops the four
+        ({{event:2020-0132-VUT.affected_pc:pct}}). Same wind — and the metric alone decides who
+        looks worst hit.`),
       transition: 'Harold is not an exception: some countries land above the baseline again and again.',
-      hint: 'All four bubbles share one wind speed; their vertical spread is the gap in population share affected. The largest raw toll — Fiji — sits lowest.',
+      hint: 'All four bubbles share one wind speed, so their vertical spread is pure population share — bigger population, smaller share. The biggest raw toll, Fiji, ends up lowest.',
       apply: () => base({
         detailSid: SID_HAROLD,
         storyFx: fx({

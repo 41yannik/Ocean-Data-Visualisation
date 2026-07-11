@@ -317,7 +317,7 @@ async function runApp() {
         if (v === 'unitChart') components.push(createUnitChart(el, ctx));
         // ohne Brush-Layer: gesperrte Sektionen brauchen kein Selektions-Overlay
         if (v === 'scatter') {
-          components.push(createScatter(el, ctx, { layers: ['axes', 'rug', 'trend', 'points', 'annotations'] }));
+          components.push(createScatter(el, ctx, { layers: ['axes', 'rug', 'trend', 'points', 'annotations', 'sizeLegend'] }));
         }
       }
       // hoverPoints gibt Punkt-Hover trotz Story-Gate frei → einfacher Tooltip.

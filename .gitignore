@@ -10,10 +10,9 @@ dist/
 /Data
 /Developer API/
 
-# EM-DAT-Derivate der Kurs-Variante — Lizenz erlaubt keine Weiterverbreitung
-# (Challenge-Variante ohne EM-DAT wird separat freigegeben, siehe docs/decisions/)
-app/public/data/events*.json
-app/public/data/meta*.json
+# Hinweis: events*.json / meta*.json enthalten EM-DAT-Derivate. Bewusste Entscheidung
+# (2026-07): für das öffentliche GitHub-Pages-Deployment freigegeben (Lizenz vom Betreiber
+# abgeklärt). Die Roh-Quelle /Data (u. a. der große EM-DAT-Export) bleibt unten ignoriert.
 
 # Python
 __pycache__/

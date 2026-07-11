@@ -127,7 +127,7 @@ export function createHaroldMorph(container, ctx) {
     .call(axisLeft(y.scale).tickValues(y.ticks).tickFormat(y.tickFormat).tickSizeOuter(0));
   axInner.append('text').attr('class', 'axis-label')
     .attr('x', innerW / 2).attr('y', innerH + 42).attr('text-anchor', 'middle')
-    .text('maximum sustained wind (kt)');
+    .text('peak wind speed (kt)');
   axInner.append('text').attr('class', 'axis-label')
     .attr('transform', 'rotate(-90)').attr('x', -innerH / 2).attr('y', -48)
     .attr('text-anchor', 'middle').text('share of population affected (log)');
