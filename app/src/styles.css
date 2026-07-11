@@ -836,19 +836,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   min-height: 100vh; display: flex; align-items: center;
   padding: 0 24px;
 }
+/* Schlichter Text auf dem Hintergrund (wie der Rest der Story) - keine Karten-Box.
+   Der Sticky-Viz liegt rechts (siehe .stage-sticky .viz-frame), der Text links → getrennt. */
 .stage-step .section-text {
   pointer-events: auto;
-  background: rgba(255, 255, 255, 0.94);
-  border-radius: 10px; padding: 22px 26px; max-width: 460px;
+  max-width: 460px;
   margin: 0 auto 0 6vw;
-  box-shadow: 0 2px 18px rgba(34, 48, 60, 0.10);
 }
-@media (max-width: 1099px) {
-  /* schmale Viewports: kein Sticky-Overlay - lineare Folge wie im Rest der Seite */
+@media (max-width: 1399px) {
+  /* Breakpoint angehoben (war 1099): der schlichte Text (ohne Karten-Box) überlagert im
+     Wisch-Layout den Sticky-Viz - lesbar nur, wo dahinter leerer Chart-Raum ist (breite
+     Schirme). Darunter kein Sticky-Overlay, sondern die lineare (gestapelte) Folge wie im
+     Rest der Seite - so kollidiert der Text nie mit der y-Achse. */
   .stage-sticky { position: static; height: auto; padding: 6vh 24px 0; }
   .stage-steps { margin-top: 0; }
   .stage-step { min-height: 0; padding: 6vh 24px; }
-  .stage-step .section-text { margin: 0 auto; background: none; box-shadow: none; padding: 0; max-width: 700px; }
+  .stage-step .section-text { margin: 0 auto; max-width: 700px; }
 }
 
 /* Weiche Zustandswechsel der Punkte/Trends beim Step-Patch (statt hartem Schnitt).
