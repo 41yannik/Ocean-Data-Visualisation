@@ -175,28 +175,26 @@ export function buildSteps(ctx) {
       id: 'patterns',
       layout: 'dual',
       title: r('The repeat victims'),
-      html: r(`Some countries sit above the wind-only baseline again and again:
-        <strong>{{stat:aboveShare.VUT}}</strong> of Vanuatu's storm-country pairs show
-        more reported impact than wind alone would suggest. In
-        {{event:2023-0128-VUT.year}}, cyclones Judy and Kevin struck Vanuatu within a
-        single week; together they reached about
-        <strong>{{event:2023-0128-VUT.affected_pc:pct}} of the population</strong> —
-        the two reported tolls overlap the same people. Gita
-        ({{event:2018-0042-TON.year}}) reached {{event:2018-0042-TON.affected_pc:pct}} of
-        Tonga. Part of this is exposure — how many people live in a storm's path — and
-        part is likely vulnerability. The data suggests this; it does not prove it.`),
+      html: r(`Zoom out, and a pattern appears: some countries sit above the wind-only line
+        <strong>again and again</strong>. Of Vanuatu's storms, <strong>{{stat:aboveShare.VUT}}</strong>
+        hit harder than wind alone would predict — cyclones Judy and Kevin, a week apart, among the
+        worst, alongside Tonga's Gita. That points to <strong>exposure</strong> — how many people
+        stand in a storm's path — and likely <strong>vulnerability</strong>, not wind. The data
+        suggests this; it does not prove it.`),
       transition: 'Before interpreting the pattern, the missing records matter.',
+      hint: "Highlighted dots are Vanuatu's storms, plus Tonga's Gita. The higher a dot sits above the dashed line, the more its toll outran its wind.",
       apply: () => base({
         formation: 'scatter', // Bühnen-Gruppe dots2 (Paket 10 Task 8)
         storyFx: fx({
-          showPoints: true, showTrend: true, showBand: true,
+          // Band bewusst aus (Vereinfachung): die gestrichelte Wind-Linie ist die Referenz für
+          // „über der Erwartung"; das wellige Quantilband lenkte nur ab. Label bleibt via showFitLabel.
+          showPoints: true, showTrend: true, showBand: false, showFitLabel: true,
           focusEventIds: [...vutAboveIds, '2018-0042-TON'],
           annotations: [
-            // Judy + Kevin sind Zwillinge (eine Woche, überlappende Betroffene): nur Judy
-            // trägt den Anteil, Kevin verweist auf denselben Treffer - sonst läse es sich
-            // als zwei unabhängige 78%-Schläge (Doppelzählung).
-            { eventId: '2023-0119-VUT', text: r('Judy {{event:2023-0119-VUT.year}} · {{event:2023-0119-VUT.affected_pc:pct}} of Vanuatu') },
-            { eventId: '2023-0128-VUT', text: r('Kevin {{event:2023-0128-VUT.year}} · same week as Judy') },
+            // Judy + Kevin sind Zwillinge (eine Woche, überlappende Betroffene) → EIN Label,
+            // das den Anteil beiden zuschreibt; vermeidet die Doppelzählung und die frühere
+            // Dreier-Beschriftungs-Kollision oben rechts.
+            { eventId: '2023-0119-VUT', text: r('Judy & Kevin {{event:2023-0119-VUT.year}} · {{event:2023-0119-VUT.affected_pc:pct}} of Vanuatu') },
             { eventId: '2018-0042-TON', text: r('Gita {{event:2018-0042-TON.year}} · {{event:2018-0042-TON.affected_pc:pct}} of Tonga') },
           ],
         }),
