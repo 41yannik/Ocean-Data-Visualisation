@@ -9,14 +9,17 @@ import { isScatterable } from '../core/filters.js';
 import { computeUnitLayout, unitTipContent } from './unitChart.js';
 
 const DUR_FORMATION = 900;
-const UNIT_CELL = 38;  // Unit-Raster in Scatter-Innenmaßen (562×416) statt 860×560
-const UNIT_R = 11;
+const UNIT_CELL = 40;  // Unit-Raster in Scatter-Innenmaßen (562×416) - größer als zuvor (38),
+                       // aber so, dass auch die Qualitäts-Zwei-Block-Ansicht (13,7×cell) noch
+                       // zentriert in die Innenbreite passt.
+const UNIT_R = 12;
 
 export function createFormationLayer(gDots, layerCtx) {
   const { data, bus, inner } = layerCtx;
-  // W + 80 zentriert auf einer virtuell breiteren Bühne = Raster rutscht 40 Einheiten
-  // nach rechts, unter der links liegenden Textkarte hervor (passt in die viewBox).
-  const unit = computeUnitLayout(data.events, { W: inner.width + 80, H: inner.height, cell: UNIT_CELL });
+  // Auf die volle Innenbreite zentriert: Raster mittig UND deckungsgleich mit der ebenfalls
+  // mittig zentrierten Zustands-Legende (vorher +80 → Gitter rechts, Legende mittig = versetzt).
+  // Die links liegende Textkarte überlappt nur den äußersten Rand → Gitter bleibt frei.
+  const unit = computeUnitLayout(data.events, { W: inner.width, H: inner.height, cell: UNIT_CELL });
   const events = unit.events;
 
   const isUnit = () => (bus.get().formation ?? 'scatter') === 'unit';
