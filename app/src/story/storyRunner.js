@@ -5,7 +5,7 @@
 // sofort angewandt und die passende Karte herangescrollt.
 //
 // Gate-Besitz: beim Start sperrt der Runner die Exploration (exploreUnlocked: false);
-// Schritt 7 schaltet über sein apply() frei, Rückwärts-Scrollen sperrt wieder (base()).
+// Schritt 8 schaltet über sein apply() frei, Rückwärts-Scrollen sperrt wieder (base()).
 import scrollama from 'scrollama';
 import { buildSteps } from './steps.js';
 

@@ -43,14 +43,22 @@ export function createAnnotationsLayer(gAnnotations, layerCtx) {
       const ringR = r(d.event.deaths ?? 0) + 5;
       const k = rank.get(d.eventId) ?? 0;
       const below = cy < inner.height * 0.33; // nahe Oberkante → Labels nach unten
-      const labelY = below ? cy + ringR + 16 + k * ROW : cy - ringR - 10 - k * ROW;
+      // Optionale Feinjustage je Annotation: dx/dy verschieben das Label (der Leader folgt),
+      // ring:false lässt den Aura-Ring weg - redundant, wenn der Punkt selbst gefüllt
+      // hervorgehoben ist (Step 5, story-focus). Standard bleibt unverändert.
+      const dx = d.dx ?? 0;
+      const dy = d.dy ?? 0;
+      const labelY = (below ? cy + ringR + 16 + k * ROW : cy - ringR - 10 - k * ROW) + dy;
+      const labelX = Math.max(70, Math.min(inner.width - 70, cx + dx));
       const node = select(this);
-      node.select('.anno-ring').attr('cx', cx).attr('cy', cy).attr('r', ringR);
+      node.select('.anno-ring')
+        .attr('cx', cx).attr('cy', cy).attr('r', ringR)
+        .attr('display', d.ring === false ? 'none' : null);
       node.select('.anno-leader')
         .attr('x1', cx).attr('y1', below ? cy + ringR : cy - ringR)
-        .attr('x2', cx).attr('y2', below ? labelY - 11 : labelY + 3);
+        .attr('x2', labelX).attr('y2', below ? labelY - 11 : labelY + 3);
       node.select('.anno-label')
-        .attr('x', Math.max(70, Math.min(inner.width - 70, cx)))
+        .attr('x', labelX)
         .attr('y', labelY)
         .attr('text-anchor', 'middle')
         .text(d.text);

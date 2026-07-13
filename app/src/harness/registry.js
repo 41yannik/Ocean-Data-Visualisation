@@ -20,6 +20,7 @@ import { createLayoutController } from '../story/layoutController.js';
 import { createProgressNav } from '../story/progressNav.js';
 import { createChapterNav } from '../story/chapterNav.js';
 import { createChartControls } from '../story/chartControls.js';
+import { createConclusionSynthesis } from '../story/conclusionSynthesis.js';
 import { createProfileBars } from '../ui/profileBars.js';
 import { createImpactTrend } from '../ui/impactTrend.js';
 
@@ -129,6 +130,15 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
     },
   },
 
+  conclusionSynthesis: {
+    title: 'Fazit-Synthese: zwei Top-5-Listen + vertikale Thermometer',
+    mount(c, ctx) {
+      c.style.maxWidth = '1420px';
+      c.style.margin = '0 auto';
+      return createConclusionSynthesis(c, ctx);
+    },
+  },
+
   chapterNav: {
     title: 'Kapitel-Nav (rechts fixiert): Scroll-Spy über drei Dummy-Sektionen, Klick springt',
     mount(c) {
@@ -145,7 +155,7 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
   },
 
   nav: {
-    title: 'Progress-Nav (rechts fixiert): step0–step7/stepOff klicken; Punkte setzen step-Patches',
+    title: 'Progress-Nav (rechts fixiert): step0–step8/stepOff klicken; Punkte setzen step-Patches',
     mount(c, ctx) {
       c.innerHTML = '<p class="harness-summary">Punkte-Leiste rechts am Bildschirmrand: bei step ≥ 0 sichtbar, aktiver Punkt = Akzent.</p>';
       const nav = document.createElement('nav');
@@ -157,7 +167,7 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
   },
 
   layout: {
-    title: 'Layout-Morph: step0–step7 klicken → data-layout wechselt (Dummy-Views)',
+    title: 'Layout-Morph: step0–step8 klicken → data-layout wechselt (Dummy-Views)',
     mount(container, ctx) {
       container.innerHTML = `
         <div class="app harness-layout" data-layout="intro">
@@ -187,7 +197,7 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
         selfTest = `PASS: wirft wie erwartet: „${err.message}"`;
       }
       container.innerHTML = `
-        <pre class="harness-summary">Steps: ${steps.length} (erwartet 8) · Selbsttest ungültige Referenz: ${selfTest}</pre>
+        <pre class="harness-summary">Steps: ${steps.length} (erwartet 10) · Selbsttest ungültige Referenz: ${selfTest}</pre>
         ${steps.map((s, i) => {
           const patch = s.apply();
           const annotations = patch.storyFx?.annotations ?? [];

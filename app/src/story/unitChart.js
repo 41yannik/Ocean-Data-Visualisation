@@ -1,4 +1,4 @@
-// Step 7 „What the data hides" - Unit Chart (Dot Matrix) der exakt 99 Sturm-Land-Paare.
+// Step 6 „What the data hides" - Unit Chart (Dot Matrix) der exakt 99 Sturm-Land-Paare.
 // Jedes Paar = ein Kreis. Vierstufiges Encoding der Datenqualität:
 //   • solide (blau, gefüllt)        - 78 vollständige Paare (Wind + Impact)
 //   • rekonstruiert (dashed Kontur) - Teilmenge davon: Wind aus Katastrophen-Akten, nicht Satellit

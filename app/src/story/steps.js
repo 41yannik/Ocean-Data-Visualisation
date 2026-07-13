@@ -9,7 +9,7 @@
 //  - apply() liefert bei jedem Aufruf FRISCHE Objekte (Store-Konvention: nie mutieren)
 //    und setzt flüchtigen State (hover/selection/detail/mode) explizit - Steps müssen
 //    auch beim Rückwärts-Scrollen und per Deep-Link deterministisch sein.
-//  - exploreUnlocked schaltet NUR Schritt 7 (der storyRunner sperrt beim Start).
+//  - exploreUnlocked schaltet NUR Schritt 8 (der storyRunner sperrt beim Start).
 import { resolveRefs } from './refs.js';
 import { isScatterable } from '../core/filters.js';
 
@@ -30,7 +30,7 @@ export const HETA_FOCUS = {
 export const HETA_FLY_MS = 1600;
 
 // Layout je Step - statisch, damit der layoutController ohne Daten-ctx auskommt.
-export const STEP_LAYOUTS = ['intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'explore'];
+export const STEP_LAYOUTS = ['intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'scatter', 'explore'];
 export const STEP_COUNT = STEP_LAYOUTS.length;
 export const stepLayout = (step) =>
   step >= 0 && step < STEP_COUNT ? STEP_LAYOUTS[step] : 'explore';
@@ -42,6 +42,7 @@ export const makeStoryFx = (over = {}) => ({
   showPoints: false, showTrend: false, showBand: false,
   showFitLabel: false, // R²/n/p-Label auch OHNE Band zeigen (Evidence-Panel)
   residualReveal: false, annotations: [], focusEventIds: null, showRug: false,
+  residualStems: false, // vertikale Abstands-Linien Fokus-Punkt → wind-only line (Step 5)
   swath: null,         // { sid, radiusKm } - Wind-Korridor um eine Zugbahn
   impactBubbles: null, // [{ eventId }] - flächenproportionale Betroffenen-Kreise
   camera: null,        // { flyMs } - Kamera-Einflug auf eine gezoomte Karte (opts.fitTo)
@@ -53,9 +54,10 @@ export const makeStoryFx = (over = {}) => ({
 const fx = makeStoryFx;
 
 // Flüchtigen State je Step deterministisch setzen (Rückwärts-Scrollen, Deep-Links).
-// exploreUnlocked: false gehört dazu - wer von Step 7 zurückscrollt, ist wieder gesperrt.
+// exploreUnlocked: false gehört dazu - wer von Step 8 zurückscrollt, ist wieder gesperrt.
 const base = (over = {}) => ({
   hover: null, selectedEventIds: null, detailSid: null, mode: 'perCapita',
+  highlight: null, textSet: null,
   exploreUnlocked: false,
   ...over,
 });
@@ -176,28 +178,45 @@ export function buildSteps(ctx) {
       layout: 'dual',
       title: r('The repeat victims'),
       html: r(`Zoom out, and a pattern appears: some countries sit above the wind-only line
-        <strong>again and again</strong>. Of Vanuatu's storms, <strong>{{stat:aboveShare.VUT}}</strong>
-        hit harder than wind alone would predict — cyclones Judy and Kevin, a week apart, among the
-        worst, alongside Tonga's Gita. That points to <strong>exposure</strong> — how many people
-        stand in a storm's path — and likely <strong>vulnerability</strong>, not wind. The data
-        suggests this; it does not prove it.`),
-      transition: 'Before interpreting the pattern, the missing records matter.',
-      hint: "Highlighted dots are Vanuatu's storms, plus Tonga's Gita. The higher a dot sits above the dashed line, the more its toll outran its wind.",
+        <strong>again and again</strong>. Take Vanuatu: <strong>{{stat:aboveCount.VUT}}</strong>
+        of its storms ({{stat:aboveShare.VUT}}) hit harder than wind alone would predict —
+        cyclones Judy and Kevin, a week apart, among the worst. That points to
+        <strong>exposure</strong> — how many people stand in a storm's path — and likely
+        <strong>vulnerability</strong>, not wind. The data suggests this; it does not prove it.`),
+      transition: 'Line the countries up, and the pattern gets even clearer.',
+      hint: "Orange dots are Vanuatu's storms; each thin line drops to the dashed wind-only line. The longer the line, the more that storm's toll outran its wind.",
       apply: () => base({
         formation: 'scatter', // Bühnen-Gruppe dots2 (Paket 10 Task 8)
         storyFx: fx({
           // Band bewusst aus (Vereinfachung): die gestrichelte Wind-Linie ist die Referenz für
           // „über der Erwartung"; das wellige Quantilband lenkte nur ab. Label bleibt via showFitLabel.
           showPoints: true, showTrend: true, showBand: false, showFitLabel: true,
-          focusEventIds: [...vutAboveIds, '2018-0042-TON'],
-          annotations: [
-            // Judy + Kevin sind Zwillinge (eine Woche, überlappende Betroffene) → EIN Label,
-            // das den Anteil beiden zuschreibt; vermeidet die Doppelzählung und die frühere
-            // Dreier-Beschriftungs-Kollision oben rechts.
-            { eventId: '2023-0119-VUT', text: r('Judy & Kevin {{event:2023-0119-VUT.year}} · {{event:2023-0119-VUT.affected_pc:pct}} of Vanuatu') },
-            { eventId: '2018-0042-TON', text: r('Gita {{event:2018-0042-TON.year}} · {{event:2018-0042-TON.affected_pc:pct}} of Tonga') },
-          ],
+          // Bewusst NUR Vanuatu (Review 2026-07-13): zwei hervorgehobene Länder verwässerten
+          // das Ein-Insel-Argument - Tonga/Gita kommt erst im Residual-Beat wieder ins Bild.
+          focusEventIds: [...vutAboveIds],
+          residualStems: true, // Abstand zur Linie als gezeichnete Strecke statt Leseaufgabe
+          // Keine Annotation mehr (Review 2026-07-13): das Judy-&-Kevin-Label doppelte nur
+          // den Text links - Namen und Prozente liefert jetzt der Punkt-Hover.
         }),
+      }),
+    },
+    {
+      // Residual-Beat (Plan „repeat victims verstärken"): dieselben Punkte fliegen aus dem
+      // Scatter in eine Zeile je Land - x wird zum Abstand von der wind-only line. Damit
+      // ist „again and again" nicht mehr Leseaufgabe, sondern abzählbares Zeilenmuster.
+      id: 'residual-rows',
+      layout: 'dual',
+      title: r('Country by country, above the line'),
+      html: r(`Strip the wind axis away and line the same storms up by country: each dot's
+        distance to the <strong>right</strong> of the dashed line is how far its toll outran
+        the wind-only expectation. <strong>{{stat:aboveCount.VUT}}</strong> of Vanuatu's storms
+        land on the heavy side — no other country with that many storms comes close. Tonga and
+        Micronesia lean the same way; Fiji, with nearly twice the storms, splits almost evenly.`),
+      transition: 'Before interpreting the pattern, the missing records matter.',
+      hint: 'Orange dots took a heavier toll than wind alone predicts, blue dots a lighter one — the note under each country simply counts its orange dots. ÷10 and ×10 mark tolls ten times below or above that expectation; countries with fewer than four complete records are folded into “Other”.',
+      apply: () => base({
+        formation: 'residualRows', // Bühnen-Gruppe dots2: Morph Scatter → Zeilen
+        storyFx: fx({ showPoints: true }),
       }),
     },
     {
@@ -212,29 +231,64 @@ export function buildSteps(ctx) {
         the dashed circle marks a wind reconstructed from disaster records rather than
         a satellite track, and the most recent seasons may still be revised.
         <strong>Missing data is not missing suffering.</strong>`),
-      transition: 'The story has shown the logic. The final view lets you inspect it yourself.',
+      transition: 'The records are incomplete. Even so, the pattern that remains gives a clear answer.',
       apply: () => base({
         formation: 'unit', unitSort: 'chrono', // Formations-Morph (Paket 10 Task 8)
         storyFx: fx({ showPoints: true, showTrend: true, showBand: true, showRug: true }),
       }),
     },
     {
+      id: 'conclusion',
+      layout: 'scatter',
+      title: r('Wind is only part of the story'),
+      html: r(`Rank the same complete storm-country records once by wind and once by the share
+        of population reported affected, and the names at the top mostly change. Some of the
+        strongest winds produced comparatively small reported impacts; several of the highest
+        impacts came from storms far below the top wind ranks. In the full comparison, wind speed
+        accounts for only <strong>{{fit:perCapita.r2pct}} of the observed variation</strong>.
+        <strong>Wind determines how powerful a cyclone is. It does not determine who suffers most.</strong>`),
+      // caveat entfernt (Redundanz-Review 2026-07-13): die Einordnung „nicht gemessen,
+      // nicht bewiesen" trägt factorIntro bereits wortgleich im Antwortblock.
+      factorQuestion: 'Does wind speed explain who is affected?',
+      factorAnswer: 'No. Stronger winds do not automatically mean greater human impact.',
+      factorIntro: `Wind measures the physical hazard. Who suffers also depends on where people
+        are exposed, what infrastructure can withstand, how early communities can act and how
+        impacts are recorded. The data can show that wind alone is insufficient, but not which
+        of these conditions shaped the outcome of any single storm.`,
+      factors: [
+        {
+          title: 'Exposure & geography',
+          text: 'A storm can cross open ocean, sparsely settled land or dense communities. Who and what lies in its path defines what is exposed.',
+        },
+        {
+          title: 'Infrastructure',
+          text: 'The strength of homes, roads, power and communications may limit or amplify how physical hazard becomes disruption.',
+        },
+        {
+          title: 'Preparedness & early warning',
+          text: 'Forecast lead time, evacuation, shelters and practised plans can change how many people remain at risk when the storm arrives.',
+        },
+        {
+          title: 'Response & reporting',
+          text: 'Access to aid may shape recovery, while reporting capacity shapes how much of the human impact enters the record.',
+        },
+      ],
+      transition: 'First compare the extremes, then test the pattern across every complete record.',
+      outro: `Wind measures the hazard. It does not measure who was exposed, prepared or able to recover.`,
+      hint: `Blue and orange rank the two extremes. The vertical thermometers place every complete
+        storm-country record from low at the bottom to high at the top. Switch the ordering between
+        wind and affected share; hover, tap or focus a top-five name to locate it in both columns.`,
+      apply: () => base({ storyFx: fx() }),
+    },
+    {
       id: 'explore',
       layout: 'explore',
       title: r('From track to toll'),
-      html: r(`Every dot on this page is a night like Heta's. Since {{stat:yearMin}},
-        these storms add up to <strong>{{stat:totalAffected}} reported people
-        affected</strong> across the island countries — a running total, so anyone hit by
-        two storms is counted twice. A cyclone's track tells you where it goes, not what
-        it costs the people beneath it. Preparedness has to target exposure and
-        vulnerability, not just forecast wind speeds.
-        <strong>Now explore the evidence yourself.</strong>`),
-      questions: [
-        'Which storms sit far above the wind-only baseline?',
-        'Which countries are repeatedly affected?',
-        'Where do strong storm tracks cluster across the Pacific?',
-      ],
-      hint: 'Hover or click any storm to highlight it across the map, scatterplot, yearly view and profile comparison. Use the filters to narrow by year, country or storm category.',
+      html: r(`The story has answered its question. This evidence lab lets you test that answer
+        across every recorded storm-country pair. Since {{stat:yearMin}}, the records contain
+        <strong>{{stat:totalAffected}} reported people affected</strong> — a running total, so
+        anyone hit by two storms is counted twice. <strong>Choose a question and test the evidence.</strong>
+        Filters and selections carry across all three views.`),
       apply: () => base({ storyFx: null, exploreUnlocked: true }),
     },
   ];

@@ -15,6 +15,7 @@
 //       scatterCount · eventCount · missingPairs · missingToll · missingWind
 //       yearMin · yearMax · totalAffected
 //       aboveShare.<iso3>                    Anteil der Scatter-Punkte des Landes über der Linie
+//       aboveCount.<iso3>                    dito als Zähler, z. B. "8 of 10"
 //       affectedRatio.<idA>.<idB>            gerundetes Verhältnis affected(A)/affected(B)
 import { fmtInt, fmtPct, fmtKt, fmtCategory } from '../core/format.js';
 import { isScatterable } from '../core/filters.js';
@@ -125,6 +126,12 @@ function lookupStat([name, ...args], ctx, token) {
     const rows = events.filter((e) => e.iso3 === args[0] && isScatterable(e));
     if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für ${args[0]} (${token})`);
     return fmtPct(rows.filter((e) => (e.residual_pc ?? 0) > 0).length / rows.length);
+  }
+  if (name === 'aboveCount') {
+    // Zähler-Variante von aboveShare: macht die Behauptung im Chart abzählbar ("8 of 10").
+    const rows = events.filter((e) => e.iso3 === args[0] && isScatterable(e));
+    if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für ${args[0]} (${token})`);
+    return `${rows.filter((e) => (e.residual_pc ?? 0) > 0).length} of ${rows.length}`;
   }
   if (name === 'totalAffected') {
     const vals = events.map((e) => e.affected).filter((v) => v != null);

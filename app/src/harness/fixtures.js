@@ -38,7 +38,7 @@ export const FIXTURES = {
   // --- Story-Platzhalter (Paket 06): 04/05-Abnahme = "crasht nicht, ignoriert step" ---
   step0: () => ({ step: 0 }), step1: () => ({ step: 1 }), step2: () => ({ step: 2 }),
   step3: () => ({ step: 3 }), step4: () => ({ step: 4 }), step5: () => ({ step: 5 }),
-  step6: () => ({ step: 6 }), // Steps 0-6 seit Evidence-Panel-Merge (expectation+reveal = ein Step)
+  step6: () => ({ step: 6 }), step7: () => ({ step: 7 }), step8: () => ({ step: 8 }),
   stepOff: () => ({ step: -1 }), // freie Erkundung ohne Story (?story=off)
 
   // --- storyFx-Choreografie (Paket 06): Spiegel der Step-apply()-Zustände ---
@@ -76,5 +76,16 @@ export const FIXTURES = {
   }),
   fxHonesty: () => ({
     storyFx: makeStoryFx({ showPoints: true, showTrend: true, showBand: true, showRug: true }),
+  }),
+  fxConclusion: () => ({
+    highlight: {
+      key: 'conclusion',
+      ids: new Set(['2005-0102-TKL', '2023-0119-VUT']),
+      annos: [],
+    },
+    storyFx: makeStoryFx({
+      showPoints: true, showTrend: true, showBand: false, showFitLabel: true,
+      hideConnectors: true,
+    }),
   }),
 };

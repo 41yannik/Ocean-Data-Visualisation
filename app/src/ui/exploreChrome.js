@@ -28,6 +28,15 @@ export function createExploreChrome(sectionEl, ctx) {
   const onEsc = (e) => { if (e.key === 'Escape') openSidebar(false); };
   document.addEventListener('keydown', onEsc);
 
+  // Der FAB ist fixed und würde nach dem Lazy-Mount sonst über frühere Story-Sektionen
+  // schweben. Nur zeigen, solange die Explore-Sektion den Viewport tatsächlich schneidet.
+  fab.hidden = true;
+  const visibilityObserver = new IntersectionObserver(([entry]) => {
+    fab.hidden = !entry.isIntersecting;
+    if (!entry.isIntersecting) openSidebar(false);
+  }, { threshold: 0.05 });
+  visibilityObserver.observe(sectionEl);
+
   // --- Selection-Chip ---
   chip.querySelector('.sc-clear').addEventListener('click', () => bus.set({ selectedEventIds: null }));
 
@@ -44,6 +53,9 @@ export function createExploreChrome(sectionEl, ctx) {
         stage.classList.remove('has-selection');
       }
     },
-    destroy() { document.removeEventListener('keydown', onEsc); },
+    destroy() {
+      visibilityObserver.disconnect();
+      document.removeEventListener('keydown', onEsc);
+    },
   };
 }

@@ -12,16 +12,19 @@ export async function runHarness(mountKey, fixtureKey) {
   applyCssVars();
   document.body.innerHTML = `
     <div class="harness-bar" id="hb">
-      <span class="hb-title">HARNESS · mount=${mountKey}</span>
+      <span class="hb-title"></span>
     </div>
     <div class="harness-container" id="hc"></div>`;
   const bar = document.querySelector('#hb');
   const container = document.querySelector('#hc');
+  bar.querySelector('.hb-title').textContent = `HARNESS · mount=${mountKey}`;
 
   const entry = REGISTRY[mountKey];
   if (!entry) {
-    container.innerHTML = `<pre class="harness-summary">Unbekannter mount-Key: ${mountKey}
-Verfügbar: ${Object.keys(REGISTRY).join(', ')}</pre>`;
+    const summary = document.createElement('pre');
+    summary.className = 'harness-summary';
+    summary.textContent = `Unbekannter mount-Key: ${mountKey}\nVerfügbar: ${Object.keys(REGISTRY).join(', ')}`;
+    container.replaceChildren(summary);
     return;
   }
 
@@ -45,6 +48,9 @@ Verfügbar: ${Object.keys(REGISTRY).join(', ')}</pre>`;
     }
     if (fixtureKey && FIXTURES[fixtureKey]) store.set(FIXTURES[fixtureKey]());
   } catch (err) {
-    container.innerHTML = `<div class="error-banner">${err.message}</div>`;
+    const banner = document.createElement('div');
+    banner.className = 'error-banner';
+    banner.textContent = err instanceof Error ? err.message : String(err);
+    container.replaceChildren(banner);
   }
 }

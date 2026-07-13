@@ -48,7 +48,10 @@ export function createTimeScrubber(container, ctx) {
   // Jahres-Ticks; Dekaden (+ Ränder) beschriftet.
   ticks.innerHTML = Array.from({ length: DMAX - DMIN + 1 }, (_, i) => DMIN + i).map((y) => {
     const pct = ((y - DMIN) / (DMAX - DMIN)) * 100;
-    const major = y % 5 === 0 || y === DMIN || y === DMAX;
+    // Keep endpoint labels legible when an endpoint sits next to a five-year tick
+    // (2025/2026 would otherwise overlap on narrow screens).
+    const major = y === DMIN || y === DMAX
+      || (y % 5 === 0 && y - DMIN >= 2 && DMAX - y >= 2);
     return `<span class="mt-tick${major ? ' mt-tick--major' : ''}" style="left:${pct}%">`
       + `${major ? `<b>${y}</b>` : ''}</span>`;
   }).join('');

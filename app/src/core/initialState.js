@@ -3,7 +3,7 @@
 //
 // Bewusste Abweichung von docs/plan/09 (dort exploreUnlocked: false): Ohne Story (Paket 06)
 // wären Brush/Filter sonst tot. Der storyRunner setzt beim Start selbst exploreUnlocked: false
-// und schaltet in Schritt 7 frei.
+// und schaltet im Explore-Schritt 8 frei.
 export function makeInitialState() {
   return {
     hover: null,               // { sid, eventId|null, x, y, source: 'map'|'scatter' } | null
@@ -16,7 +16,12 @@ export function makeInitialState() {
     // playing = läuft der Autoplay-Timer. Einziger Schreiber: ui/timeScrubber.js.
     activeYear: null,
     playing: false,
-    step: -1,                  // -1 = freie Erkundung; 0..7 = Story (Paket 06)
+    // Geführtes Evidence Lab (Explore): eine Frage/Ansicht zur Zeit. Kartenlayer und
+    // Hot-Zone-Metrik bleiben beim Ansichtswechsel erhalten.
+    exploreView: 'outliers',  // 'outliers' | 'countries' | 'geography'
+    mapLayer: 'tracks',       // 'tracks' | 'hotzones'
+    hotZoneMetric: 'frequency', // 'frequency' | 'averageWind'
+    step: -1,                  // -1 = freie Erkundung; 0..8 = Story
     // Story-Choreografie (Paket 06): null = neutral (alles sichtbar, keine Effekte).
     // Nicht-null nur während der Story; Shape siehe story/steps.js fx().
     storyFx: null,
@@ -32,7 +37,7 @@ export function makeInitialState() {
     // ({ ids, pulse } | null; „Category 1"/„glowing outliers").
     highlight: null,
     textSet: null,
-    // Step 7 (unit chart) - Sortierung: 'chrono' (chronologisch) | 'quality' (zwei Blöcke).
+    // Step 6 (unit chart) - Sortierung: 'chrono' (chronologisch) | 'quality' (zwei Blöcke).
     unitSort: 'chrono',
     // Bühnen-Gruppe dots2 (Paket 10): 'scatter' | 'unit' - Ziel-Formation der 99 Kreise.
     formation: 'scatter',

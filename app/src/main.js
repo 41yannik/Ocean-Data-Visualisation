@@ -18,7 +18,6 @@ import { createScatter } from './scatter/index.js';
 import { createTooltip } from './ui/tooltip.js';
 import { createDetailPanel } from './ui/detailPanel.js';
 import { createModeToggle } from './ui/modeToggle.js';
-import { createLegend } from './ui/legend.js';
 import { createFilterPanel } from './ui/filterPanel.js';
 import { createTimeScrubber } from './ui/timeScrubber.js';
 import { createSstIntro } from './story/sstIntro.js';
@@ -27,17 +26,17 @@ import { createImpactBars } from './story/impactBars.js';
 import { createHaroldMorph } from './story/haroldMorph.js';
 import { createUnitChart } from './story/unitChart.js';
 import { createUnitSortControl } from './story/unitSortControl.js';
-import { createExploreChrome } from './ui/exploreChrome.js';
+import { createExploreLab } from './ui/exploreLab.js';
 import { buildSteps } from './story/steps.js';
 import { SECTIONS } from './story/sections.js';
 import { createChapterNav } from './story/chapterNav.js';
 import { createStageGroup } from './story/stageGroup.js';
 import { createFormationLayer } from './story/formationLayer.js';
 import { createChartControls } from './story/chartControls.js';
-import { createProfileBars } from './ui/profileBars.js';
-import { createImpactTrend } from './ui/impactTrend.js';
+import { createConclusionSynthesis } from './story/conclusionSynthesis.js';
 import { createTrackHeatmap } from './ui/trackHeatmap.js';
-import { createTileExpander } from './ui/tileExpander.js';
+import { createCountryRecurrence } from './ui/countryRecurrence.js';
+import { createSelectionSummary } from './ui/selectionSummary.js';
 import { methodsHtml } from './story/methods.js';
 import { resolveHighlightSpec } from './story/highlightSpecs.js';
 
@@ -52,67 +51,39 @@ const params = new URLSearchParams(location.search);
   }
 })();
 
-// Kompakte Scatter-Dims NUR fürs Explore-Grid (~1.9:1, flacher als das globale SCATTER
-// 640x520). So werden alle vier Grid-Kacheln gleich hoch und passen zusammen in einen
-// Viewport. axesLayer platziert Achsenlabel/Caption relativ zu inner.height → passt.
-const EXPLORE_SCATTER = { width: 640, height: 337, margin: { top: 16, right: 18, bottom: 66, left: 56 } };
+// Großformatiger Scatter für die primäre Analyseansicht des Evidence Labs.
+const EXPLORE_SCATTER = { width: 760, height: 560, margin: { top: 28, right: 24, bottom: 78, left: 68 } };
 
-// Workbench-Chrome der Explore-Sektion: vollbreite Hero-Map als geografischer Einstieg,
-// darunter ein 2x2-Dashboard-Grid (Scatter, Profil-Balken, Jahres-Trend, Hot-Zone-Heatmap).
-// Jede Kachel hat einen Expand-Button (tileExpander → Modal). Mount-IDs (#legend,
-// #mode-toggle, #filters, #tile-*) bleiben erhalten → bestehende Komponenten ohne Änderung.
-function exploreWorkbench(aria = {}) {
-  const glyph = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">'
-    + '<path d="M9.5 2H14v4.5M14 2 9 7M6.5 14H2V9.5M2 14l5-5" fill="none" stroke="currentColor" '
-    + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const tileHead = (title, label) => `
-        <header class="tile-head">
-          <h3>${title}</h3>
-          <button type="button" class="tile-expand" aria-label="Expand: ${label}" aria-expanded="false">${glyph}</button>
-        </header>`;
+function evidenceWorkbench(aria = {}) {
   return `
-    <div class="explore-workbench">
-      <div class="viz-stage">
-        <div class="viz-row">
-          <figure class="viz-frame viz-frame--map" data-view="map" aria-label="${aria.map ?? ''}"></figure>
-        </div>
-        <!-- Zeit-Scrubber: spotlightet ein Jahr auf der Karte, Play fährt 2001→2026 ab -->
-        <div id="map-timeline"></div>
-        <div class="selection-chip" hidden><span class="sc-count"></span><button type="button" class="sc-clear">clear</button></div>
-      </div>
-      <!-- Legende statisch UNTER der Karte (Datenraum bleibt frei) -->
-      <div class="chart-legend"><div id="legend"></div></div>
-      <!-- Globale Interaktionszeile direkt über dem Raster (statt je Kachel) -->
-      <p class="dash-help">Hover previews · click pins a selection · drag on the scatter selects a subset · filters narrow every view · orange = active highlight, blue = data, pale = context</p>
-      <div class="tile-grid">
-        <section class="tile" aria-label="${aria.scatter ?? 'Scatter plot of maximum sustained wind versus share of national population reported affected'}">
-          ${tileHead('Maximum wind vs. share of population affected', 'wind versus reported impact scatter plot')}
-          <div class="tile-body tile-body--scatter">
-            <figure class="viz-frame viz-frame--scatter" data-view="scatter"></figure>
-          </div>
+    <div class="evidence-lab">
+      <nav class="evidence-questions" role="tablist" aria-label="Choose an evidence question">
+        <button role="tab" data-explore-view="outliers" aria-controls="evidence-outliers" aria-selected="true">Which storms defy the wind-only expectation?</button>
+        <button role="tab" data-explore-view="countries" aria-controls="evidence-countries" aria-selected="false" tabindex="-1">Which countries appear repeatedly in the impact records?</button>
+        <button role="tab" data-explore-view="geography" aria-controls="evidence-geography" aria-selected="false" tabindex="-1">Where do storm tracks concentrate?</button>
+      </nav>
+      <details class="evidence-filters" open><summary>Filter data</summary>
+        <div class="evidence-filter-row"><div class="evidence-metric"><span>Impact measure</span><div id="mode-toggle"></div></div><div id="filters"></div></div>
+      </details>
+      <div class="evidence-panels">
+        <section id="evidence-outliers" class="evidence-panel" data-panel="outliers" role="tabpanel">
+          <header><p class="kicker">Wind outliers</p><h3>Which impacts outran the wind-only expectation?</h3><p>Distance above or below the line shows where reported impact diverged from wind alone.</p></header>
+          <div class="outlier-layout"><figure class="viz-frame viz-frame--scatter" data-view="scatter" aria-label="${aria.scatter ?? ''}"></figure><aside id="selection-summary" class="evidence-summary"></aside></div>
         </section>
-        <section class="tile" aria-label="Grouped bar chart comparing the storm profiles of Mawar, Percy and Cyclone Guba">
-          ${tileHead('Storm profiles compared', 'storm profiles comparison')}
-          <div class="tile-body" id="tile-profile"></div>
+        <section id="evidence-countries" class="evidence-panel" data-panel="countries" role="tabpanel" hidden>
+          <header><p class="kicker">Repeated records</p><h3>Which countries appear repeatedly in the impact records?</h3><p>Each dot is one storm-country record. Hollow dots mean the human impact was not reported.</p></header>
+          <figure id="country-recurrence" class="country-recurrence"></figure>
         </section>
-        <section class="tile" aria-label="Reported people affected per year by Pacific subregion, log scale">
-          ${tileHead('Reported people affected per year', 'reported people affected per year')}
-          <div class="tile-body" id="tile-trend"></div>
-        </section>
-        <section class="tile" aria-label="Heatmap of the Pacific: darker cells were crossed by more and stronger storms">
-          ${tileHead('Storm hot zones', 'storm hot zones heatmap')}
-          <div class="tile-body" id="tile-heat"></div>
-          <p class="tile-note">Darker cells mark where more frequent and/or stronger storm tracks concentrate.</p>
+        <section id="evidence-geography" class="evidence-panel" data-panel="geography" role="tabpanel" hidden>
+          <header><p class="kicker">Track concentration</p><h3>Where do storm tracks concentrate?</h3><p>Switch between individual tracks and an aggregate view of the same filtered storms.</p></header>
+          <div class="geo-controls"><div role="group" aria-label="Map layer"><button data-map-layer="tracks" aria-pressed="true">Tracks</button><button data-map-layer="hotzones" aria-pressed="false">Hot zones</button></div><div class="hot-metric-control" role="group" aria-label="Hot-zone metric" hidden><button data-hot-metric="frequency" aria-pressed="true">Frequency</button><button data-hot-metric="averageWind" aria-pressed="false">Average wind</button></div></div>
+          <div class="geo-stage"><figure class="viz-frame viz-frame--map" data-view="map" data-geo-layer="tracks" aria-label="${aria.map ?? ''}"></figure><figure class="viz-frame viz-frame--map" id="hot-zone-map" data-geo-layer="hotzones" hidden></figure></div>
+          <div id="map-timeline"></div>
+          <p class="geo-context" data-geo-note="tracks">Track width indicates storm category. Hover or click a track to follow that storm across the evidence lab.</p>
+          <p class="geo-context" data-geo-note="hotzones" hidden>Each cell aggregates the filtered tracks that cross it. Click a cell to select its contributing storm records.</p>
         </section>
       </div>
-    </div>
-    <button type="button" class="filter-fab" aria-expanded="false">⚙ Filter storms</button>
-    <div class="sidebar-backdrop" hidden></div>
-    <aside class="explore-sidebar" data-open="false" aria-hidden="true">
-      <header class="sb-head"><h3>Filter &amp; scale</h3><button type="button" class="sb-close" aria-label="Close">×</button></header>
-      <div class="sb-block"><h4>Scale</h4><div id="mode-toggle"></div></div>
-      <div class="sb-block"><h4>Filters</h4><div id="filters"></div></div>
-    </aside>`;
+    </div>`;
 }
 
 async function runApp() {
@@ -159,6 +130,36 @@ async function runApp() {
       const figures = sec.views.map((v) =>
         `<figure class="viz-frame viz-frame--${v}" data-view="${v}" aria-label="${sec.aria?.[v] ?? ''}"></figure>`,
       ).join('');
+      // Fazit: zwei große Top-5-Listen und gekoppelte vertikale Thermometer bilden
+      // eine gemeinsame Synthese; unquantifizierte Bedingungen folgen redaktionell.
+      if (sec.conclusion) {
+        return `
+        <section class="section section--conclusion" id="step-${sec.step}" data-step="${sec.step}">
+          ${sectionTextHtml(sec, s)}
+          <div class="conclusion-evidence">
+            <div class="viz-row">${figures}</div>
+          </div>
+          <aside class="conclusion-factors" aria-labelledby="conclusion-answer-title">
+            <div class="conclusion-answer">
+              <!-- Kicker-Diät (Review 2026-07-13): die kursive Frage trägt die Rückkehr
+                   zur Ausgangsfrage allein - kein Eyebrow, erst recht kein farbiges. -->
+              <p class="conclusion-answer__question">${s.factorQuestion}</p>
+              <h3 id="conclusion-answer-title">${s.factorAnswer}</h3>
+              <p>${s.factorIntro}</p>
+            </div>
+            <div class="conclusion-conditions">
+              <div class="conclusion-factors__head">
+                <h3>What this dataset cannot see</h3>
+              </div>
+              <ul>
+                ${s.factors.map((factor) => `
+                  <li><h4>${factor.title}</h4><p>${factor.text}</p></li>`).join('')}
+              </ul>
+            </div>
+          </aside>
+          ${s.outro ? `<p class="conclusion-outro">${s.outro}</p>` : ''}
+        </section>`;
+      }
       // Evidence-Panel: zweispaltig - Text links, Chart mit Control-Leiste rechts.
       if (sec.split) {
         return `
@@ -173,7 +174,7 @@ async function runApp() {
       return `
         <section class="section${sec.explore ? ' section-explore' : ''}" id="step-${sec.step}" data-step="${sec.step}">
           ${sectionTextHtml(sec, s)}
-          ${sec.explore ? exploreWorkbench(sec.aria) : `
+          ${sec.explore ? evidenceWorkbench(sec.aria) : `
           ${sec.controls ? '<div class="story-controls"></div>' : ''}
           <div class="viz-row${sec.views.length > 1 ? ' viz-row--dual' : ''}">${figures}</div>`}
         </section>`;
@@ -185,14 +186,18 @@ async function runApp() {
         <div class="stage-group" data-stage="${block.stage}">
           <div class="stage-sticky">
             <figure class="viz-frame viz-frame--scatter" data-view="scatter"
-              aria-label="${block.members[0].aria?.scatter ?? ''}"></figure>
+              aria-label="${block.members[0].aria?.scatter ?? ''}">${
+              // Controls direkt AN der Grafik (oben rechts im Frame), nicht in der Textkarte -
+              // sichtbar nur in der Unit-Formation (CSS-Gate über :has(.fm-unit)).
+              block.members.some((sec) => sec.controls) ? '<div class="story-controls story-controls--stage"></div>' : ''
+            }</figure>
           </div>
           <div class="stage-steps">
             ${block.members.map((sec) => {
               const s = steps[sec.step];
               return `
               <div class="stage-step" id="step-${sec.step}" data-step="${sec.step}">
-                ${sectionTextHtml(sec, s, sec.controls ? '<div class="story-controls"></div>' : '')}
+                ${sectionTextHtml(sec, s, '')}
               </div>`;
             }).join('')}
           </div>
@@ -271,34 +276,46 @@ async function runApp() {
       const step = steps[sec.step];
 
       if (sec.explore) {
-        const store = createStore(makeInitialState()); // step -1, exploreUnlocked true
+        const requestedView = params.get('view');
+        const exploreView = ['outliers', 'countries', 'geography'].includes(requestedView) ? requestedView : 'outliers';
+        const store = createStore({ ...makeInitialState(), exploreView });
         const ctx = { data, meta, bus: store, config: null };
         const components = [
-          createMap(sectionEl.querySelector('[data-view=map]'), ctx),
-          // Kompakter Scatter fürs 2x2-Grid: flacher viewBox (~1.9:1) → gleich hohe
-          // Kacheln, alle vier auf einen Blick. Story-Scatter bleibt unberührt.
-          createScatter(sectionEl.querySelector('[data-view=scatter]'), ctx, { dims: EXPLORE_SCATTER }),
           createTooltip(document.body, ctx),
           createDetailPanel(document.querySelector('#detail'), ctx),
-          createLegend(sectionEl.querySelector('#legend'), ctx),
           createModeToggle(sectionEl.querySelector('#mode-toggle'), ctx),
           createFilterPanel(sectionEl.querySelector('#filters'), ctx),
-          createTimeScrubber(sectionEl.querySelector('#map-timeline'), ctx),
-          createExploreChrome(sectionEl, ctx),
-          // Dashboard-Kacheln (2x2-Grid): Scatter oben links (bereits via createScatter),
-          // Profil-Balken, Jahres-Trend und Hot-Zone-Heatmap - alle auf demselben Store
-          // (Cross-Highlighting über hover/textSet/selectedEventIds sofort funktionsfähig).
-          createProfileBars(sectionEl.querySelector('#tile-profile'), ctx),
-          createImpactTrend(sectionEl.querySelector('#tile-trend'), ctx),
-          createTrackHeatmap(sectionEl.querySelector('#tile-heat'), ctx),
-          createTileExpander(sectionEl, ctx),
+          createExploreLab(sectionEl, ctx),
         ];
+        const mountedViews = new Set();
+        function mountView(view) {
+          if (mountedViews.has(view)) return;
+          mountedViews.add(view);
+          if (view === 'outliers') components.push(
+            createScatter(sectionEl.querySelector('[data-view=scatter]'), ctx, { dims: EXPLORE_SCATTER }),
+            createSelectionSummary(sectionEl.querySelector('#selection-summary'), ctx),
+          );
+          if (view === 'countries') components.push(
+            createCountryRecurrence(sectionEl.querySelector('#country-recurrence'), ctx),
+          );
+          if (view === 'geography') components.push(
+            createMap(sectionEl.querySelector('[data-view=map]'), ctx),
+            createTrackHeatmap(sectionEl.querySelector('#hot-zone-map'), ctx),
+            createTimeScrubber(sectionEl.querySelector('#map-timeline'), ctx),
+          );
+          const state = store.get();
+          for (const component of components.slice(-({ outliers: 2, countries: 1, geography: 3 }[view]))) {
+            component.update(state, undefined);
+          }
+        }
         store.subscribe((state, patch) => {
+          mountView(state.exploreView);
           for (const c of components) c.update(state, patch);
         });
         const state = store.get();
+        mountView(state.exploreView);
         for (const c of components) c.update(state, undefined);
-        window.store = store; // Konsole/E2E: das interaktive Dashboard
+        window.store = store;
         return;
       }
 
@@ -315,6 +332,7 @@ async function runApp() {
         if (v === 'bars') components.push(createImpactBars(el, ctx));
         if (v === 'haroldMorph') components.push(createHaroldMorph(el, ctx));
         if (v === 'unitChart') components.push(createUnitChart(el, ctx));
+        if (v === 'conclusionSynthesis') components.push(createConclusionSynthesis(el, ctx));
         // ohne Brush-Layer: gesperrte Sektionen brauchen kein Selektions-Overlay
         if (v === 'scatter') {
           components.push(createScatter(el, ctx, { layers: ['axes', 'rug', 'trend', 'points', 'annotations', 'sizeLegend'] }));
@@ -359,9 +377,7 @@ async function runApp() {
       }, { threshold: 0.3 });
       for (const row of main.querySelectorAll('.viz-row')) io.observe(row);
       for (const sticky of main.querySelectorAll('.stage-sticky')) io.observe(sticky);
-      // Explore-Sektion ist hoch (Hero-Map + 2x2-Grid): auch das Grid beobachten,
-      // damit ein Sprung direkt zu den Kacheln die Sektion ebenfalls mountet.
-      for (const grid of main.querySelectorAll('.tile-grid')) io.observe(grid);
+      for (const lab of main.querySelectorAll('.evidence-lab')) io.observe(lab);
     } else {
       for (const el of main.querySelectorAll('.section')) {
         const sec = sections.find((s) => s.step === Number(el.dataset.step));
@@ -372,11 +388,14 @@ async function runApp() {
 
     // Deep-Link ?step=N → zur Sektion springen (IO mountet bei Ankunft)
     const deepStep = params.has('step') ? Number(params.get('step')) : null;
-    if (Number.isFinite(deepStep)) {
-      const target = document.querySelector(`#step-${deepStep}`);
+    if (Number.isInteger(deepStep) && sections.some((section) => section.step === deepStep)) {
+      const target = document.getElementById(`step-${deepStep}`);
       if (target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
     }
   } catch (err) {
-    document.querySelector('.app').innerHTML = `<div class="error-banner">${err.message}</div>`;
+    const banner = document.createElement('div');
+    banner.className = 'error-banner';
+    banner.textContent = err instanceof Error ? err.message : String(err);
+    document.querySelector('.app').replaceChildren(banner);
   }
 }

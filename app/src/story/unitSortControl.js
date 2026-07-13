@@ -1,4 +1,4 @@
-// Umschalter für das Unit Chart (Step 7): chronologisch ↔ nach Datenqualität.
+// Umschalter für das Unit Chart (Step 6): chronologisch ↔ nach Datenqualität.
 // Schaltet das Store-Feld `unitSort`; das unitChart ordnet die 99 Kreise fließend um.
 export function createUnitSortControl(container, ctx) {
   const { bus } = ctx;

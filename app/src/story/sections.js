@@ -49,16 +49,31 @@ export const SECTIONS = [
   },
   {
     step: 5, act: 'The evidence', stage: 'dots2', views: ['scatter'],
-    aria: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-baseline storms highlighted, with Kevin, Judy and Gita annotated' },
+    aria: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-baseline storms fully highlighted with '
+      + 'thin lines dropping to the dashed wind-only line; hovering a dot names the storm and its toll' },
   },
   {
-    step: 6, act: 'The people', stage: 'dots2', views: ['unitChart'], controls: 'unitSort',
+    // Residual-Beat: gleiche Bühne (stage dots2), die Punkte morphen vom Scatter in
+    // eine Zeile je Land - konsekutiv gleiche stage-Keys bleiben EINE Stage-Gruppe.
+    step: 6, act: 'The evidence', stage: 'dots2', views: ['scatter'],
+    aria: { scatter: 'Dot plot of the same storm records, one row per country: dots right of a dashed '
+      + 'vertical line took a heavier toll than the wind-only expectation, dots left of it a lighter one; '
+      + 'Vanuatu’s row sits almost entirely to the right, with eight of ten storms above the line' },
+  },
+  {
+    step: 7, act: 'The people', stage: 'dots2', views: ['unitChart'], controls: 'unitSort',
     aria: { unitChart: 'Unit chart of all 99 storm-country pairs: filled dots are complete records; '
       + 'hollow dots are pairs whose human impact was never recorded; one half-filled dot had a recorded '
       + 'impact but no measured wind. A button re-sorts them into two blocks by data completeness' },
   },
   {
-    step: 7, act: 'Your turn', views: ['map', 'scatter'], explore: true,
+    step: 8, act: 'The conclusion', views: ['conclusionSynthesis'], conclusion: true,
+    aria: {
+      conclusionSynthesis: 'Linked conclusion with two top-five lists and paired vertical cold-to-warm thermometers. Low values sit at the bottom and high values at the top; an order switch compares wind with affected share',
+    },
+  },
+  {
+    step: 9, act: 'Your turn', views: ['map', 'scatter'], explore: true,
     aria: { map: ARIA.map, scatter: ARIA.scatter },
   },
 ];
