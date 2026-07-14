@@ -3,6 +3,7 @@
 // Nicht interaktiv (pointer-events: none via CSS), max. ~3 gleichzeitig (Clutter-Regel).
 import { select } from 'd3';
 import { isScatterable } from '../core/filters.js';
+import { UNIFORM_POINT_R } from '../core/config.js';
 
 export function createAnnotationsLayer(gAnnotations, layerCtx) {
   const g = gAnnotations.append('g').attr('class', 'g-story-annotations');
@@ -11,7 +12,9 @@ export function createAnnotationsLayer(gAnnotations, layerCtx) {
   function render(state) {
     // Story-Annotationen (storyFx) + Button-Annotationen (highlight.annos, Evidence-Panel);
     // Dedupe per eventId - das persistente Button-Highlight gewinnt.
-    const raw = [...(state.highlight?.annos ?? []), ...(state.storyFx?.annotations ?? [])];
+    const raw = state.highlight
+      ? [...(state.highlight.annos ?? [])]
+      : [...(state.storyFx?.annotations ?? [])];
     const seen = new Set();
     const annos = raw
       .filter((a) => !seen.has(a.eventId) && seen.add(a.eventId))
@@ -40,7 +43,9 @@ export function createAnnotationsLayer(gAnnotations, layerCtx) {
     enter.merge(sel).each(function (d) {
       const cx = x(d.event.intensity_kt);
       const cy = y.scale(y.value(d.event));
-      const ringR = r(d.event.deaths ?? 0) + 5;
+      const pointR = state.storyFx?.uniformPoints || layerCtx.uniformPoints
+        ? UNIFORM_POINT_R : r(d.event.deaths ?? 0);
+      const ringR = pointR + 5;
       const k = rank.get(d.eventId) ?? 0;
       const below = cy < inner.height * 0.33; // nahe Oberkante → Labels nach unten
       // Optionale Feinjustage je Annotation: dx/dy verschieben das Label (der Leader folgt),
@@ -63,11 +68,19 @@ export function createAnnotationsLayer(gAnnotations, layerCtx) {
         .attr('text-anchor', 'middle')
         .text(d.text);
     });
+    g.classed('story-hidden', state.storyFx?.hoverPoints === true
+      && (state.hover?.eventId != null || state.stormPin?.sid != null));
+  }
+
+  function visibility(state) {
+    g.classed('story-hidden', state.storyFx?.hoverPoints === true
+      && (state.hover?.eventId != null || state.stormPin?.sid != null));
   }
 
   return {
     update(state, patch) {
       if (!patch || 'storyFx' in patch || 'mode' in patch || 'highlight' in patch) render(state);
+      else if ('hover' in patch || 'stormPin' in patch) visibility(state);
     },
     destroy() { g.remove(); },
   };

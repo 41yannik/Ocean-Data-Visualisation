@@ -23,10 +23,11 @@ import { createTimeScrubber } from './ui/timeScrubber.js';
 import { createSstIntro } from './story/sstIntro.js';
 import { createStormTrend } from './story/stormTrend.js';
 import { createImpactBars } from './story/impactBars.js';
-import { createHaroldMorph } from './story/haroldMorph.js';
+import { createPamMorph } from './story/pamMorph.js';
 import { createUnitChart } from './story/unitChart.js';
 import { createUnitSortControl } from './story/unitSortControl.js';
 import { createExploreLab } from './ui/exploreLab.js';
+import { createExploreThumbs } from './ui/exploreThumbs.js';
 import { buildSteps } from './story/steps.js';
 import { SECTIONS } from './story/sections.js';
 import { createChapterNav } from './story/chapterNav.js';
@@ -35,7 +36,9 @@ import { createFormationLayer } from './story/formationLayer.js';
 import { createChartControls } from './story/chartControls.js';
 import { createConclusionSynthesis } from './story/conclusionSynthesis.js';
 import { createTrackHeatmap } from './ui/trackHeatmap.js';
+import { createTollMap } from './ui/tollMap.js';
 import { createCountryRecurrence } from './ui/countryRecurrence.js';
+import { createResidualLab } from './ui/residualLab.js';
 import { createSelectionSummary } from './ui/selectionSummary.js';
 import { methodsHtml } from './story/methods.js';
 import { resolveHighlightSpec } from './story/highlightSpecs.js';
@@ -51,36 +54,69 @@ const params = new URLSearchParams(location.search);
   }
 })();
 
-// Großformatiger Scatter für die primäre Analyseansicht des Evidence Labs.
-const EXPLORE_SCATTER = { width: 760, height: 560, margin: { top: 28, right: 24, bottom: 78, left: 68 } };
+// Kompakter Scatter für das stabile Analysefenster des Evidence Labs.
+const EXPLORE_SCATTER = { width: 720, height: 500, margin: { top: 24, right: 20, bottom: 68, left: 64 } };
 
 function evidenceWorkbench(aria = {}) {
   return `
     <div class="evidence-lab">
-      <nav class="evidence-questions" role="tablist" aria-label="Choose an evidence question">
-        <button role="tab" data-explore-view="outliers" aria-controls="evidence-outliers" aria-selected="true">Which storms defy the wind-only expectation?</button>
-        <button role="tab" data-explore-view="countries" aria-controls="evidence-countries" aria-selected="false" tabindex="-1">Which countries appear repeatedly in the impact records?</button>
-        <button role="tab" data-explore-view="geography" aria-controls="evidence-geography" aria-selected="false" tabindex="-1">Where do storm tracks concentrate?</button>
-      </nav>
-      <details class="evidence-filters" open><summary>Filter data</summary>
-        <div class="evidence-filter-row"><div class="evidence-metric"><span>Impact measure</span><div id="mode-toggle"></div></div><div id="filters"></div></div>
-      </details>
+      <div class="evidence-switcher">
+        <nav class="evidence-questions" role="tablist" aria-label="Choose an evidence perspective">
+          <button id="tab-outliers" role="tab" data-explore-view="outliers" aria-controls="evidence-outliers" aria-selected="true">
+            <span class="thumb-viz" data-thumb="outliers" aria-hidden="true"></span>
+            <span class="thumb-label">Wind outliers</span>
+          </button>
+          <button id="tab-residuals" role="tab" data-explore-view="residuals" aria-controls="evidence-residuals" aria-selected="false" tabindex="-1">
+            <span class="thumb-viz" data-thumb="residuals" aria-hidden="true"></span>
+            <span class="thumb-label">Beyond the wind line</span>
+          </button>
+          <button id="tab-countries" role="tab" data-explore-view="countries" aria-controls="evidence-countries" aria-selected="false" tabindex="-1">
+            <span class="thumb-viz" data-thumb="countries" aria-hidden="true"></span>
+            <span class="thumb-label">Repeated impacts</span>
+          </button>
+          <button id="tab-geography" role="tab" data-explore-view="geography" aria-controls="evidence-geography" aria-selected="false" tabindex="-1">
+            <span class="thumb-viz" data-thumb="geography" aria-hidden="true"></span>
+            <span class="thumb-label">Track geography</span>
+          </button>
+        </nav>
+        <button class="evidence-refine" type="button" aria-expanded="false" aria-controls="evidence-filter-region">
+          Refine data <span class="evidence-refine-count" hidden></span>
+        </button>
+      </div>
+      <div id="evidence-filter-region" class="evidence-filters" hidden>
+        <div id="filters"></div>
+      </div>
+      <div class="evidence-context-controls">
+        <div class="evidence-metric"><span>Impact measure</span><div id="mode-toggle"></div></div>
+        <div id="evidence-filter-summary" class="evidence-filter-summary" aria-live="polite" aria-atomic="true"></div>
+      </div>
       <div class="evidence-panels">
-        <section id="evidence-outliers" class="evidence-panel" data-panel="outliers" role="tabpanel">
-          <header><p class="kicker">Wind outliers</p><h3>Which impacts outran the wind-only expectation?</h3><p>Distance above or below the line shows where reported impact diverged from wind alone.</p></header>
-          <div class="outlier-layout"><figure class="viz-frame viz-frame--scatter" data-view="scatter" aria-label="${aria.scatter ?? ''}"></figure><aside id="selection-summary" class="evidence-summary"></aside></div>
+        <section id="evidence-outliers" class="evidence-panel" data-panel="outliers" role="tabpanel" aria-labelledby="question-outliers">
+          <header><h3 id="question-outliers">Which impacts outran the wind-only expectation?</h3><p>Distance above or below the line shows where reported impact diverged from wind alone.</p></header>
+          <div class="evidence-empty" hidden><p role="status">No complete wind-and-impact records match these filters.</p><button type="button" data-clear-filters>Clear filters</button></div>
+          <div class="evidence-panel-content outlier-layout"><figure class="viz-frame viz-frame--scatter" data-view="scatter" aria-label="${aria.scatter ?? ''}"></figure><aside id="selection-summary" class="evidence-summary"></aside></div>
         </section>
-        <section id="evidence-countries" class="evidence-panel" data-panel="countries" role="tabpanel" hidden>
-          <header><p class="kicker">Repeated records</p><h3>Which countries appear repeatedly in the impact records?</h3><p>Each dot is one storm-country record. Hollow dots mean the human impact was not reported.</p></header>
-          <figure id="country-recurrence" class="country-recurrence"></figure>
+        <section id="evidence-residuals" class="evidence-panel" data-panel="residuals" role="tabpanel" aria-labelledby="question-residuals" hidden>
+          <header><h3 id="question-residuals">Who suffers more than wind alone predicts?</h3><p>One row per country, every record placed by its distance from the wind-only line. Dots to the right took a heavier toll than the wind predicts; the emphasised marker is the country's median.</p></header>
+          <div class="evidence-empty" hidden><p role="status">No complete wind-and-impact records match these filters.</p><button type="button" data-clear-filters>Clear filters</button></div>
+          <div class="evidence-panel-content"><figure id="residual-lab" class="residual-lab"></figure></div>
         </section>
-        <section id="evidence-geography" class="evidence-panel" data-panel="geography" role="tabpanel" hidden>
-          <header><p class="kicker">Track concentration</p><h3>Where do storm tracks concentrate?</h3><p>Switch between individual tracks and an aggregate view of the same filtered storms.</p></header>
-          <div class="geo-controls"><div role="group" aria-label="Map layer"><button data-map-layer="tracks" aria-pressed="true">Tracks</button><button data-map-layer="hotzones" aria-pressed="false">Hot zones</button></div><div class="hot-metric-control" role="group" aria-label="Hot-zone metric" hidden><button data-hot-metric="frequency" aria-pressed="true">Frequency</button><button data-hot-metric="averageWind" aria-pressed="false">Average wind</button></div></div>
-          <div class="geo-stage"><figure class="viz-frame viz-frame--map" data-view="map" data-geo-layer="tracks" aria-label="${aria.map ?? ''}"></figure><figure class="viz-frame viz-frame--map" id="hot-zone-map" data-geo-layer="hotzones" hidden></figure></div>
-          <div id="map-timeline"></div>
-          <p class="geo-context" data-geo-note="tracks">Track width indicates storm category. Hover or click a track to follow that storm across the evidence lab.</p>
-          <p class="geo-context" data-geo-note="hotzones" hidden>Each cell aggregates the filtered tracks that cross it. Click a cell to select its contributing storm records.</p>
+        <section id="evidence-countries" class="evidence-panel" data-panel="countries" role="tabpanel" aria-labelledby="question-countries" hidden>
+          <header><h3 id="question-countries">Which countries appear repeatedly in the impact records?</h3><p>Each dot is one storm-country record. Hollow dots mean the human impact was not reported.</p></header>
+          <div class="evidence-empty" hidden><p role="status">No storm-country records match these filters.</p><button type="button" data-clear-filters>Clear filters</button></div>
+          <div class="evidence-panel-content"><figure id="country-recurrence" class="country-recurrence"></figure></div>
+        </section>
+        <section id="evidence-geography" class="evidence-panel" data-panel="geography" role="tabpanel" aria-labelledby="question-geography" hidden>
+          <header><h3 id="question-geography">Where do storms concentrate — and where does the toll land?</h3><p>Switch between individual tracks, an aggregate view and the reported human toll of the same filtered storms.</p></header>
+          <div class="evidence-empty" hidden><p role="status">No storm tracks match these filters.</p><button type="button" data-clear-filters>Clear filters</button></div>
+          <div class="evidence-panel-content">
+            <div class="geo-controls"><div role="group" aria-label="Map layer"><button data-map-layer="tracks" aria-pressed="true">Tracks</button><button data-map-layer="hotzones" aria-pressed="false">Hot zones</button><button data-map-layer="toll" aria-pressed="false">Human toll</button></div><div class="hot-metric-control" role="group" aria-label="Hot-zone metric" hidden><button data-hot-metric="frequency" aria-pressed="true">Frequency</button><button data-hot-metric="averageWind" aria-pressed="false">Average wind</button></div></div>
+            <div class="geo-stage"><figure class="viz-frame viz-frame--map" data-view="map" data-geo-layer="tracks" aria-label="${aria.map ?? ''}"></figure><figure class="viz-frame viz-frame--map" id="hot-zone-map" data-geo-layer="hotzones" hidden></figure><figure class="viz-frame viz-frame--map" id="human-toll-map" data-geo-layer="toll" hidden></figure></div>
+            <div id="map-timeline"></div>
+            <p class="geo-context" data-geo-note="tracks">Track width indicates storm category. Hover or click a track to follow that storm across the evidence lab.</p>
+            <p class="geo-context" data-geo-note="hotzones" hidden>Each cell aggregates the filtered tracks that cross it. Click a cell to select its contributing storm records.</p>
+            <p class="geo-context" data-geo-note="toll" hidden>Circle area sums each country's reported affected people — switch the impact measure to compare median population shares instead. Hollow rings mark countries whose filtered records report no human impact. Click a circle to select that country's records.</p>
+          </div>
         </section>
       </div>
     </div>`;
@@ -120,7 +156,7 @@ async function runApp() {
             ${s.questions ? `<ul class="guide-questions">${s.questions.map((q) => `<li>${q}</li>`).join('')}</ul>` : ''}
             ${s.caveat ? `<p class="section-caveat">${s.caveat}</p>` : ''}
             ${s.transition ? `<p class="transition">${s.transition}</p>` : ''}
-            ${s.source ? `<p class="source">${s.source}</p>` : ''}
+            ${s.source ? `<p class="source"><span class="source-label">Source</span> · ${s.source}</p>` : ''}
             ${s.hint ? `<p class="reading-hint">${s.hint}</p>` : ''}
             ${extra}
           </div>`;
@@ -147,15 +183,14 @@ async function runApp() {
               <h3 id="conclusion-answer-title">${s.factorAnswer}</h3>
               <p>${s.factorIntro}</p>
             </div>
-            <div class="conclusion-conditions">
-              <div class="conclusion-factors__head">
-                <h3>What this dataset cannot see</h3>
-              </div>
-              <ul>
-                ${s.factors.map((factor) => `
-                  <li><h4>${factor.title}</h4><p>${factor.text}</p></li>`).join('')}
-              </ul>
-            </div>
+            <ol class="conclusion-factor-cards" role="list">
+              ${s.factors.map((factor, i) => `
+                <li class="factor-card">
+                  <span class="factor-card__num" aria-hidden="true">${String(i + 1).padStart(2, '0')}</span>
+                  <h4>${factor.title}</h4>
+                  <p>${factor.text}</p>
+                </li>`).join('')}
+            </ol>
           </aside>
           ${s.outro ? `<p class="conclusion-outro">${s.outro}</p>` : ''}
         </section>`;
@@ -277,44 +312,59 @@ async function runApp() {
 
       if (sec.explore) {
         const requestedView = params.get('view');
-        const exploreView = ['outliers', 'countries', 'geography'].includes(requestedView) ? requestedView : 'outliers';
+        const exploreView = ['outliers', 'residuals', 'countries', 'geography'].includes(requestedView) ? requestedView : 'outliers';
         const store = createStore({ ...makeInitialState(), exploreView });
         const ctx = { data, meta, bus: store, config: null };
+        const exploreLab = createExploreLab(sectionEl, ctx);
         const components = [
           createTooltip(document.body, ctx),
           createDetailPanel(document.querySelector('#detail'), ctx),
           createModeToggle(sectionEl.querySelector('#mode-toggle'), ctx),
           createFilterPanel(sectionEl.querySelector('#filters'), ctx),
-          createExploreLab(sectionEl, ctx),
+          exploreLab,
+          createExploreThumbs(sectionEl, ctx),
         ];
         const mountedViews = new Set();
         function mountView(view) {
-          if (mountedViews.has(view)) return;
+          if (mountedViews.has(view)) return [];
           mountedViews.add(view);
-          if (view === 'outliers') components.push(
-            createScatter(sectionEl.querySelector('[data-view=scatter]'), ctx, { dims: EXPLORE_SCATTER }),
+          const added = [];
+          if (view === 'outliers') added.push(
+            createScatter(sectionEl.querySelector('[data-view=scatter]'), ctx,
+              { dims: EXPLORE_SCATTER, uniformPoints: true }),
             createSelectionSummary(sectionEl.querySelector('#selection-summary'), ctx),
           );
-          if (view === 'countries') components.push(
+          if (view === 'residuals') added.push(
+            createResidualLab(sectionEl.querySelector('#residual-lab'), ctx),
+          );
+          if (view === 'countries') added.push(
             createCountryRecurrence(sectionEl.querySelector('#country-recurrence'), ctx),
           );
-          if (view === 'geography') components.push(
+          if (view === 'geography') added.push(
             createMap(sectionEl.querySelector('[data-view=map]'), ctx),
             createTrackHeatmap(sectionEl.querySelector('#hot-zone-map'), ctx),
+            createTollMap(sectionEl.querySelector('#human-toll-map'), ctx),
             createTimeScrubber(sectionEl.querySelector('#map-timeline'), ctx),
           );
-          const state = store.get();
-          for (const component of components.slice(-({ outliers: 2, countries: 1, geography: 3 }[view]))) {
-            component.update(state, undefined);
-          }
+          components.push(...added);
+          return added;
         }
         store.subscribe((state, patch) => {
-          mountView(state.exploreView);
-          for (const c of components) c.update(state, patch);
+          // Das aktive Panel zuerst sichtbar machen, damit neu gemountete D3-Views ihre
+          // echte Breite statt clientWidth=0 messen (besonders wichtig für die Länderzeilen).
+          exploreLab.update(state, patch);
+          const added = new Set(mountView(state.exploreView));
+          for (const c of components) {
+            if (c === exploreLab) continue;
+            c.update(state, added.has(c) ? undefined : patch);
+          }
         });
         const state = store.get();
+        exploreLab.update(state, undefined);
         mountView(state.exploreView);
-        for (const c of components) c.update(state, undefined);
+        for (const c of components) {
+          if (c !== exploreLab) c.update(state, undefined);
+        }
         window.store = store;
         return;
       }
@@ -330,12 +380,12 @@ async function runApp() {
         if (v === 'stormTrend') components.push(createStormTrend(el, ctx));
         if (v === 'map') components.push(createMap(el, ctx, sec.mapOpts ?? {}));
         if (v === 'bars') components.push(createImpactBars(el, ctx));
-        if (v === 'haroldMorph') components.push(createHaroldMorph(el, ctx));
+        if (v === 'pamMorph') components.push(createPamMorph(el, ctx));
         if (v === 'unitChart') components.push(createUnitChart(el, ctx));
         if (v === 'conclusionSynthesis') components.push(createConclusionSynthesis(el, ctx));
         // ohne Brush-Layer: gesperrte Sektionen brauchen kein Selektions-Overlay
         if (v === 'scatter') {
-          components.push(createScatter(el, ctx, { layers: ['axes', 'rug', 'trend', 'points', 'annotations', 'sizeLegend'] }));
+          components.push(createScatter(el, ctx, { layers: ['axes', 'rug', 'trend', 'points', 'annotations'] }));
         }
       }
       // hoverPoints gibt Punkt-Hover trotz Story-Gate frei → einfacher Tooltip.

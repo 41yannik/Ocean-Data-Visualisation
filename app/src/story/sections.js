@@ -35,16 +35,17 @@ export const SECTIONS = [
     // ersetzt die frühere Bühnen-Gruppe 'dots' mit zwei Scroll-Beats.
     step: 3, act: 'The evidence', split: true, views: ['scatter'],
     aria: { scatter: 'Interactive scatterplot of maximum sustained wind against share of national '
-      + 'population reported affected, with an almost flat dashed wind-only baseline. Buttons above the '
-      + 'chart highlight Mawar 2023, Percy, Cyclone Guba or the high-residual outliers; '
-      + 'a dropdown filters the dots by country' },
+      + 'population reported affected, with a dashed average fit from wind alone. Buttons above the '
+      + 'chart highlight Tino, Daman or the records farthest from the fit; '
+      + 'hovering a dot links all country records from the same storm, and a dropdown filters the dots by country' },
   },
   {
-    step: 4, act: 'The evidence', views: ['haroldMorph'],
+    step: 4, act: 'The evidence', views: ['pamMorph'],
     aria: {
-      haroldMorph: 'Animated sequence: Cyclone Harold’s track is drawn across four countries; '
-        + 'impact bubbles pop at Solomon Islands, Vanuatu, Fiji and Tonga, then fly onto a '
-        + 'scatterplot where all four share the same wind speed but land several times apart in people reported affected',
+      pamMorph: 'Stable map of Cyclone Pam with one blue point per affected country. Each point is '
+        + 'labelled with the country name, affected population share and reported number of people; '
+        + 'hovering, focusing or tapping it opens a short explanation of the reported exposure. '
+        + 'Orange shows Pam’s track, observed gale-force wind extent and its 150-knot peak near Vanuatu.',
     },
   },
   {

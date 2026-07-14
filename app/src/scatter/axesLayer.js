@@ -1,10 +1,9 @@
-// Achsen + Labels + dynamische n-Caption (Missing-Data-Ehrlichkeit, Lücke L2/L3).
+// Achsen + Labels.
 import { axisBottom, axisLeft } from 'd3';
 import { DUR_MODE } from '../core/config.js';
-import { matchesFilters, isScatterable } from '../core/filters.js';
 
 export function createAxesLayer(g, layerCtx) {
-  const { inner, data } = layerCtx;
+  const { inner } = layerCtx;
 
   const gX = g.append('g').attr('class', 'axis axis-x').attr('transform', `translate(0,${inner.height})`);
   const gY = g.append('g').attr('class', 'axis axis-y');
@@ -19,8 +18,9 @@ export function createAxesLayer(g, layerCtx) {
     .attr('x', -inner.height / 2).attr('y', -44)
     .attr('text-anchor', 'middle');
 
-  const caption = g.append('text').attr('class', 'n-caption')
-    .attr('x', 0).attr('y', inner.height + 62);
+  const scaleNote = g.append('text').attr('class', 'axis-scale-note')
+    .attr('x', 0).attr('y', -10)
+    .text('Equal steps up = 10×');
 
   function render(state, animate) {
     const { x, y } = layerCtx.scales;
@@ -31,12 +31,7 @@ export function createAxesLayer(g, layerCtx) {
     gX.call(axisBottom(x).ticks(7).tickSizeOuter(0));
     tx(gY).call(axisLeft(y.scale).tickValues(y.ticks).tickFormat(y.tickFormat).tickSizeOuter(0));
     yLabel.text(y.axisLabel);
-
-    const filtered = data.events.filter((e) => matchesFilters(e, state.filters));
-    const shown = filtered.filter(isScatterable).length;
-    // Klartext statt Statistik-Kürzel: die Missing-Data-Ehrlichkeit trägt ausführlich die
-    // Sektion „What the data hides" - hier reicht die einfache, verständliche Zählung.
-    caption.text(`${shown} storm–country pairs, each with a measured wind and a reported toll`);
+    scaleNote.attr('aria-label', 'The vertical scale is logarithmic; each equal step represents ten times the affected share.');
   }
 
   return {

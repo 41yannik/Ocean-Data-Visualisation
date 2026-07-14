@@ -4,8 +4,8 @@ export function createModeToggle(container, ctx) {
   const bus = ctx.bus;
   container.className = 'mode-toggle';
   container.innerHTML = `
-    <button type="button" data-mode="perCapita" aria-pressed="true">per capita</button>
-    <button type="button" data-mode="absolute" aria-pressed="false">absolute</button>
+    <button type="button" data-mode="perCapita" aria-pressed="true">Population share</button>
+    <button type="button" data-mode="absolute" aria-pressed="false">People affected</button>
     <span class="refit-hint" aria-live="polite"></span>`;
 
   const buttons = [...container.querySelectorAll('button')];

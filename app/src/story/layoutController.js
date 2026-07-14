@@ -16,7 +16,7 @@ const STEP_LABELS = {
   1: { map: 'Map focused on Cyclone Heta’s track past American Samoa and Niue; both impact sites pulse' },
   2: { scatter: 'Scatterplot: storm-country pairs appear; no trend line yet; Mawar and Percy annotated' },
   3: { scatter: 'Scatterplot: nearly flat expectation line with quantile band; high-residual outliers highlighted, Cyclone Guba ringed' },
-  4: { map: 'Map focused on Cyclone Harold’s track across four countries', scatter: 'Scatterplot: Harold’s four connected country outcomes highlighted' },
+  4: { map: 'Map focused on Cyclone Pam and five countries with reported impacts', scatter: 'Scatterplot: Pam’s five connected country outcomes highlighted' },
   5: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-line storms highlighted, with Kevin, Judy and Gita annotated' },
   6: { scatter: 'Scatterplot with rug ticks along the wind axis marking storms without an impact count' },
 };

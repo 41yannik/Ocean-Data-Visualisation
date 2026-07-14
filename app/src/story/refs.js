@@ -17,6 +17,7 @@
 //       aboveShare.<iso3>                    Anteil der Scatter-Punkte des Landes über der Linie
 //       aboveCount.<iso3>                    dito als Zähler, z. B. "8 of 10"
 //       affectedRatio.<idA>.<idB>            gerundetes Verhältnis affected(A)/affected(B)
+//       affectedPcRatio.<idA>.<idB>          gerundetes Verhältnis affected_pc(A)/affected_pc(B)
 import { fmtInt, fmtPct, fmtKt, fmtCategory } from '../core/format.js';
 import { isScatterable } from '../core/filters.js';
 
@@ -143,6 +144,12 @@ function lookupStat([name, ...args], ctx, token) {
     if (!a || !b) throw new Error(`Story-Referenz auf unbekanntes Event: ${token}`);
     if (a.affected == null || b.affected == null || !b.affected) return null;
     return String(Math.round(a.affected / b.affected));
+  }
+  if (name === 'affectedPcRatio') {
+    const [a, b] = args.map((id) => ctx.data.index.byId.get(id));
+    if (!a || !b) throw new Error(`Story-Referenz auf unbekanntes Event: ${token}`);
+    if (a.affected_pc == null || b.affected_pc == null || !b.affected_pc) return null;
+    return String(Math.round(a.affected_pc / b.affected_pc));
   }
   throw new Error(`Story-Referenz auf unbekannte Statistik: ${token}`);
 }

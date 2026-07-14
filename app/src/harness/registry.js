@@ -23,6 +23,8 @@ import { createChartControls } from '../story/chartControls.js';
 import { createConclusionSynthesis } from '../story/conclusionSynthesis.js';
 import { createProfileBars } from '../ui/profileBars.js';
 import { createImpactTrend } from '../ui/impactTrend.js';
+import { createResidualLab } from '../ui/residualLab.js';
+import { createTollMap } from '../ui/tollMap.js';
 
 export const REGISTRY = {
   tooltip: {
@@ -117,6 +119,26 @@ Harold-Zeilen: ${index.bySid.get('2020092S09155')?.length} (erwartet 4) · Pam: 
       c.appendChild(tile);
       const comp = createImpactTrend(tile, ctx);
       return { update: comp.update, destroy() { comp.destroy(); tile.remove(); } };
+    },
+  },
+  residualLab: {
+    title: 'Residual-Zeilen (Evidence Lab): eine Zeile je Land, x = Abstand zur wind-only line',
+    mount(c, ctx) {
+      const figure = document.createElement('figure');
+      figure.className = 'residual-lab';
+      c.appendChild(figure);
+      const comp = createResidualLab(figure, ctx);
+      return { update: comp.update, destroy() { comp.destroy(); figure.remove(); } };
+    },
+  },
+  tollMap: {
+    title: 'Human-Toll-Karte (Evidence Lab): Kreisfläche = Betroffene je Land',
+    mount(c, ctx) {
+      const figure = document.createElement('figure');
+      figure.className = 'viz-frame viz-frame--map';
+      c.appendChild(figure);
+      const comp = createTollMap(figure, ctx);
+      return { update: comp.update, destroy() { comp.destroy(); figure.remove(); } };
     },
   },
 

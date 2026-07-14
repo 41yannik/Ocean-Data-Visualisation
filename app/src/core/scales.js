@@ -52,7 +52,7 @@ export function makeYScale(mode, innerHeight) {
       const pct = 10 ** v * 100;
       return pct >= 1 ? `${pct}%` : `${pct.toFixed(pct >= 0.1 ? 1 : 2)}%`;
     },
-    axisLabel: isAbs ? 'people reported affected (log)' : 'share of population affected (log)',
+    axisLabel: isAbs ? 'people reported affected' : 'share of population reported affected',
   };
 }
 

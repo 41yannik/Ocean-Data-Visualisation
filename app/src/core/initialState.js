@@ -37,6 +37,8 @@ export function makeInitialState() {
     // ({ ids, pulse } | null; „Category 1"/„glowing outliers").
     highlight: null,
     textSet: null,
+    // Evidence-Panel: per Klick fixierte 1:n-Gruppe (ein Sturm, mehrere Länderpunkte).
+    stormPin: null,
     // Step 6 (unit chart) - Sortierung: 'chrono' (chronologisch) | 'quality' (zwei Blöcke).
     unitSort: 'chrono',
     // Bühnen-Gruppe dots2 (Paket 10): 'scatter' | 'unit' - Ziel-Formation der 99 Kreise.

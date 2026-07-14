@@ -1,6 +1,6 @@
 // Reduziertes Fazit: zwei Top-5-Lesarten links, dieselben vollständigen
 // Sturm-Land-Paare als gekoppelte Kalt-Warm-Bänder rechts. Keine Filter und
-// kein Dashboard-State – Hover, Fokus oder Tap verbindet genau einen Namen.
+// kein Dashboard-State – Hover oder Fokus verbindet genau einen Namen.
 import { scaleLinear } from 'd3';
 import { isScatterable } from '../core/filters.js';
 import { fmtPct } from '../core/format.js';
@@ -81,7 +81,6 @@ export function createConclusionSynthesis(container, ctx) {
   const maxWind = Math.max(...model.topWind.map((d) => d.intensity_kt));
   const maxImpact = Math.max(...model.topImpact.map((d) => d.affected_pc));
   const controller = new AbortController();
-  let pinnedId = null;
   let hoverId = null;
   let orderMode = 'wind';
 
@@ -126,7 +125,6 @@ export function createConclusionSynthesis(container, ctx) {
     </div>`;
 
   const thermoRows = container.querySelector('.cs-thermo-rows');
-  const focusId = () => hoverId ?? pinnedId;
 
   function renderThermometer() {
     // DOM order is high → low so the strongest value sits at the top.
@@ -142,7 +140,7 @@ export function createConclusionSynthesis(container, ctx) {
   }
 
   function renderFocus() {
-    const d = model.byId.get(focusId());
+    const d = model.byId.get(hoverId);
     container.querySelectorAll('[data-record-id]').forEach((node) => {
       node.classList.toggle('active', !!d && node.dataset.recordId === d.id);
       node.classList.toggle('muted', !!d && node.dataset.recordId !== d.id);
@@ -171,15 +169,8 @@ export function createConclusionSynthesis(container, ctx) {
   }, { signal: controller.signal });
   container.addEventListener('click', (event) => {
     const order = event.target.closest('[data-order]');
-    if (order) { orderMode = order.dataset.order; renderThermometer(); return; }
-    const row = event.target.closest('.cs-rank-row');
-    if (!row) return;
-    pinnedId = pinnedId === row.dataset.recordId ? null : row.dataset.recordId;
-    hoverId = null; renderFocus();
-  }, { signal: controller.signal });
-  container.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    pinnedId = null; hoverId = null; renderFocus();
+    if (!order) return;
+    orderMode = order.dataset.order; renderThermometer();
   }, { signal: controller.signal });
 
   renderThermometer();

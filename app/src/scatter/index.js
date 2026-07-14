@@ -38,7 +38,9 @@ export function createScatter(container, ctx, opts = {}) {
   const gPoints = root.append('g').attr('class', 'g-points');
   const gAnnotations = root.append('g').attr('class', 'g-annotations');
 
-  const layerCtx = { ...ctx, scales: null, inner };
+  // uniformPoints: Evidence-Lab-Instanz ohne deaths-Radius (dort gibt es keine
+  // Größenlegende); Story-Instanzen steuern dasselbe per storyFx.uniformPoints.
+  const layerCtx = { ...ctx, scales: null, inner, uniformPoints: opts.uniformPoints === true };
   const setScales = (mode) => {
     layerCtx.scales = {
       x: makeXScale(inner.width),

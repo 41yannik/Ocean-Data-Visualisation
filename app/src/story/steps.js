@@ -14,7 +14,7 @@ import { resolveRefs } from './refs.js';
 import { isScatterable } from '../core/filters.js';
 
 export const SID_HETA = '2003359S15177';
-export const SID_HAROLD = '2020092S09155';
+export const SID_PAM = '2015066S08170';
 export const SID_GUBA = '2007317S10150';
 
 // Sturmwind-Radius (R34, max. Quadrant) für Heta aus IBTrACS-Rohdaten: median 370 km,
@@ -28,6 +28,11 @@ export const HETA_FOCUS = {
   coordinates: [[-176.5, -10.5], [-164.5, -23]],
 };
 export const HETA_FLY_MS = 1600;
+
+// Gemeinsame Quellenzeile für alle Visualisierungen, die Sturmwind und gemeldete
+// Auswirkungen vergleichen. Die Sektionsstruktur rendert sie direkt vor
+// „How to read".
+const IMPACT_SOURCE = 'Peak wind: IBTrACS / NOAA · Reported impacts: EM-DAT / CRED · Population: UN World Population Prospects';
 
 // Layout je Step - statisch, damit der layoutController ohne Daten-ctx auskommt.
 export const STEP_LAYOUTS = ['intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'scatter', 'explore'];
@@ -49,6 +54,7 @@ export const makeStoryFx = (over = {}) => ({
   focusOnly: false,    // true = Nicht-Fokus-Tracks KOMPLETT ausblenden (statt faden)
   hideConnectors: false, // true = Multi-Country-Connectors ausblenden (Rausch-Reduktion, Step 3)
   hoverPoints: false,  // true = Punkt-Hover trotz Story-Gate frei (Tooltip + Residuum-Linie, Step 3)
+  stormSpine: false,   // true = ein Sturm verbindet beim Hover seine Länderpunkte (Step 3)
   ...over,
 });
 const fx = makeStoryFx;
@@ -57,7 +63,7 @@ const fx = makeStoryFx;
 // exploreUnlocked: false gehört dazu - wer von Step 8 zurückscrollt, ist wieder gesperrt.
 const base = (over = {}) => ({
   hover: null, selectedEventIds: null, detailSid: null, mode: 'perCapita',
-  highlight: null, textSet: null,
+  highlight: null, textSet: null, stormPin: null,
   exploreUnlocked: false,
   ...over,
 });
@@ -65,7 +71,7 @@ const base = (over = {}) => ({
 export function buildSteps(ctx) {
   const r = (template) => resolveRefs(template, ctx);
 
-  const haroldIds = (ctx.data.index.bySid.get(SID_HAROLD) ?? []).map((e) => e.id);
+  const pamIds = (ctx.data.index.bySid.get(SID_PAM) ?? []).map((e) => e.id);
   const vutAboveIds = ctx.data.events
     .filter((e) => e.iso3 === 'VUT' && isScatterable(e) && (e.residual_pc ?? 0) > 0)
     .map((e) => e.id);
@@ -102,6 +108,7 @@ export function buildSteps(ctx) {
         So the growing human toll in this story is not because the storms themselves got worse —
         it is about who stands in their way.`),
       source: r('Every Pacific tropical storm, {{trend:yearMin}}–{{trend:yearMax}} · IBTrACS / NOAA'),
+      hint: 'Top: each dot is the number of Pacific tropical storms in one season. Bottom: each dot is their average peak wind. The dashed lines show the linear trend across 2001–2025.',
       apply: () => base({ storyFx: fx() }),
     },
     {
@@ -131,44 +138,51 @@ export function buildSteps(ctx) {
       // als EIN interaktives Kapitel - Text links, Chart mit Controls rechts (chartControls).
       id: 'evidence',
       layout: 'scatter',
-      title: r('The line is almost flat'),
-      html: r(`Now zoom out from that one night. Each dot is one storm hitting one country —
-        {{stat:scatterCount}} in all — placed by how strong its wind was (left to right) against
-        the share of that country's people reported affected (bottom to top). If wind decided the
-        toll, the dots would climb one clear line. Instead the dashed <strong>wind-only line stays
-        almost flat</strong>: a much stronger storm barely lifts the share of people affected.
-        What a storm does to a population depends far more on who is exposed and how prepared they
-        are — and on who does the counting.`),
-      transition: 'If wind explains only a small part of the outcome, the most telling cases are the exceptions.',
-      hint: 'Right = stronger wind; higher = a larger share of people reported affected; bigger dot = more reported deaths. A dot above the dashed line took a heavier toll than its wind alone would predict. Hover any dot for the storm and country.',
+      title: r('Stronger winds, widely different impacts'),
+      html: r(`Each dot represents one storm affecting one country. One storm can create several
+        dots — one for every country with a reported impact. Farther right means stronger wind;
+        higher means a larger reported affected share. The dashed line shows the average
+        relationship from wind alone. The points spread widely around it: across these
+        {{stat:scatterCount}} records, wind speed accounts for only about
+        <strong>{{fit:perCapita.r2pct}} of the differences</strong> in affected share. Stronger
+        wind matters, but it does not explain the large differences on its own.`),
+      source: IMPACT_SOURCE,
+      hint: 'Right = stronger wind. Higher = larger affected share. Each vertical step is 10×. Hover a dot to connect every country reported for the same storm; click to keep the group visible. The dashed line is the wind-only fit. All dots are equal size.',
       apply: () => base({
         storyFx: fx({
-          // Band bewusst aus: die flache gestrichelte Linie IST die Aussage - das
-          // wellige Quantilband würde sie visuell verwässern. R²-Label bleibt.
+          // Die Linie trägt eine Klartext-Effektgröße; einheitliche Punktgröße hält
+          // die Aufmerksamkeit auf Wind × betroffenen Anteil statt auf einer dritten Variable.
           showPoints: true, showTrend: true, showBand: false, showFitLabel: true,
-          hideConnectors: true, hoverPoints: true,
+          showFitNote: true, uniformPoints: true, hideConnectors: true, hoverPoints: true,
+          stormSpine: true,
         }),
       }),
     },
     {
-      id: 'harold',
+      id: 'pam',
       layout: 'dual',
-      title: r('One storm, four countries'),
-      html: r(`Cyclone Harold ({{event:2020-0132-FJI.year}}, {{event:2020-0132-FJI.category:cat}})
-        crossed four countries at the same measured intensity — a rare natural experiment, with
-        the wind held constant. By raw count Fiji looks worst hit:
-        <strong>{{event:2020-0132-FJI.affected:int}}</strong> reported affected, the most of the
-        four. But Fiji also has the most people. Measured against each population — the metric
-        this story uses — the ranking <strong>flips</strong>: Fiji falls to the smallest share
-        ({{event:2020-0132-FJI.affected_pc:pct}}), while Vanuatu tops the four
-        ({{event:2020-0132-VUT.affected_pc:pct}}). Same wind — and the metric alone decides who
-        looks worst hit.`),
-      transition: 'Harold is not an exception: some countries land above the baseline again and again.',
-      hint: 'All four bubbles share one wind speed, so their vertical spread is pure population share — bigger population, smaller share. The biggest raw toll, Fiji, ends up lowest.',
+      title: r('One storm, several kinds of exposure'),
+      html: r(`Cyclone Pam ({{event:2015-0093-VUT.year}}, {{event:2015-0093-VUT.category:cat}})
+        is linked to reported impacts in five Pacific countries — but that does not mean all five
+        experienced the same wind. Pam’s <strong>{{event:2015-0093-VUT.intensity_kt:kt}} lifetime
+        peak occurred near Vanuatu</strong>. Parts of Solomon Islands also lay near the track;
+        Tuvalu and Kiribati mainly reported remote swell and coastal flooding. Papua New Guinea’s
+        record sits amid impacts from Pam and another system, Nathan. The reported affected share
+        still ranges from <strong>{{event:2015-0093-VUT.affected_pc:pct}}</strong> to
+        <strong>{{event:2015-0093-PNG.affected_pc:pct}}</strong> — a
+        {{stat:affectedPcRatio.2015-0093-VUT.2015-0093-PNG}}× span — but it compares different
+        exposure pathways, not equal local wind.`),
+      transition: 'Pam separates the storm’s physical footprint from the outcomes reported across countries.',
+      source: 'Track & gale-force radii: IBTrACS / NOAA · Reported impacts & locations: EM-DAT / CRED · Impact mechanisms: IFRC & WMO · Population: UN World Population Prospects',
+      hint: r(`Each blue point marks one affected country at a representative island location. Its
+        label gives the affected population share and reported number of people. Hover, focus or tap
+        a point to see how the country was affected. The orange line is Pam’s track; the pale outlines
+        show the observed gale-force wind extent. Pam’s {{event:2015-0093-VUT.intensity_kt:kt}} peak is
+        shown only where it occurred near Vanuatu.`),
       apply: () => base({
-        detailSid: SID_HAROLD,
+        detailSid: SID_PAM,
         storyFx: fx({
-          focusSids: [SID_HAROLD], focusEventIds: [...haroldIds],
+          focusSids: [SID_PAM], focusEventIds: [...pamIds],
           showPoints: true, showTrend: true, showBand: true,
         }),
       }),
@@ -184,6 +198,7 @@ export function buildSteps(ctx) {
         <strong>exposure</strong> — how many people stand in a storm's path — and likely
         <strong>vulnerability</strong>, not wind. The data suggests this; it does not prove it.`),
       transition: 'Line the countries up, and the pattern gets even clearer.',
+      source: IMPACT_SOURCE,
       hint: "Orange dots are Vanuatu's storms; each thin line drops to the dashed wind-only line. The longer the line, the more that storm's toll outran its wind.",
       apply: () => base({
         formation: 'scatter', // Bühnen-Gruppe dots2 (Paket 10 Task 8)
@@ -213,6 +228,7 @@ export function buildSteps(ctx) {
         land on the heavy side — no other country with that many storms comes close. Tonga and
         Micronesia lean the same way; Fiji, with nearly twice the storms, splits almost evenly.`),
       transition: 'Before interpreting the pattern, the missing records matter.',
+      source: IMPACT_SOURCE,
       hint: 'Orange dots took a heavier toll than wind alone predicts, blue dots a lighter one — the note under each country simply counts its orange dots. ÷10 and ×10 mark tolls ten times below or above that expectation; countries with fewer than four complete records are folded into “Other”.',
       apply: () => base({
         formation: 'residualRows', // Bühnen-Gruppe dots2: Morph Scatter → Zeilen
@@ -232,6 +248,8 @@ export function buildSteps(ctx) {
         a satellite track, and the most recent seasons may still be revised.
         <strong>Missing data is not missing suffering.</strong>`),
       transition: 'The records are incomplete. Even so, the pattern that remains gives a clear answer.',
+      source: IMPACT_SOURCE,
+      hint: 'Each circle is one storm–country pair. Filled circles have both wind and impact data; hollow circles have no reported impact. The half-filled circle has impact but no measured wind, and a dashed ring marks wind reconstructed from disaster records.',
       apply: () => base({
         formation: 'unit', unitSort: 'chrono', // Formations-Morph (Paket 10 Task 8)
         storyFx: fx({ showPoints: true, showTrend: true, showBand: true, showRug: true }),
@@ -251,10 +269,9 @@ export function buildSteps(ctx) {
       // nicht bewiesen" trägt factorIntro bereits wortgleich im Antwortblock.
       factorQuestion: 'Does wind speed explain who is affected?',
       factorAnswer: 'No. Stronger winds do not automatically mean greater human impact.',
-      factorIntro: `Wind measures the physical hazard. Who suffers also depends on where people
-        are exposed, what infrastructure can withstand, how early communities can act and how
-        impacts are recorded. The data can show that wind alone is insufficient, but not which
-        of these conditions shaped the outcome of any single storm.`,
+      factorIntro: `Wind measures the physical hazard. The data can show that wind alone is insufficient,
+        but not which conditions shaped the outcome of any single storm. Who suffers also depends
+        on four things this dataset cannot see:`,
       factors: [
         {
           title: 'Exposure & geography',
@@ -274,21 +291,23 @@ export function buildSteps(ctx) {
         },
       ],
       transition: 'First compare the extremes, then test the pattern across every complete record.',
+      source: IMPACT_SOURCE,
       outro: `Wind measures the hazard. It does not measure who was exposed, prepared or able to recover.`,
       hint: `Blue and orange rank the two extremes. The vertical thermometers place every complete
         storm-country record from low at the bottom to high at the top. Switch the ordering between
-        wind and affected share; hover, tap or focus a top-five name to locate it in both columns.`,
+        wind and affected share; hover or focus a top-five name to locate it in both columns.`,
       apply: () => base({ storyFx: fx() }),
     },
     {
       id: 'explore',
       layout: 'explore',
       title: r('From track to toll'),
-      html: r(`The story has answered its question. This evidence lab lets you test that answer
-        across every recorded storm-country pair. Since {{stat:yearMin}}, the records contain
-        <strong>{{stat:totalAffected}} reported people affected</strong> — a running total, so
-        anyone hit by two storms is counted twice. <strong>Choose a question and test the evidence.</strong>
-        Filters and selections carry across all three views.`),
+      html: r(`The story has answered its question. Now test the same relationship across every
+        recorded storm-country pair. Since {{stat:yearMin}}, these records contain
+        <strong>{{stat:totalAffected}} reported people affected</strong>. This is a running total:
+        repeat impacts are counted once per storm-country record.`),
+      source: IMPACT_SOURCE,
+      hint: 'Choose a perspective, then hover, select or refine the data. Filters and selections carry across all three views.',
       apply: () => base({ storyFx: null, exploreUnlocked: true }),
     },
   ];

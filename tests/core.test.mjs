@@ -11,6 +11,8 @@ import { buildSteps, STEP_COUNT } from '../app/src/story/steps.js';
 import { SECTIONS } from '../app/src/story/sections.js';
 import { buildCountryRecurrence } from '../app/src/ui/countryRecurrence.js';
 import { aggregateHotZoneCells } from '../app/src/ui/trackHeatmap.js';
+import { buildResidualLab } from '../app/src/ui/residualLab.js';
+import { buildCountryToll } from '../app/src/ui/tollMap.js';
 import { readFile } from 'node:fs/promises';
 
 
@@ -37,6 +39,7 @@ test('initial state returns independent mutable containers', () => {
 
   assert.deepEqual(second.filters.yearRange, [2001, 2026]);
   assert.deepEqual(second.hetaReached, {});
+  assert.equal(second.stormPin, null);
 });
 
 test('filters combine inclusive year, minimum-category set, and countries', () => {
@@ -168,6 +171,21 @@ test('story has ten steps and the residual beat morphs the dots2 stage', async (
   assert.equal(steps.length, STEP_COUNT);
   assert.equal(SECTIONS.length, 10);
   assert.deepEqual(SECTIONS.map((section) => section.step), [...steps.keys()]);
+  assert.ok(steps.every((step) => step.source?.trim()), 'every visualisation has a source');
+  assert.ok(steps.every((step) => step.hint?.trim()), 'every visualisation has a How to read explanation');
+  assert.equal(steps[3].caveat, undefined);
+  assert.equal(steps[3].transition, undefined);
+  assert.deepEqual(steps[3].apply().storyFx.annotations, []);
+  assert.equal(steps[3].apply().storyFx.stormSpine, true);
+  assert.equal(steps[3].apply().stormPin, null);
+
+  // Step 4 uses Pam's five complete country records but does not mistake lifetime peak
+  // wind for equal local exposure across all five countries.
+  assert.equal(steps[4].id, 'pam');
+  assert.equal(steps[4].title, 'One storm, several kinds of exposure');
+  assert.equal(steps[4].apply().detailSid, '2015066S08170');
+  assert.equal(steps[4].apply().storyFx.focusEventIds.length, 5);
+  assert.ok(steps[4].html.includes('672× span'));
 
   // Residual-Beat: Index 6, gleiche Bühne wie Step 5/7, Formation residualRows.
   assert.equal(steps[6].id, 'residual-rows');
@@ -194,4 +212,73 @@ test('hot-zone aggregation separates frequency from average wind', () => {
   assert.equal(average.find((cell) => cell.idx === 0).value, 120);
   assert.equal(frequency.find((cell) => cell.idx === 1).value, 1);
   assert.equal(aggregateHotZoneCells(storms, null, 'frequency', 2019).length, 0);
+});
+
+test('residual lab groups by country, sorts by above-share, and switches fields by mode', async () => {
+  const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const pc = buildResidualLab(events);
+
+  // 19 Länder haben Residuen (MHL nicht); zusammen exakt die 78 scatterbaren Paare.
+  assert.equal(pc.field, 'residual_pc');
+  assert.equal(pc.rows.length, 19);
+  assert.equal(pc.rows.reduce((sum, row) => sum + row.n, 0), 78);
+  assert.ok(pc.rows.every((row) => row.events.every((event) => event.residual_pc != null)));
+
+  // Sortierung: aboveShare absteigend, Ties nach n absteigend (PLW 2/2 vor 1/1-Ländern).
+  assert.equal(pc.rows[0].iso3, 'PLW');
+  assert.ok(pc.rows.every((row, index) => index === 0
+    || pc.rows[index - 1].aboveShare > row.aboveShare
+    || (pc.rows[index - 1].aboveShare === row.aboveShare && pc.rows[index - 1].n >= row.n)));
+
+  // Vanuatu: das Story-Muster (8 von 10 über der Linie) bleibt in der Lab-Sicht messbar.
+  const vut = pc.rows.find((row) => row.iso3 === 'VUT');
+  assert.equal(vut.n, 10);
+  assert.equal(vut.nAbove, 8);
+  assert.ok(vut.median > 0);
+
+  // Mode wechselt das Residual-Feld (nicht nur die Beschriftung).
+  const abs = buildResidualLab(events, { mode: 'absolute' });
+  assert.equal(abs.field, 'residual_abs');
+  assert.equal(abs.rows.reduce((sum, row) => sum + row.n, 0), 78);
+  assert.notEqual(abs.rows.find((row) => row.iso3 === 'VUT').median, vut.median);
+
+  // Filter wirken vor der Gruppierung.
+  const filtered = buildResidualLab(events, {
+    filters: { yearRange: [2001, 2026], categories: null, countries: ['VUT'] },
+  });
+  assert.equal(filtered.rows.length, 1);
+  assert.equal(filtered.rows[0].iso3, 'VUT');
+});
+
+test('country toll aggregates reported impacts per country and mode', () => {
+  const events = [
+    { id: 'a1', iso3: 'AAA', country: 'Aland', year: 2019, category: 3, affected: 100, affected_pc: 0.1 },
+    { id: 'a2', iso3: 'AAA', country: 'Aland', year: 2020, category: 4, affected: 300, affected_pc: 0.3 },
+    { id: 'b1', iso3: 'BBB', country: 'Bland', year: 2020, category: 2, affected: null, affected_pc: null },
+  ];
+
+  const absolute = buildCountryToll(events, { mode: 'absolute' });
+  const aaa = absolute.find((row) => row.iso3 === 'AAA');
+  assert.equal(aaa.value, 400);
+  assert.equal(aaa.n, 2);
+  assert.equal(aaa.reported, 2);
+
+  const perCapita = buildCountryToll(events, { mode: 'perCapita' });
+  assert.equal(perCapita.find((row) => row.iso3 === 'AAA').value, 0.2);
+
+  // Nicht gemeldete Länder bleiben als hohle Ringe erhalten (value 0, unreported).
+  const bbb = absolute.find((row) => row.iso3 === 'BBB');
+  assert.equal(bbb.unreported, true);
+  assert.equal(bbb.value, 0);
+  assert.deepEqual(bbb.eventIds, ['b1']);
+
+  // Sortierung nach value absteigend: große Kreise zuerst gezeichnet.
+  assert.deepEqual(absolute.map((row) => row.iso3), ['AAA', 'BBB']);
+
+  // activeYear schneidet auf das Jahr; Filter wirken zusätzlich.
+  assert.equal(buildCountryToll(events, { mode: 'absolute', activeYear: 2019 })
+    .find((row) => row.iso3 === 'AAA').value, 100);
+  assert.equal(buildCountryToll(events, {
+    filters: { yearRange: [2001, 2026], categories: null, countries: ['BBB'] },
+  }).length, 1);
 });

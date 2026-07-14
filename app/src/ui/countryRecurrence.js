@@ -46,12 +46,16 @@ export function createCountryRecurrence(container, ctx) {
   function render(state) {
     currentRows = buildCountryRecurrence(data.events, state.filters);
     const compact = container.clientWidth < 600;
-    const W = compact ? 390 : 1080;
-    const rowH = compact ? 26 : 33;
+    const W = compact ? 390 : 1000;
+    const rowH = compact ? 26 : 24;
     const M = compact
-      ? { top: 38, right: 48, bottom: 24, left: 122 }
-      : { top: 42, right: 190, bottom: 34, left: 176 };
-    const height = M.top + M.bottom + Math.max(1, currentRows.length) * rowH;
+      ? { top: 38, right: 48, bottom: 24, left: 150 }
+      : { top: 38, right: 160, bottom: 30, left: 160 };
+    // Extra-Zeile unter dem Raster für die Farb-Legende (die Punktfüllung kodiert
+    // die Impact-Stärke - ohne Skala wäre das Encoding nicht dekodierbar).
+    const LEGEND_H = 30;
+    const plotBottom = M.top + Math.max(1, currentRows.length) * rowH;
+    const height = plotBottom + LEGEND_H + M.bottom;
     svg.attr('viewBox', `0 0 ${W} ${height}`);
     const x = scaleLinear().domain([yearMin, yearMax]).range([M.left, W - M.right]);
     const all = currentRows.flatMap((row, rowIndex) => row.events
@@ -62,10 +66,19 @@ export function createCountryRecurrence(container, ctx) {
     const axes = svg.append('g').attr('class', 'cr-axes');
     for (const year of compact ? [2001, 2010, 2020, 2026] : [2001, 2005, 2010, 2015, 2020, 2026]) {
       axes.append('line').attr('x1', x(year)).attr('x2', x(year))
-        .attr('y1', M.top - 12).attr('y2', height - M.bottom + 4).attr('class', 'cr-gridline');
+        .attr('y1', M.top - 12).attr('y2', plotBottom + 4).attr('class', 'cr-gridline');
       axes.append('text').attr('x', x(year)).attr('y', M.top - 20)
         .attr('text-anchor', 'middle').attr('class', 'cr-year').text(year);
     }
+
+    // 2025 hat keine erfassten Events (meta.caveats) - die Lücke bekommt ein dezentes
+    // Band samt Note, damit sie nicht als Datenfehler gelesen wird.
+    axes.append('rect').attr('class', 'cr-gap-band')
+      .attr('x', x(2024.5)).attr('width', x(2025.5) - x(2024.5))
+      .attr('y', M.top - 12).attr('height', plotBottom + 4 - (M.top - 12));
+    axes.append('text').attr('class', 'cr-gap-note')
+      .attr('x', x(2025)).attr('y', plotBottom + 15).attr('text-anchor', 'middle')
+      .text(compact ? 'no 2025 events' : 'no events recorded in 2025');
     const rows = svg.append('g').selectAll('g.cr-row').data(currentRows, (row) => row.iso3)
       .join('g').attr('class', 'cr-row').attr('transform', (_, index) => `translate(0,${M.top + index * rowH})`);
     rows.append('text').attr('x', M.left - 14).attr('y', rowH / 2 + 4)
@@ -73,7 +86,25 @@ export function createCountryRecurrence(container, ctx) {
     rows.append('text').attr('x', W - M.right + 18).attr('y', rowH / 2 + 4)
       .attr('class', 'cr-count').text((row) => compact
         ? `${row.reportedCount}/${row.totalCount}`
-        : `${row.reportedCount} reported / ${row.totalCount} records`);
+        : `${row.reportedCount} reported / ${row.totalCount} ${row.totalCount === 1 ? 'record' : 'records'}`);
+
+    // Farb-Legende (Stufen-Swatches wie die Hot-Zone-Karte): volle Skala aus dem
+    // ungefilterten Datensatz - Filter dürfen die Farbzuordnung nicht umdeuten.
+    const activeColor = state.mode === 'absolute' ? absoluteColor : shareColor;
+    const activeMax = state.mode === 'absolute' ? maxAffected : maxShare;
+    const steps = compact ? 10 : 12;
+    const swatchW = compact ? 12 : 18;
+    const legend = svg.append('g').attr('class', 'cr-legend')
+      .attr('transform', `translate(${M.left},${plotBottom + 22})`);
+    legend.append('text').attr('class', 'heat-legend-label').attr('y', -7)
+      .text(state.mode === 'absolute' ? 'fewer people affected' : 'lower affected share');
+    for (let index = 0; index < steps; index++) {
+      legend.append('rect').attr('x', index * (swatchW - 0.5)).attr('width', swatchW).attr('height', 8)
+        .attr('fill', activeColor(activeMax * index / (steps - 1)));
+    }
+    legend.append('text').attr('class', 'heat-legend-label')
+      .attr('x', (steps - 1) * (swatchW - 0.5) + swatchW).attr('y', -7).attr('text-anchor', 'end')
+      .text(state.mode === 'absolute' ? 'more people affected' : 'higher affected share');
 
     const duplicateIndex = new Map();
     marks = svg.append('g').selectAll('circle').data(all, (d) => d.event.id).join('circle')
@@ -83,9 +114,9 @@ export function createCountryRecurrence(container, ctx) {
       .attr('cy', (d) => {
         const key = `${d.row.iso3}-${d.event.year}`; const slot = duplicateIndex.get(key) ?? 0;
         duplicateIndex.set(key, slot + 1);
-        return M.top + d.rowIndex * rowH + rowH / 2 + (slot % 3 - 1) * (compact ? 3.5 : 5);
+        return M.top + d.rowIndex * rowH + rowH / 2 + (slot % 3 - 1) * (compact ? 3.5 : 4.2);
       })
-      .attr('r', compact ? 4 : 5.5).attr('tabindex', 0)
+      .attr('r', compact ? 4 : 4.7).attr('tabindex', 0)
       .attr('aria-label', (d) => `${d.event.name}, ${d.event.country}, ${d.event.year}: ${d.event.affected == null ? 'human impact not reported' : `${fmtPct(d.event.affected_pc)} of population reported affected`}`)
       .style('fill', (d) => {
         if (d.event.affected == null) return 'transparent';

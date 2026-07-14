@@ -1,5 +1,5 @@
 // Chart-Controls des Evidence-Panels (Plan „delightful-harbor"): Bedienelemente DIREKT
-// an der Grafik statt im Textblock. Vier Story-Buttons (Mawar/Percy/Guba/Outliers) setzen
+// an der Grafik statt im Textblock. Zwei Gegenbeispiele + ein Abweichungs-Set setzen
 // das Store-Feld `highlight` ({ key, ids, annos }) - pointsLayer hebt das Set orange hervor
 // und dimmt den Rest, annotationsLayer zeichnet die mitgelieferten Punkt-Annotationen.
 // Ein Land-Dropdown filtert per komplettem filters-Objekt (Store-Konvention).
@@ -7,17 +7,17 @@
 import { COUNTRY_LOOKUP } from '../map/countryNames.js';
 import { resolveRefs } from './refs.js';
 import { resolveHighlightSpec } from './highlightSpecs.js';
-import { STORY_STORMS } from './keyStorms.js';
-
-const ANNOS = {
-  mawar: 'Mawar {{event:2023-0300-GUM.year}} · {{event:2023-0300-GUM.affected_pc:pct}} of Guam affected',
-  percy: 'Percy · extreme wind, almost no reported impact',
-  guba: 'Guba · weak wind, {{event:2007-0557-PNG.deaths:int}} reported deaths',
-};
 
 const BUTTONS = [
-  ...STORY_STORMS.map((s) => ({ ...s, anno: ANNOS[s.key] })),
-  { key: 'outliers', spec: 'outliers', label: 'Glowing outliers' },
+  {
+    key: 'tino', eventId: '2020-0015-TUV', label: 'Tino · above fit',
+    anno: 'Tino · {{event:2020-0015-TUV.affected_pc:pct}} affected at {{event:2020-0015-TUV.intensity_kt:kt}}',
+  },
+  {
+    key: 'daman', eventId: '2007-0655-FJI', label: 'Daman · below fit',
+    anno: 'Daman · {{event:2007-0655-FJI.affected_pc:pct}} affected at {{event:2007-0655-FJI.intensity_kt:kt}}',
+  },
+  { key: 'outliers', spec: 'outliers', label: 'Largest gaps from fit' },
 ];
 
 const DEFAULT_FILTERS = { yearRange: [2001, 2026], categories: null, countries: null };
@@ -46,7 +46,7 @@ export function createChartControls(container, ctx) {
   for (const list of Object.values(byRegion)) list.sort();
 
   container.innerHTML = `
-    <div class="cc-buttons" role="group" aria-label="Highlight a storm on the chart">
+    <div class="cc-buttons" role="group" aria-label="Show contrasting records on the chart">
       ${BUTTONS.map((b) => `<button type="button" class="cc-btn" data-key="${b.key}" aria-pressed="false">${b.label}</button>`).join('')}
     </div>
     <label class="cc-filter">
@@ -65,7 +65,11 @@ export function createChartControls(container, ctx) {
     btn.addEventListener('click', () => {
       const key = btn.dataset.key;
       const cur = bus.get().highlight?.key ?? null;
-      bus.set({ highlight: cur === key ? null : { key, ...specs[key] } });
+      bus.set({
+        highlight: cur === key ? null : { key, ...specs[key] },
+        hover: null,
+        stormPin: null,
+      });
     });
   }
 
@@ -73,6 +77,8 @@ export function createChartControls(container, ctx) {
   select.addEventListener('change', () => {
     bus.set({
       filters: { ...DEFAULT_FILTERS, countries: select.value ? [select.value] : null },
+      hover: null,
+      stormPin: null,
     });
   });
 

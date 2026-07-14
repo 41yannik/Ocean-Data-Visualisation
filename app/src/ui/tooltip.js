@@ -1,12 +1,14 @@
 // Tooltip: Singleton-Div (position: fixed), reagiert AUSSCHLIESSLICH auf hover-Patches.
 // Position aus hover.x/y (clientX/clientY, Lücke L11) mit Viewport-Flip.
 import { fmtInt, fmtPct, fmtKt, fmtSource, fmtCategory } from '../core/format.js';
+import { isScatterable, matchesFilters } from '../core/filters.js';
 
 export function createTooltip(body, ctx) {
   const { byId, bySid } = ctx.data.index;
   const el = document.createElement('div');
   el.className = 'tooltip';
   body.appendChild(el);
+  let contentKey = null;
 
   function contentForEvent(e) {
     return `
@@ -22,12 +24,31 @@ export function createTooltip(body, ctx) {
   }
 
   // Einfache Sprache (Story-Step 3): ein Satz, kein Fachjargon.
-  function contentSimple(e) {
+  function contentSimple(e, state) {
     if (!e) return '';
+    const sameStorm = e.sid
+      ? (bySid.get(e.sid) ?? []).filter((event) => isScatterable(event)
+        && matchesFilters(event, state.filters))
+        .sort((a, b) => (b.affected_pc ?? 0) - (a.affected_pc ?? 0))
+      : [e];
+    if (sameStorm.length > 1) {
+      const countries = new Set(sameStorm.map((event) => event.iso3)).size;
+      return `
+        <div class="tt-storm-kicker">One storm · ${countries} affected countries</div>
+        <div class="tt-title">${e.name ?? 'A storm'} · ${e.year} · ${fmtKt(e.intensity_kt)}</div>
+        <div class="tt-country-list">
+          ${sameStorm.map((event) => `
+            <div class="tt-country-row${event.id === e.id ? ' active' : ''}">
+              <span>${event.country}</span><strong>${fmtPct(event.affected_pc)}</strong>
+            </div>`).join('')}
+        </div>
+        <div class="tt-sub">Selected: ${e.country} · deaths <strong>${fmtInt(e.deaths)}</strong></div>`;
+    }
     return `
       <div class="tt-title">${e.name ?? 'A storm'} · ${e.country} · ${e.year}</div>
       <div class="tt-simple">At <strong>${fmtKt(e.intensity_kt)}</strong> of wind,
-        <strong>${fmtPct(e.affected_pc)}</strong> of the population was reported affected.</div>`;
+        <strong>${fmtPct(e.affected_pc)}</strong> of the population was reported affected.</div>
+      <div class="tt-sub">Reported deaths: <strong>${fmtInt(e.deaths)}</strong></div>`;
   }
 
   function contentForStorm(sid) {
@@ -48,13 +69,21 @@ export function createTooltip(body, ctx) {
 
   function render(state) {
     const h = state.hover;
-    if (!h) { el.classList.remove('visible'); return; }
+    if (!h) {
+      contentKey = null;
+      el.classList.remove('visible');
+      return;
+    }
     // Text-getriebener Hover (Mawar/Percy im Fließtext) hat keine x/y → kein Tooltip,
     // nur Punkt-Highlight/Residuum. Der Tooltip erscheint nur bei Zeiger-Hover.
     if (h.x == null || h.y == null) { el.classList.remove('visible'); return; }
-    el.innerHTML = h.variant === 'simple'
-      ? contentSimple(byId.get(h.eventId))
-      : h.eventId ? contentForEvent(byId.get(h.eventId)) : contentForStorm(h.sid);
+    const nextContentKey = `${h.variant ?? 'full'}|${h.eventId ?? ''}|${h.sid ?? ''}`;
+    if (nextContentKey !== contentKey) {
+      el.innerHTML = h.variant === 'simple'
+        ? contentSimple(byId.get(h.eventId), state)
+        : h.eventId ? contentForEvent(byId.get(h.eventId)) : contentForStorm(h.sid);
+      contentKey = nextContentKey;
+    }
     el.classList.add('visible');
 
     // Position + Flip am Viewport-Rand

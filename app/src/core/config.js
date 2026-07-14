@@ -32,6 +32,7 @@ export const SCATTER = {
 };
 export const R_MIN = 2.5;      // Punktradius (Tote fehlend/0)
 export const R_MAX = 12;
+export const UNIFORM_POINT_R = 4;
 
 // Nur Story-relevante Inseln beschriften - Clutter-Regel
 export const LABELED_ISO3 = ['FJI', 'VUT', 'NIU', 'GUM', 'TON', 'WSM', 'TUV'];
