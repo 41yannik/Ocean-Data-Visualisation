@@ -181,10 +181,9 @@ export function buildSteps(ctx) {
         shown only where it occurred near Vanuatu.`),
       apply: () => base({
         detailSid: SID_PAM,
-        storyFx: fx({
-          focusSids: [SID_PAM], focusEventIds: [...pamIds],
-          showPoints: true, showTrend: true, showBand: true,
-        }),
+        // Nur die Karten-Flags: pamMorph ist eine eigenständige Karte und liest keine
+        // Scatter-Flags (showPoints/showTrend/showBand waren vestigial).
+        storyFx: fx({ focusSids: [SID_PAM], focusEventIds: [...pamIds] }),
       }),
     },
     {
@@ -252,7 +251,8 @@ export function buildSteps(ctx) {
       hint: 'Each circle is one storm–country pair. Filled circles have both wind and impact data; hollow circles have no reported impact. The half-filled circle has impact but no measured wind, and a dashed ring marks wind reconstructed from disaster records.',
       apply: () => base({
         formation: 'unit', unitSort: 'chrono', // Formations-Morph (Paket 10 Task 8)
-        storyFx: fx({ showPoints: true, showTrend: true, showBand: true, showRug: true }),
+        // Kein showRug: die Bühne dots2 mountet keinen Rug-Layer (Flag war No-op).
+        storyFx: fx({ showPoints: true, showTrend: true, showBand: true }),
       }),
     },
     {

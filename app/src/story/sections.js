@@ -62,7 +62,10 @@ export const SECTIONS = [
       + 'Vanuatu’s row sits almost entirely to the right, with eight of ten storms above the line' },
   },
   {
-    step: 7, act: 'The people', stage: 'dots2', views: ['unitChart'], controls: 'unitSort',
+    // views ist in Bühnen-Gruppen wirkungslos (groupHtml rendert die geteilte Scatter-
+    // Bühne); 'scatter' statt des toten 'unitChart'-Eintrags, die Unit-Formation
+    // liefert formationLayer. Die aria-Beschreibung bleibt dokumentierend erhalten.
+    step: 7, act: 'The people', stage: 'dots2', views: ['scatter'], controls: 'unitSort',
     aria: { unitChart: 'Unit chart of all 99 storm-country pairs: filled dots are complete records; '
       + 'hollow dots are pairs whose human impact was never recorded; one half-filled dot had a recorded '
       + 'impact but no measured wind. A button re-sorts them into two blocks by data completeness' },

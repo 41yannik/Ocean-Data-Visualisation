@@ -1,5 +1,5 @@
-// Die drei Story-Stürme des Evidence-Panels und des Explore-Dashboards - EINE Quelle
-// für IDs + Anzeigenamen (genutzt von chartControls und profileRadar):
+// Die drei Vergleichs-Stürme - EINE Quelle für IDs + Anzeigenamen (einziger
+// Konsument: ui/profileBars.js, nur im Dev-Harness gemountet):
 //   Mawar (Guam 2023)   - stärkster Wind UND hoher Impact
 //   Percy (Tokelau 2005) - starker Wind, minimaler Impact
 //   Guba (PNG 2007)      - schwacher Wind, tödlichster Sturm des Zeitraums
