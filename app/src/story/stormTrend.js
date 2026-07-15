@@ -1,9 +1,12 @@
-// Storm-Trend (Step 1): zwei gestapelte Liniendiagramme mit gemeinsamer Jahres-x-Achse,
-// 2001–2025 — Sturmzahl und mittlere Windstärke. Aussage in Klartext: weder mehr noch
-// stärkere Stürme (kein klarer Trend). Struktur-Klon von sstIntro (geteilte Ränder →
+// Storm-Trend (Step 1) + Genesis-Drift (Step 2): gestapelte Liniendiagramme mit
+// gemeinsamer Jahres-x-Achse, 2001–2025. Struktur-Klon von sstIntro (geteilte Ränder →
 // bündige x-Achse, stroke-dashoffset-Draw, Crosshair durch alle Panels, lokaler .tooltip).
 // Caption = Klartext-Verdikt (kein R²/p-Jargon), damit jeder sofort „No clear trend" versteht.
 // Vertrag: create(container, ctx) → {update, destroy}; Zahlen/Fits aus data.trends (Pipeline).
+//
+// renderTrendPanels ist die geteilte Maschinerie; createStormTrend (Sturmzahl + Wind)
+// und createGenesisTrend (Genesis-Breite beider Becken, geteilte y-Skala) sind dünne
+// Spezialisierungen. buildGenesisModel ist pur und wird gegen trends.json getestet.
 import { select, scaleLinear, line as d3line } from 'd3';
 
 // Klartext-Verdikt aus dem Fit: nicht signifikant → „No clear trend", sonst die Richtung.
@@ -18,11 +21,13 @@ const BLOCK = 230;          // Titel + Plot + Luft je Panel
 const TITLE_DY = 16;        // Titel-Baseline über dem Plot
 const TICKS_X = [2001, 2005, 2010, 2015, 2020, 2025];
 
-export function createStormTrend(container, ctx) {
+// Geteilte Panel-Maschinerie: rendert panelSpecs als gestapelte Linien-Panels mit
+// gemeinsamer x-Achse, Trendlinien, Captions, Crosshair + lokalem Tooltip.
+// opts: { panelSpecs, aria, tipHtml(idx, year) → HTML, drift? }
+function renderTrendPanels(container, ctx, { panelSpecs, aria, tipHtml, drift = null }) {
   const t = ctx.data.trends;
   const reducedMotion = ctx.bus.get?.().reducedMotion ?? false;
-  const S = t.series;
-  const years = S.season;
+  const years = t.series.season;
   const [y0, y1] = t.window;
 
   const innerW = W - MARGIN.left - MARGIN.right;
@@ -31,32 +36,13 @@ export function createStormTrend(container, ctx) {
   const svg = select(container).append('svg')
     .attr('viewBox', `0 0 ${W} ${H}`)
     .attr('role', 'img')
-    .attr('aria-label',
-      'Two stacked line charts, 2001 to 2025: the number of Pacific tropical storms per year '
-      + 'and their average wind strength. Both are essentially flat — no clear trend — so storms '
-      + 'here are not becoming more frequent or stronger.');
+    .attr('aria-label', aria);
   const root = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
 
   // Lokaler Tooltip (folgt dem Cursor; .tooltip-CSS wiederverwendet)
   const tip = document.createElement('div');
   tip.className = 'tooltip st-tip';
   document.body.appendChild(tip);
-
-  // ---- Panel-Definitionen (Plot-Koordinaten relativ zum root-Ursprung) ----
-  const panelSpecs = [
-    {
-      title: 'Storms per year',
-      yDomain: [0, niceCeil(Math.max(...S.count), 15)], yTicks: 4, yFmt: (v) => v,
-      caption: verdict(t.fits.count),
-      series: [{ values: S.count, fill: 'var(--point)', trend: t.fits.count }],
-    },
-    {
-      title: 'Average wind strength  ·  kt',
-      yDomain: [40, 100], yTicks: 4, yFmt: (v) => v,
-      caption: verdict(t.fits.windMean),
-      series: [{ values: S.meanWind, fill: 'var(--point)', trend: t.fits.windMean }],
-    },
-  ];
 
   const panels = panelSpecs.map((spec, i) => {
     const top = i * BLOCK;
@@ -122,10 +108,30 @@ export function createStormTrend(container, ctx) {
       }
     });
 
-    // Caption (R² · n · p) unten rechts im Plot
+    // Caption (Klartext-Verdikt) unten rechts im Plot
     g.append('text').attr('class', 'n-caption')
       .attr('x', innerW).attr('y', p.plotB - 6).attr('text-anchor', 'end').text(p.caption);
   });
+
+  // Drift-Bracket (Genesis, optional): vertikale Spanne latFirst→latLast am rechten
+  // Panel-Rand + Beschriftung der Verschiebung in km. Akzent nur als TEXT (--accent-text),
+  // die Akzent-Exklusivität für Highlights bleibt gewahrt.
+  if (drift) {
+    const p = panels[drift.panel];
+    const bx = innerW + 8;
+    const gb = root.append('g').attr('class', 'st-drift');
+    gb.append('line').attr('class', 'st-drift-span')
+      .attr('x1', bx).attr('x2', bx)
+      .attr('y1', p.y(drift.from)).attr('y2', p.y(drift.to));
+    for (const v of [drift.from, drift.to]) {
+      gb.append('line').attr('class', 'st-drift-span')
+        .attr('x1', bx - 4).attr('x2', bx)
+        .attr('y1', p.y(v)).attr('y2', p.y(v));
+    }
+    gb.append('text').attr('class', 'st-drift-note')
+      .attr('x', innerW).attr('y', p.plotT + 12).attr('text-anchor', 'end')
+      .text(drift.label);
+  }
 
   // ---- gemeinsame x-Achse unter dem untersten Panel ----
   const gx = root.append('g').attr('class', 'st-axis');
@@ -156,10 +162,7 @@ export function createStormTrend(container, ctx) {
 
     if (hoveredYear !== yr) {
       hoveredYear = yr;
-      const c = S.count[idx], w = S.meanWind[idx];
-      tip.innerHTML =
-        `<div class="tt-title">${yr}</div>`
-        + `<div class="tt-sub">${c} storm${c === 1 ? '' : 's'} · ${w == null ? '—' : `${Math.round(w)} kt`} average wind</div>`;
+      tip.innerHTML = tipHtml(idx, yr);
     }
     tip.classList.add('visible');
     const pad = 14;
@@ -202,6 +205,88 @@ export function createStormTrend(container, ctx) {
     update() {}, // statisch (frozen Section) — Layout blendet die View ein/aus
     destroy() { svg.remove(); tip.remove(); },
   };
+}
+
+export function createStormTrend(container, ctx) {
+  const t = ctx.data.trends;
+  const S = t.series;
+  return renderTrendPanels(container, ctx, {
+    aria: 'Two stacked line charts, 2001 to 2025: the number of Pacific tropical storms per year '
+      + 'and their average wind strength. Both are essentially flat — no clear trend — so storms '
+      + 'here are not becoming more frequent or stronger.',
+    panelSpecs: [
+      {
+        title: 'Storms per year',
+        yDomain: [0, niceCeil(Math.max(...S.count), 15)], yTicks: 4, yFmt: (v) => v,
+        caption: verdict(t.fits.count),
+        series: [{ values: S.count, fill: 'var(--point)', trend: t.fits.count }],
+      },
+      {
+        title: 'Average wind strength  ·  kt',
+        yDomain: [40, 100], yTicks: 4, yFmt: (v) => v,
+        caption: verdict(t.fits.windMean),
+        series: [{ values: S.meanWind, fill: 'var(--point)', trend: t.fits.windMean }],
+      },
+    ],
+    tipHtml: (idx, yr) => {
+      const c = S.count[idx], w = S.meanWind[idx];
+      return `<div class="tt-title">${yr}</div>`
+        + `<div class="tt-sub">${c} storm${c === 1 ? '' : 's'} · ${w == null ? '—' : `${Math.round(w)} kt`} average wind</div>`;
+    },
+  });
+}
+
+// Genesis-Drift (Step 2), pur und getestet: beide Becken auf EINER y-Skala
+// (Ehrlichkeits-Mechanik - ein Becken driftet, eins nicht; nur die gemeinsame
+// Skala macht den Kontrast belastbar). Serien sind |Breite| (Saisonmittel des
+// ersten Fixes mit Tropensturm-Stärke); SP heißt deshalb °S, nie „north".
+export function buildGenesisModel(trends) {
+  const f = trends.fits;
+  const all = [...trends.series.genesisWP, ...trends.series.genesisSP].filter((v) => v != null);
+  const lo = Math.floor(Math.min(...all) / 2) * 2;
+  const hi = Math.ceil(Math.max(...all) / 2) * 2;
+  const yDomain = [lo, hi];
+  return {
+    northKm: trends.summary.genesis.wpNorthKm,
+    latFirst: trends.summary.genesis.wpLatFirst,
+    latLast: trends.summary.genesis.wpLatLast,
+    panels: [
+      {
+        key: 'wp',
+        title: 'Northwest Pacific  ·  formation latitude  ·  °N',
+        yDomain, yTicks: 4, yFmt: (v) => `${v}°`,
+        caption: verdict(f.genesisWP),
+        series: [{ values: trends.series.genesisWP, fill: 'var(--point)', trend: f.genesisWP }],
+      },
+      {
+        key: 'sp',
+        title: 'South Pacific  ·  formation latitude  ·  °S (distance from equator)',
+        yDomain, yTicks: 4, yFmt: (v) => `${v}°`,
+        caption: verdict(f.genesisSP),
+        series: [{ values: trends.series.genesisSP, fill: 'var(--point)', trend: f.genesisSP }],
+      },
+    ],
+  };
+}
+
+export function createGenesisTrend(container, ctx) {
+  const t = ctx.data.trends;
+  const S = t.series;
+  const model = buildGenesisModel(t);
+  const deg = (v, suffix) => (v == null ? '—' : `${v.toFixed(1)}${suffix}`);
+  return renderTrendPanels(container, ctx, {
+    aria: 'Two stacked line charts, 2001 to 2025, on one shared latitude scale: the average '
+      + 'latitude where Pacific storms first reach tropical-storm strength. In the Northwest '
+      + 'Pacific the formation latitude trends clearly poleward, about 322 kilometres since '
+      + '2001; in the South Pacific it shows no clear trend.',
+    panelSpecs: model.panels,
+    tipHtml: (idx, yr) => `<div class="tt-title">${yr}</div>`
+      + `<div class="tt-sub">NW Pacific ${deg(S.genesisWP[idx], '°N')} · South Pacific ${deg(S.genesisSP[idx], '°S')}</div>`,
+    drift: {
+      panel: 0, from: model.latFirst, to: model.latLast,
+      label: `≈ ${model.northKm} km poleward`,
+    },
+  });
 }
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));

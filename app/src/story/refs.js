@@ -11,6 +11,7 @@
 //       count.<first5|last5|perDecade|r2|p>
 //       windMean.<perDecade|r2|r2pct|p>
 //       genesisWP.<perDecade|p|northKm|latFirst|latLast>
+//       genesisSP.<perDecade|p>
 //   {{stat:<name>[.<args>]}}                 abgeleitete Statistik, vor-formatiert:
 //       scatterCount · eventCount · missingPairs · missingToll · missingWind
 //       yearMin · yearMax · totalAffected
@@ -107,6 +108,12 @@ function lookupTrend([group, key], ctx, token) {
     if (key === 'northKm') return String(t.summary.genesis.wpNorthKm);
     if (key === 'latFirst') return t.summary.genesis.wpLatFirst.toFixed(1);
     if (key === 'latLast') return t.summary.genesis.wpLatLast.toFixed(1);
+  }
+  // Südpazifik-Becken: bewusst NUR p und perDecade - eine km-Verschiebung gibt es
+  // dort nicht zu behaupten (p = 0.71, kein Trend).
+  if (group === 'genesisSP') {
+    if (key === 'perDecade') return signed1(t.fits.genesisSP.perDecade);
+    if (key === 'p') return pfmt(t.fits.genesisSP.p);
   }
   throw new Error(`Story-Referenz auf unbekannten Trend-Schlüssel: ${token}`);
 }

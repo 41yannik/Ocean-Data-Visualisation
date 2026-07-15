@@ -21,7 +21,13 @@ export const SECTIONS = [
   { step: 0, act: 'The question', views: ['sst'], aria: { sst: ARIA.sst } },
   { step: 1, act: 'The question', views: ['stormTrend'], aria: { stormTrend: ARIA.stormTrend } },
   {
-    step: 2, act: 'The question', views: ['map', 'bars'],
+    step: 2, act: 'The question', views: ['genesisTrend'],
+    aria: { genesisTrend: 'Two stacked line charts, 2001 to 2025, on one shared latitude scale: '
+      + 'the average latitude where storms first reach tropical-storm strength. The Northwest Pacific '
+      + 'panel trends clearly poleward, about 322 kilometres; the South Pacific panel is flat — no clear trend' },
+  },
+  {
+    step: 3, act: 'The question', views: ['map', 'bars'],
     // gezoomte Projektion auf ASM/NIU; labelScope 'story' blendet ablenkende Nachbar-
     // Labels (Tonga/Samoa) aus - nur die zwei Vergleichsinseln (via Impact-Bubbles).
     mapOpts: { fitTo: HETA_FOCUS, labelScope: 'story' },
@@ -33,14 +39,14 @@ export const SECTIONS = [
   {
     // Evidence-Panel: EIN interaktives Kapitel (Text links, Chart + Controls rechts) -
     // ersetzt die frühere Bühnen-Gruppe 'dots' mit zwei Scroll-Beats.
-    step: 3, act: 'The evidence', split: true, views: ['scatter'],
+    step: 4, act: 'The evidence', split: true, views: ['scatter'],
     aria: { scatter: 'Interactive scatterplot of maximum sustained wind against share of national '
       + 'population reported affected, with a dashed average fit from wind alone. Buttons above the '
       + 'chart highlight Tino, Daman or the records farthest from the fit; '
       + 'hovering a dot links all country records from the same storm, and a dropdown filters the dots by country' },
   },
   {
-    step: 4, act: 'The evidence', views: ['pamMorph'],
+    step: 5, act: 'The evidence', views: ['pamMorph'],
     aria: {
       pamMorph: 'Stable map of Cyclone Pam with one blue point per affected country. Each point is '
         + 'labelled with the country name, affected population share and reported number of people; '
@@ -49,14 +55,14 @@ export const SECTIONS = [
     },
   },
   {
-    step: 5, act: 'The evidence', stage: 'dots2', views: ['scatter'],
+    step: 6, act: 'The evidence', stage: 'dots2', views: ['scatter'],
     aria: { scatter: 'Scatterplot: Vanuatu’s repeat above-the-baseline storms fully highlighted with '
       + 'thin lines dropping to the dashed wind-only line; hovering a dot names the storm and its toll' },
   },
   {
     // Residual-Beat: gleiche Bühne (stage dots2), die Punkte morphen vom Scatter in
     // eine Zeile je Land - konsekutiv gleiche stage-Keys bleiben EINE Stage-Gruppe.
-    step: 6, act: 'The evidence', stage: 'dots2', views: ['scatter'],
+    step: 7, act: 'The evidence', stage: 'dots2', views: ['scatter'],
     aria: { scatter: 'Dot plot of the same storm records, one row per country: dots right of a dashed '
       + 'vertical line took a heavier toll than the wind-only expectation, dots left of it a lighter one; '
       + 'Vanuatu’s row sits almost entirely to the right, with eight of ten storms above the line' },
@@ -65,19 +71,19 @@ export const SECTIONS = [
     // views ist in Bühnen-Gruppen wirkungslos (groupHtml rendert die geteilte Scatter-
     // Bühne); 'scatter' statt des toten 'unitChart'-Eintrags, die Unit-Formation
     // liefert formationLayer. Die aria-Beschreibung bleibt dokumentierend erhalten.
-    step: 7, act: 'The people', stage: 'dots2', views: ['scatter'], controls: 'unitSort',
+    step: 8, act: 'The people', stage: 'dots2', views: ['scatter'], controls: 'unitSort',
     aria: { unitChart: 'Unit chart of all 99 storm-country pairs: filled dots are complete records; '
       + 'hollow dots are pairs whose human impact was never recorded; one half-filled dot had a recorded '
       + 'impact but no measured wind. A button re-sorts them into two blocks by data completeness' },
   },
   {
-    step: 8, act: 'The conclusion', views: ['conclusionSynthesis'], conclusion: true,
+    step: 9, act: 'The conclusion', views: ['conclusionSynthesis'], conclusion: true,
     aria: {
       conclusionSynthesis: 'Linked conclusion with two top-five lists and paired vertical cold-to-warm thermometers. Low values sit at the bottom and high values at the top; an order switch compares wind with affected share',
     },
   },
   {
-    step: 9, act: 'Your turn', views: ['map', 'scatter'], explore: true,
+    step: 10, act: 'Your turn', views: ['map', 'scatter'], explore: true,
     aria: { map: ARIA.map, scatter: ARIA.scatter },
   },
 ];

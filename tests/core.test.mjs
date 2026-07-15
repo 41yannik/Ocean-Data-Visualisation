@@ -8,6 +8,7 @@ import { buildConclusionSynthesisModel } from '../app/src/story/conclusionSynthe
 import { computeResidualRows, RR_R } from '../app/src/story/residualRows.js';
 import { resolveRefs } from '../app/src/story/refs.js';
 import { buildSteps, STEP_COUNT } from '../app/src/story/steps.js';
+import { buildGenesisModel } from '../app/src/story/stormTrend.js';
 import { SECTIONS } from '../app/src/story/sections.js';
 import { buildCountryRecurrence } from '../app/src/ui/countryRecurrence.js';
 import { aggregateHotZoneCells } from '../app/src/ui/trackHeatmap.js';
@@ -154,7 +155,7 @@ test('aboveCount stat renders a countable claim and fails loud on unknown countr
   assert.throws(() => resolveRefs('{{stat:aboveCount.XXX}}', ctx));
 });
 
-test('story has ten steps and the residual beat morphs the dots2 stage', async () => {
+test('story has eleven steps and the residual beat morphs the dots2 stage', async () => {
   const [events, meta, sst, trends] = await Promise.all([
     'events.json', 'meta.json', 'sst.json', 'trends.json',
   ].map(async (file) => JSON.parse(await readFile(new URL(`../app/public/data/${file}`, import.meta.url)))));
@@ -167,38 +168,86 @@ test('story has ten steps and the residual beat morphs the dots2 stage', async (
   const ctx = { data: { events, sst, trends, index: { byId, bySid } }, meta };
 
   const steps = buildSteps(ctx);
-  assert.equal(steps.length, 10);
+  assert.equal(steps.length, 11);
   assert.equal(steps.length, STEP_COUNT);
-  assert.equal(SECTIONS.length, 10);
+  assert.equal(SECTIONS.length, 11);
   assert.deepEqual(SECTIONS.map((section) => section.step), [...steps.keys()]);
   assert.ok(steps.every((step) => step.source?.trim()), 'every visualisation has a source');
   assert.ok(steps.every((step) => step.hint?.trim()), 'every visualisation has a How to read explanation');
-  assert.equal(steps[3].caveat, undefined);
-  assert.equal(steps[3].transition, undefined);
-  assert.deepEqual(steps[3].apply().storyFx.annotations, []);
-  assert.equal(steps[3].apply().storyFx.stormSpine, true);
-  assert.equal(steps[3].apply().stormPin, null);
 
-  // Step 4 uses Pam's five complete country records but does not mistake lifetime peak
+  // Index-Zugriff über die Step-id statt harter Zahlen: Einfügungen verschieben
+  // Indizes, die inhaltlichen Zusicherungen je Beat bleiben stabil.
+  const at = (id) => {
+    const index = steps.findIndex((step) => step.id === id);
+    assert.ok(index >= 0, `step ${id} exists`);
+    return index;
+  };
+
+  // Genesis-Beat: direkt nach dem no-trend-Beat, im Frage-Akt, neutraler Zustand.
+  const genesis = at('genesis-shift');
+  assert.equal(genesis, at('storm-trend') + 1);
+  assert.equal(SECTIONS[genesis].act, 'The question');
+  assert.deepEqual(SECTIONS[genesis].views, ['genesisTrend']);
+  assert.ok(steps[genesis].html.includes('322 km'));
+  assert.ok(steps[genesis].html.includes('0.710'), 'SP-Nullbefund steht im Text');
+
+  const evidence = at('evidence');
+  assert.equal(steps[evidence].caveat, undefined);
+  assert.equal(steps[evidence].transition, undefined);
+  assert.deepEqual(steps[evidence].apply().storyFx.annotations, []);
+  assert.equal(steps[evidence].apply().storyFx.stormSpine, true);
+  assert.equal(steps[evidence].apply().stormPin, null);
+
+  // Pam uses five complete country records but does not mistake lifetime peak
   // wind for equal local exposure across all five countries.
-  assert.equal(steps[4].id, 'pam');
-  assert.equal(steps[4].title, 'One storm, several kinds of exposure');
-  assert.equal(steps[4].apply().detailSid, '2015066S08170');
-  assert.equal(steps[4].apply().storyFx.focusEventIds.length, 5);
-  assert.ok(steps[4].html.includes('672× span'));
+  const pam = at('pam');
+  assert.equal(steps[pam].title, 'One storm, several kinds of exposure');
+  assert.equal(steps[pam].apply().detailSid, '2015066S08170');
+  assert.equal(steps[pam].apply().storyFx.focusEventIds.length, 5);
+  assert.ok(steps[pam].html.includes('672× span'));
 
-  // Residual-Beat: Index 6, gleiche Bühne wie Step 5/7, Formation residualRows.
-  assert.equal(steps[6].id, 'residual-rows');
-  assert.equal(steps[6].apply().formation, 'residualRows');
-  assert.equal(SECTIONS[6].stage, 'dots2');
-  assert.ok(steps[6].html.includes('8 of 10'));
+  // Residual-Beat: gleiche Bühne wie patterns/honesty, Formation residualRows.
+  const rr = at('residual-rows');
+  assert.equal(steps[rr].apply().formation, 'residualRows');
+  assert.equal(SECTIONS[rr].stage, 'dots2');
+  assert.ok(steps[rr].html.includes('8 of 10'));
 
-  // Step 5 zeichnet die Stems; apply() liefert stets frische Objekte (Store-Konvention).
-  assert.equal(steps[5].apply().storyFx.residualStems, true);
-  const first = steps[5].apply();
-  const second = steps[5].apply();
+  // patterns zeichnet die Stems; apply() liefert stets frische Objekte (Store-Konvention).
+  const patterns = at('patterns');
+  assert.equal(steps[patterns].apply().storyFx.residualStems, true);
+  const first = steps[patterns].apply();
+  const second = steps[patterns].apply();
   assert.notEqual(first, second);
   assert.notEqual(first.storyFx, second.storyFx);
+});
+
+test('genesis model contrasts both basins on one shared latitude scale', async () => {
+  const trends = JSON.parse(await readFile(new URL('../app/public/data/trends.json', import.meta.url)));
+  const model = buildGenesisModel(trends);
+
+  // Zwei Panels, WP zuerst; Verdicts in der Klartext-Sprache von Step 1.
+  assert.deepEqual(model.panels.map((p) => p.key), ['wp', 'sp']);
+  assert.equal(model.panels[0].caption, 'A clear upward trend');
+  assert.equal(model.panels[1].caption, 'No clear trend');
+
+  // Ehrlichkeits-Mechanik: BEIDE Panels teilen dieselbe y-Domain, und sie deckt
+  // alle beobachteten Saisonmittel beider Becken ab.
+  const [d0, d1] = model.panels[0].yDomain;
+  assert.deepEqual(model.panels[1].yDomain, model.panels[0].yDomain);
+  const all = [...trends.series.genesisWP, ...trends.series.genesisSP].filter((v) => v != null);
+  assert.ok(Math.min(...all) >= d0 && Math.max(...all) <= d1);
+
+  // Jede Serie trägt einen Fit (Trendlinie) und alle 25 Saisons.
+  assert.ok(model.panels.every((p) => p.series[0].trend && p.series[0].values.length === trends.series.season.length));
+  assert.equal(model.northKm, 322);
+});
+
+test('genesisSP trend refs resolve pre-formatted and fail loud on unknown keys', async () => {
+  const trends = JSON.parse(await readFile(new URL('../app/public/data/trends.json', import.meta.url)));
+  const ctx = { data: { trends } };
+  assert.equal(resolveRefs('{{trend:genesisSP.p}}', ctx), '0.710');
+  assert.equal(resolveRefs('{{trend:genesisWP.northKm}}', ctx), '322');
+  assert.throws(() => resolveRefs('{{trend:genesisSP.northKm}}', ctx));
 });
 
 test('hot-zone aggregation separates frequency from average wind', () => {

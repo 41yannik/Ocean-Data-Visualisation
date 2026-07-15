@@ -35,7 +35,7 @@ export const HETA_FLY_MS = 1600;
 const IMPACT_SOURCE = 'Peak wind: IBTrACS / NOAA · Reported impacts: EM-DAT / CRED · Population: UN World Population Prospects';
 
 // Layout je Step - statisch, damit der layoutController ohne Daten-ctx auskommt.
-export const STEP_LAYOUTS = ['intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'scatter', 'explore'];
+export const STEP_LAYOUTS = ['intro', 'intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'scatter', 'explore'];
 export const STEP_COUNT = STEP_LAYOUTS.length;
 export const stepLayout = (step) =>
   step >= 0 && step < STEP_COUNT ? STEP_LAYOUTS[step] : 'explore';
@@ -109,6 +109,26 @@ export function buildSteps(ctx) {
         it is about who stands in their way.`),
       source: r('Every Pacific tropical storm, {{trend:yearMin}}–{{trend:yearMax}} · IBTrACS / NOAA'),
       hint: 'Top: each dot is the number of Pacific tropical storms in one season. Bottom: each dot is their average peak wind. The dashed lines show the linear trend across 2001–2025.',
+      apply: () => base({ storyFx: fx() }),
+    },
+    {
+      // Genesis-Drift-Beat (V1): das eine physische Signal, das sich messbar ändert -
+      // nicht Anzahl, nicht Stärke, sondern WO Stürme entstehen. Zwei Becken auf EINER
+      // Skala; nur der NW-Pazifik driftet (p 0.015, ~322 km). Kein Kausal-Claim zu
+      // Impacts - der Beat motiviert die Exposure-These („who stands in their way").
+      id: 'genesis-shift',
+      layout: 'intro',
+      title: r('Where storms are born is drifting'),
+      html: r(`One thing about these storms <strong>is</strong> changing: not how many, not how
+        strong, but where they begin. In the Northwest Pacific, the latitude where storms first
+        reach storm strength has crept poleward, from about {{trend:genesisWP.latFirst}}°N in
+        the early seasons to about {{trend:genesisWP.latLast}}°N in the recent ones — roughly
+        <strong>{{trend:genesisWP.northKm}} km</strong> (p = {{trend:genesisWP.p}}). South of
+        the equator, no such drift shows (p = {{trend:genesisSP.p}}). A shifting birthplace does
+        not make a storm worse, but it can change <strong>which islands lie in its path</strong>.
+        That is the thread this story follows: not the storms, but who stands in their way.`),
+      source: r('Every Pacific tropical storm, {{trend:yearMin}}–{{trend:yearMax}} · genesis = first fix at tropical-storm strength · IBTrACS / NOAA'),
+      hint: 'Each dot is one season’s average formation latitude, measured as distance from the equator. Top: the Northwest Pacific — its dashed trend line climbs. Bottom: the South Pacific, on the same scale — flat. The trend is statistically clear but modest: year-to-year scatter stays large.',
       apply: () => base({ storyFx: fx() }),
     },
     {
