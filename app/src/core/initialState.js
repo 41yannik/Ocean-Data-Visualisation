@@ -41,7 +41,8 @@ export function makeInitialState() {
     stormPin: null,
     // Step 6 (unit chart) - Sortierung: 'chrono' (chronologisch) | 'quality' (zwei Blöcke).
     unitSort: 'chrono',
-    // Bühnen-Gruppe dots2 (Paket 10): 'scatter' | 'unit' - Ziel-Formation der 99 Kreise.
+    // Bühnen-Gruppe dots2: 'scatter' | 'residualRows' | 'subregion' | 'unit' -
+    // Ziel-Formation der 99 Kreise.
     formation: 'scatter',
     exploreUnlocked: true,
     reducedMotion: typeof matchMedia !== 'undefined'

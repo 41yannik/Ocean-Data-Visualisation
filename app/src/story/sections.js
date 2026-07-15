@@ -68,22 +68,32 @@ export const SECTIONS = [
       + 'Vanuatu’s row sits almost entirely to the right, with eight of ten storms above the line' },
   },
   {
+    // Subregion-Beat: gleiche Bühne, die Zeilen falten auf die drei Subregionen.
+    // Pointe = Vermeidung des ökologischen Fehlschlusses (Vanuatus Signal verschwindet
+    // in Melanesiens Balance) - das Muster lebt auf Länderebene.
+    step: 8, act: 'The evidence', stage: 'dots2', views: ['scatter'],
+    aria: { scatter: 'Dot plot of the same storm records folded into one row per Pacific subregion: '
+      + 'Polynesia leans right of the dashed wind-only line with twelve of seventeen records above it, '
+      + 'Melanesia splits almost evenly, Micronesia leans slightly left; a short vertical stroke marks '
+      + 'each group’s median' },
+  },
+  {
     // views ist in Bühnen-Gruppen wirkungslos (groupHtml rendert die geteilte Scatter-
     // Bühne); 'scatter' statt des toten 'unitChart'-Eintrags, die Unit-Formation
     // liefert formationLayer. Die aria-Beschreibung bleibt dokumentierend erhalten.
-    step: 8, act: 'The people', stage: 'dots2', views: ['scatter'], controls: 'unitSort',
+    step: 9, act: 'The people', stage: 'dots2', views: ['scatter'], controls: 'unitSort',
     aria: { unitChart: 'Unit chart of all 99 storm-country pairs: filled dots are complete records; '
       + 'hollow dots are pairs whose human impact was never recorded; one half-filled dot had a recorded '
       + 'impact but no measured wind. A button re-sorts them into two blocks by data completeness' },
   },
   {
-    step: 9, act: 'The conclusion', views: ['conclusionSynthesis'], conclusion: true,
+    step: 10, act: 'The conclusion', views: ['conclusionSynthesis'], conclusion: true,
     aria: {
       conclusionSynthesis: 'Linked conclusion with two top-five lists and paired vertical cold-to-warm thermometers. Low values sit at the bottom and high values at the top; an order switch compares wind with affected share',
     },
   },
   {
-    step: 10, act: 'Your turn', views: ['map', 'scatter'], explore: true,
+    step: 11, act: 'Your turn', views: ['map', 'scatter'], explore: true,
     aria: { map: ARIA.map, scatter: ARIA.scatter },
   },
 ];

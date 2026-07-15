@@ -35,7 +35,7 @@ export const HETA_FLY_MS = 1600;
 const IMPACT_SOURCE = 'Peak wind: IBTrACS / NOAA · Reported impacts: EM-DAT / CRED · Population: UN World Population Prospects';
 
 // Layout je Step - statisch, damit der layoutController ohne Daten-ctx auskommt.
-export const STEP_LAYOUTS = ['intro', 'intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'scatter', 'explore'];
+export const STEP_LAYOUTS = ['intro', 'intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'dual', 'scatter', 'explore'];
 export const STEP_COUNT = STEP_LAYOUTS.length;
 export const stepLayout = (step) =>
   step >= 0 && step < STEP_COUNT ? STEP_LAYOUTS[step] : 'explore';
@@ -246,11 +246,37 @@ export function buildSteps(ctx) {
         the wind-only expectation. <strong>{{stat:aboveCount.VUT}}</strong> of Vanuatu's storms
         land on the heavy side — no other country with that many storms comes close. Tonga and
         Micronesia lean the same way; Fiji, with nearly twice the storms, splits almost evenly.`),
-      transition: 'Before interpreting the pattern, the missing records matter.',
+      transition: 'Countries tell one story. Do whole regions tell another?',
       source: IMPACT_SOURCE,
       hint: 'Orange dots took a heavier toll than wind alone predicts, blue dots a lighter one — the note under each country simply counts its orange dots. ÷10 and ×10 mark tolls ten times below or above that expectation; countries with fewer than four complete records are folded into “Other”.',
       apply: () => base({
         formation: 'residualRows', // Bühnen-Gruppe dots2: Morph Scatter → Zeilen
+        storyFx: fx({ showPoints: true }),
+      }),
+    },
+    {
+      // Subregion-Beat (V2): dieselben Zeilen, gefaltet auf die drei Subregionen.
+      // Die Pointe ist die VERMEIDUNG des ökologischen Fehlschlusses: Polynesien lehnt
+      // schwer, aber Vanuatus Signal verschwindet in Melanesiens Balance - das Muster
+      // lebt auf Länder-, nicht auf Regionsebene. Begründet zugleich, warum die Story
+      // auf Länderebene argumentiert.
+      id: 'subregion-rows',
+      layout: 'dual',
+      title: r('Is it a region’s fate?'),
+      html: r(`Merge the same rows into the three Pacific subregions and the picture changes
+        character. Polynesia’s records lean heavy:
+        <strong>{{stat:subregionAboveCount.Polynesia}}</strong> outran the wind-only
+        expectation, and the group’s midpoint sits well right of the line. But Melanesia —
+        home to Vanuatu — splits almost evenly
+        ({{stat:subregionAboveCount.Melanesia}}): Fiji’s balanced record dilutes Vanuatu’s
+        within the same row. Geography sets who lies in the storm belt, but it does not
+        assign the burden by region. <strong>The pattern lives at the level of countries,
+        not regions.</strong>`),
+      transition: 'Before interpreting any of it, the missing records matter.',
+      source: IMPACT_SOURCE,
+      hint: 'The same dots regroup into one row per subregion. Orange dots took a heavier toll than wind alone predicts, blue a lighter one; the short vertical stroke marks each group’s median, and the note under each region counts its orange dots.',
+      apply: () => base({
+        formation: 'subregion', // Bühnen-Gruppe dots2: Morph Länder-Zeilen → Subregionen
         storyFx: fx({ showPoints: true }),
       }),
     },

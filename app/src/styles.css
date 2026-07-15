@@ -961,6 +961,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 
 /* n-Caption in der dots2-Bühne ausblenden: die Zählung steht dort schon im Text. */
 .stage-group[data-stage="dots2"] .n-caption { display: none; }
+/* Gruppen-Median der Subregion-Formation (Spiegel von .rlab-median) */
+.rr-median { stroke: var(--trend); stroke-width: 2.5; pointer-events: none; }
 
 /* Formations-Morph (Paket 10 Task 8): Scatter-Chrome fadet aus, sobald die Punkte
    im Unit-Raster (fm-unit) ODER in den Residual-Zeilen (fm-residual) stehen;

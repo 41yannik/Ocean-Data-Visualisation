@@ -5,7 +5,7 @@ import { isScatterable, matchesFilters } from '../app/src/core/filters.js';
 import { makeInitialState } from '../app/src/core/initialState.js';
 import { createStore } from '../app/src/core/state.js';
 import { buildConclusionSynthesisModel } from '../app/src/story/conclusionSynthesis.js';
-import { computeResidualRows, RR_R } from '../app/src/story/residualRows.js';
+import { computeResidualRows, computeSubregionRows, RR_R } from '../app/src/story/residualRows.js';
 import { resolveRefs } from '../app/src/story/refs.js';
 import { buildSteps, STEP_COUNT } from '../app/src/story/steps.js';
 import { buildGenesisModel } from '../app/src/story/stormTrend.js';
@@ -148,6 +148,40 @@ test('residual rows place dots on the correct side of the zero line without over
   }
 });
 
+test('subregion rows collapse the same 78 pairs into three honest groups', async () => {
+  const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const rr = computeSubregionRows(events, { W: 562, H: 416 });
+
+  // Drei Zeilen, aboveShare absteigend: Polynesien lehnt schwer, Melanesien teilt
+  // sich fast gleich (Vanuatus Signal verschwindet in Fijis Balance) - die Pointe des Beats.
+  assert.deepEqual(rr.rows.map((row) => row.key), ['Polynesia', 'Melanesia', 'Micronesia']);
+  assert.deepEqual(rr.rows.map((row) => [row.nAbove, row.n]), [[12, 17], [22, 44], [8, 17]]);
+  assert.equal(rr.rows.reduce((sum, row) => sum + row.n, 0), 78);
+
+  // Gruppen-Median: Polynesien klar rechts der Null-Linie, Mikronesien links.
+  assert.ok(rr.rows[0].median > 0);
+  assert.ok(rr.rows[2].median < 0);
+
+  // Jeder scatterbare Punkt hat eine Position; Ghosts (kein Residuum) keine.
+  const scatterable = events.filter(isScatterable);
+  assert.ok(scatterable.every((e) => rr.pos(e) != null));
+  assert.ok(events.filter((e) => !isScatterable(e)).every((e) => rr.pos(e) == null));
+
+  // Regression: die Länder-Variante bleibt unter der Generalisierung bit-identisch
+  // (Zeilenfolge + Zähler wie vor dem Refactor; eigene Detail-Tests oben).
+  const country = computeResidualRows(events, { W: 562, H: 416 });
+  assert.equal(country.rows.length, 8);
+  assert.equal(country.rows[0].key, 'VUT');
+});
+
+test('subregionAboveCount stat renders a countable claim and fails loud on unknown regions', async () => {
+  const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const ctx = { data: { events } };
+  assert.equal(resolveRefs('{{stat:subregionAboveCount.Polynesia}}', ctx), '12 of 17');
+  assert.equal(resolveRefs('{{stat:subregionAboveCount.Melanesia}}', ctx), '22 of 44');
+  assert.throws(() => resolveRefs('{{stat:subregionAboveCount.Atlantis}}', ctx));
+});
+
 test('aboveCount stat renders a countable claim and fails loud on unknown countries', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
   const ctx = { data: { events } };
@@ -155,7 +189,7 @@ test('aboveCount stat renders a countable claim and fails loud on unknown countr
   assert.throws(() => resolveRefs('{{stat:aboveCount.XXX}}', ctx));
 });
 
-test('story has eleven steps and the residual beat morphs the dots2 stage', async () => {
+test('story has twelve steps and the row beats morph the dots2 stage', async () => {
   const [events, meta, sst, trends] = await Promise.all([
     'events.json', 'meta.json', 'sst.json', 'trends.json',
   ].map(async (file) => JSON.parse(await readFile(new URL(`../app/public/data/${file}`, import.meta.url)))));
@@ -168,9 +202,9 @@ test('story has eleven steps and the residual beat morphs the dots2 stage', asyn
   const ctx = { data: { events, sst, trends, index: { byId, bySid } }, meta };
 
   const steps = buildSteps(ctx);
-  assert.equal(steps.length, 11);
+  assert.equal(steps.length, 12);
   assert.equal(steps.length, STEP_COUNT);
-  assert.equal(SECTIONS.length, 11);
+  assert.equal(SECTIONS.length, 12);
   assert.deepEqual(SECTIONS.map((section) => section.step), [...steps.keys()]);
   assert.ok(steps.every((step) => step.source?.trim()), 'every visualisation has a source');
   assert.ok(steps.every((step) => step.hint?.trim()), 'every visualisation has a How to read explanation');
@@ -211,6 +245,15 @@ test('story has eleven steps and the residual beat morphs the dots2 stage', asyn
   assert.equal(steps[rr].apply().formation, 'residualRows');
   assert.equal(SECTIONS[rr].stage, 'dots2');
   assert.ok(steps[rr].html.includes('8 of 10'));
+
+  // Subregion-Beat: direkt nach den Länderzeilen, gleiche Bühne, Formation subregion;
+  // beide Zähler stehen als abzählbare Behauptungen im Text.
+  const sub = at('subregion-rows');
+  assert.equal(sub, rr + 1);
+  assert.equal(steps[sub].apply().formation, 'subregion');
+  assert.equal(SECTIONS[sub].stage, 'dots2');
+  assert.ok(steps[sub].html.includes('12 of 17'));
+  assert.ok(steps[sub].html.includes('22 of 44'));
 
   // patterns zeichnet die Stems; apply() liefert stets frische Objekte (Store-Konvention).
   const patterns = at('patterns');

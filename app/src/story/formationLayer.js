@@ -3,6 +3,9 @@
 //   formation 'scatter':      78 scatterbare Punkte an x/y der Skalen, 21 Ghosts unsichtbar (r 0).
 //   formation 'residualRows': dieselben 78 Punkte als EINE Zeile je Land, x = Abstand zur
 //                             wind-only line (residualRows.js) - macht „again and again" abzählbar.
+//   formation 'subregion':    dieselben 78 Punkte gefaltet auf drei Subregion-Zeilen
+//                             (computeSubregionRows) inkl. Gruppen-Median-Tick - der Beat
+//                             zeigt, dass die Regionen-Faltung das Länder-Muster verwischt.
 //   formation 'unit':         alle 99 fliegen ins Unit-Raster (chrono bzw. quality je unitSort),
 //                             Ghosts wachsen ein - Scatter-Chrome (Achsen/Trend) fadet per CSS aus.
 // Objektkonstanz + benannte Transition 'formation' - der Kern von Strategie 4 (Paket 10).
@@ -10,7 +13,7 @@ import { easeCubicInOut } from 'd3';
 import { isScatterable } from '../core/filters.js';
 import { fmtKt, fmtPct } from '../core/format.js';
 import { computeUnitLayout, unitTipContent } from './unitChart.js';
-import { computeResidualRows, RR_R } from './residualRows.js';
+import { computeResidualRows, computeSubregionRows, RR_R } from './residualRows.js';
 
 const DUR_FORMATION = 900;
 // Punktgröße = RR_R (Review 2026-07-13): die Kreise behalten über Residual-Zeilen und
@@ -27,6 +30,7 @@ export function createFormationLayer(gDots, layerCtx) {
   const unit = computeUnitLayout(data.events, { W: inner.width, H: inner.height, cell: UNIT_CELL });
   const events = unit.events;
   const rr = computeResidualRows(data.events, { W: inner.width, H: inner.height });
+  const rrSub = computeSubregionRows(data.events, { W: inner.width, H: inner.height });
 
   const formationNow = () => bus.get().formation ?? 'scatter';
 
@@ -77,26 +81,38 @@ export function createFormationLayer(gDots, layerCtx) {
   });
   gLegend.attr('transform', `translate(0, ${inner.height - 6})`);
 
-  // Zeilen-Chrome der Residual-Formation: Länder-Labels mit Above-Zähler, gestrichelte
+  // Zeilen-Chrome der Zeilen-Formationen: Labels mit Above-Zähler, gestrichelte
   // Null-Linie (gleiche Dash-Sprache wie die wind-only line) und Faktor-Ticks. Kein
   // separates Achsen-Label: der Tick „wind-only line" bei 0 benennt die Referenz selbst.
+  // Für die Subregion-Zeilen zusätzlich ein Median-Tick je Gruppe (die Gruppen-Lesart,
+  // auf die die Step-Copy zeigt).
+  function drawRowChrome(g, lay, { medianTick = false } = {}) {
+    g.append('line').attr('class', 'rr-zero')
+      .attr('x1', lay.zeroX).attr('x2', lay.zeroX)
+      .attr('y1', 6).attr('y2', lay.axisY - 14);
+    for (const t of lay.ticks) {
+      g.append('text').attr('class', 'rr-tick')
+        .attr('x', t.x).attr('y', lay.axisY).attr('text-anchor', 'middle').text(t.label);
+    }
+    for (const row of lay.rows) {
+      g.append('text').attr('class', 'rr-row-label')
+        .attr('x', lay.labelX).attr('y', row.y - 1).attr('text-anchor', 'end').text(row.label);
+      // Ausgeschrieben statt „8/10 above" (Review 2026-07-13: Bruch-Notation war unklar) -
+      // zählt schlicht die orangen Punkte der Zeile.
+      g.append('text').attr('class', 'rr-row-count')
+        .attr('x', lay.labelX).attr('y', row.y + 13).attr('text-anchor', 'end')
+        .text(`${row.nAbove} of ${row.n} hit harder`);
+      if (medianTick && row.median != null) {
+        g.append('line').attr('class', 'rr-median')
+          .attr('x1', lay.x(row.median)).attr('x2', lay.x(row.median))
+          .attr('y1', row.y - 26).attr('y2', row.y + 26);
+      }
+    }
+  }
   const gRR = gDots.append('g').attr('class', 'rr-chrome').attr('opacity', 0);
-  gRR.append('line').attr('class', 'rr-zero')
-    .attr('x1', rr.zeroX).attr('x2', rr.zeroX)
-    .attr('y1', 6).attr('y2', rr.axisY - 14);
-  for (const t of rr.ticks) {
-    gRR.append('text').attr('class', 'rr-tick')
-      .attr('x', t.x).attr('y', rr.axisY).attr('text-anchor', 'middle').text(t.label);
-  }
-  for (const row of rr.rows) {
-    gRR.append('text').attr('class', 'rr-row-label')
-      .attr('x', rr.labelX).attr('y', row.y - 1).attr('text-anchor', 'end').text(row.label);
-    // Ausgeschrieben statt „8/10 above" (Review 2026-07-13: Bruch-Notation war unklar) -
-    // zählt schlicht die orangen Punkte der Zeile.
-    gRR.append('text').attr('class', 'rr-row-count')
-      .attr('x', rr.labelX).attr('y', row.y + 13).attr('text-anchor', 'end')
-      .text(`${row.nAbove} of ${row.n} hit harder`);
-  }
+  drawRowChrome(gRR, rr);
+  const gRRSub = gDots.append('g').attr('class', 'rr-chrome').attr('opacity', 0);
+  drawRowChrome(gRRSub, rrSub, { medianTick: true });
 
   // Lokaler Tooltip - Wortlaut identisch zum eigenständigen Unit Chart
   const tip = document.createElement('div');
@@ -120,7 +136,8 @@ export function createFormationLayer(gDots, layerCtx) {
         + `<strong>${fmtPct(d.affected_pc)}</strong> of the population was reported affected.</div>`
         + factorLine(d);
     } else {
-      tip.innerHTML = unitTipContent(d) + (f === 'residualRows' ? factorLine(d) : '');
+      tip.innerHTML = unitTipContent(d)
+        + (f === 'residualRows' || f === 'subregion' ? factorLine(d) : '');
     }
     tip.classList.add('visible');
     positionTip(event);
@@ -153,6 +170,10 @@ export function createFormationLayer(gDots, layerCtx) {
     const p = rr.pos(d);
     return p ? { cx: p[0], cy: p[1], r: RR_R, o: 1 } : ghostPark(d);
   }
+  function subregionTarget(d) {
+    const p = rrSub.pos(d);
+    return p ? { cx: p[0], cy: p[1], r: RR_R, o: 1 } : ghostPark(d);
+  }
 
   let last = null;
   function layout(state, animate) {
@@ -163,6 +184,7 @@ export function createFormationLayer(gDots, layerCtx) {
     const target = (d) => {
       if (f === 'unit') return unitTarget(d, state.unitSort ?? 'chrono');
       if (f === 'residualRows') return residualTarget(d);
+      if (f === 'subregion') return subregionTarget(d);
       return scatterTarget(d) ?? ghostPark(d);
     };
     const sel = animate && !state.reducedMotion
@@ -174,15 +196,20 @@ export function createFormationLayer(gDots, layerCtx) {
       .attr('cy', (d) => target(d).cy)
       .attr('r', (d) => target(d).r)
       .attr('opacity', (d) => target(d).o);
-    gDots.classed('fm-unit', f === 'unit').classed('fm-residual', f === 'residualRows');
-    // Divergenz nur in der Residual-Formation: über der Linie = Akzent, darunter = Blau.
+    const isRowFormation = f === 'residualRows' || f === 'subregion';
+    gDots.classed('fm-unit', f === 'unit').classed('fm-residual', isRowFormation);
+    // Divergenz nur in den Zeilen-Formationen: über der Linie = Akzent, darunter = Blau.
+    // WICHTIG: Positions-Check über das AKTIVE Layout, sonst leaken Länder-Positionen
+    // in die Subregion-Formation (beide platzieren dieselben 78, aber getrennt gehalten).
+    const activeRR = f === 'subregion' ? rrSub : rr;
     circles
-      .classed('rr-above', (d) => f === 'residualRows' && rr.pos(d) != null && (d.residual_pc ?? 0) > 0)
-      .classed('rr-below', (d) => f === 'residualRows' && rr.pos(d) != null && (d.residual_pc ?? 0) <= 0);
+      .classed('rr-above', (d) => isRowFormation && activeRR.pos(d) != null && (d.residual_pc ?? 0) > 0)
+      .classed('rr-below', (d) => isRowFormation && activeRR.pos(d) != null && (d.residual_pc ?? 0) <= 0);
     gLabels.transition('fm-lab').duration(400)
       .attr('opacity', f === 'unit' && (state.unitSort ?? 'chrono') === 'quality' ? 1 : 0);
     gLegend.transition('fm-leg').duration(400).attr('opacity', f === 'unit' ? 1 : 0);
     gRR.transition('fm-rr').duration(400).attr('opacity', f === 'residualRows' ? 1 : 0);
+    gRRSub.transition('fm-rrsub').duration(400).attr('opacity', f === 'subregion' ? 1 : 0);
   }
 
   // Stems nur in der Scatter-Formation, wenn der Step sie anfordert (storyFx.residualStems)

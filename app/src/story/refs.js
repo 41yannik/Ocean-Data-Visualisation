@@ -17,6 +17,7 @@
 //       yearMin · yearMax · totalAffected
 //       aboveShare.<iso3>                    Anteil der Scatter-Punkte des Landes über der Linie
 //       aboveCount.<iso3>                    dito als Zähler, z. B. "8 of 10"
+//       subregionAboveCount.<name>           Zähler je Subregion, z. B. "12 of 17"
 //       affectedRatio.<idA>.<idB>            gerundetes Verhältnis affected(A)/affected(B)
 //       affectedPcRatio.<idA>.<idB>          gerundetes Verhältnis affected_pc(A)/affected_pc(B)
 import { fmtInt, fmtPct, fmtKt, fmtCategory } from '../core/format.js';
@@ -139,6 +140,12 @@ function lookupStat([name, ...args], ctx, token) {
     // Zähler-Variante von aboveShare: macht die Behauptung im Chart abzählbar ("8 of 10").
     const rows = events.filter((e) => e.iso3 === args[0] && isScatterable(e));
     if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für ${args[0]} (${token})`);
+    return `${rows.filter((e) => (e.residual_pc ?? 0) > 0).length} of ${rows.length}`;
+  }
+  if (name === 'subregionAboveCount') {
+    // Zähler je Subregion (Subregion-Beat): "12 of 17" für Polynesia.
+    const rows = events.filter((e) => e.subregion === args[0] && isScatterable(e));
+    if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für Subregion ${args[0]} (${token})`);
     return `${rows.filter((e) => (e.residual_pc ?? 0) > 0).length} of ${rows.length}`;
   }
   if (name === 'totalAffected') {

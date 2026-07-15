@@ -11,7 +11,7 @@
 // Impact hat kein Residuum - ein hohler Marker am Achsenrand würde eine Position auf
 // einer quantitativen Achse erfinden. Verworfene Alternative: Rand-Spalte „no record";
 // die Lücken sind bewusst Gegenstand des NÄCHSTEN Beats (Unit-Chart), nicht dieses.
-import { scaleLinear } from 'd3';
+import { scaleLinear, median as d3median } from 'd3';
 import { isScatterable } from '../core/filters.js';
 
 export const RR_R = 6;          // Punktradius der Residual-Formation
@@ -25,19 +25,24 @@ const DOMAIN = [-2.8, 1.6];
 // Lane-Versätze für den deterministischen Dodge (statt d3-force: reproduzierbar, testbar).
 const LANES = [0, -9, 9, -18, 18];
 
-export function computeResidualRows(rawEvents, { W, H }) {
+// Default-Gruppierung (Länder-Beat) - groupBy ist parametrisierbar, damit der
+// Subregion-Beat DASSELBE Layout mit anderer Faltung nutzt (Defaults bit-identisch).
+const BY_COUNTRY = (e) => ({ key: e.iso3, label: e.country });
+
+export function computeResidualRows(rawEvents, { W, H, groupBy = BY_COUNTRY, minRowN = MIN_ROW_N } = {}) {
   const scatterable = rawEvents.filter(isScatterable);
 
-  // Länder gruppieren; kleine (< MIN_ROW_N Records) in „Other" falten statt 19 Mini-Zeilen.
-  const byIso = new Map();
+  // Gruppen bilden; kleine (< minRowN Records) in „Other" falten statt vieler Mini-Zeilen.
+  const byKey = new Map();
   for (const e of scatterable) {
-    if (!byIso.has(e.iso3)) byIso.set(e.iso3, { key: e.iso3, label: e.country, events: [] });
-    byIso.get(e.iso3).events.push(e);
+    const g = groupBy(e);
+    if (!byKey.has(g.key)) byKey.set(g.key, { key: g.key, label: g.label, events: [] });
+    byKey.get(g.key).events.push(e);
   }
   const own = [];
   const other = { key: 'OTHER', label: 'Other', events: [] };
-  for (const g of byIso.values()) {
-    if (g.events.length >= MIN_ROW_N) own.push(g);
+  for (const g of byKey.values()) {
+    if (g.events.length >= Math.max(1, minRowN)) own.push(g);
     else other.events.push(...g.events);
   }
   // Erzähl-Reihenfolge: absteigender Above-Anteil (VUT zuerst), Ties nach n, dann Name;
@@ -68,6 +73,9 @@ export function computeResidualRows(rawEvents, { W, H }) {
     return {
       key: g.key, label: g.label, y: cy, n: g.events.length,
       nAbove: g.events.filter((e) => (e.residual_pc ?? 0) > 0).length,
+      // Gruppen-Median des Residuums - der Subregion-Beat zeichnet ihn als Tick;
+      // für Länderzeilen ein harmloses Zusatzfeld.
+      median: d3median(g.events, (e) => e.residual_pc ?? 0),
     };
   });
 
@@ -85,4 +93,15 @@ export function computeResidualRows(rawEvents, { W, H }) {
       { v: 1, label: '×10' },
     ].map((t) => ({ ...t, x: x(t.v) })),
   };
+}
+
+// Subregion-Beat: dieselben 78 Paare, gefaltet auf die drei Pazifik-Subregionen
+// (Melanesien/Polynesien/Mikronesien liegen als Feld in jedem Event). minRowN 1:
+// keine „Other"-Faltung - drei Zeilen sind der Punkt des Beats.
+export function computeSubregionRows(rawEvents, { W, H }) {
+  return computeResidualRows(rawEvents, {
+    W, H,
+    groupBy: (e) => ({ key: e.subregion, label: e.subregion }),
+    minRowN: 1,
+  });
 }
