@@ -87,13 +87,22 @@ export const SECTIONS = [
       + 'impact but no measured wind. A button re-sorts them into two blocks by data completeness' },
   },
   {
-    step: 10, act: 'The conclusion', views: ['conclusionSynthesis'], conclusion: true,
+    // Two-Currencies-Beat: eigenständige eingefrorene Sektion (bewusst KEINE vierte
+    // Formation - 67 der 99 Kreise hätten auf einer Dollar-Achse keine ehrliche Position).
+    step: 10, act: 'The people', views: ['damageStrip'],
+    aria: { damageStrip: 'Dot plot of recorded storm damage per country on a logarithmic US-dollar '
+      + 'axis: eleven countries carry at least one recorded damage figure, led by Guam, where a single '
+      + 'record — Typhoon Mawar 2023 — accounts for about two thirds of every recorded dollar; a closing '
+      + 'note counts nine further countries whose 23 storm records never received a dollar figure' },
+  },
+  {
+    step: 11, act: 'The conclusion', views: ['conclusionSynthesis'], conclusion: true,
     aria: {
       conclusionSynthesis: 'Linked conclusion with two top-five lists and paired vertical cold-to-warm thermometers. Low values sit at the bottom and high values at the top; an order switch compares wind with affected share',
     },
   },
   {
-    step: 11, act: 'Your turn', views: ['map', 'scatter'], explore: true,
+    step: 12, act: 'Your turn', views: ['map', 'scatter'], explore: true,
     aria: { map: ARIA.map, scatter: ARIA.scatter },
   },
 ];

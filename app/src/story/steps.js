@@ -35,7 +35,7 @@ export const HETA_FLY_MS = 1600;
 const IMPACT_SOURCE = 'Peak wind: IBTrACS / NOAA · Reported impacts: EM-DAT / CRED · Population: UN World Population Prospects';
 
 // Layout je Step - statisch, damit der layoutController ohne Daten-ctx auskommt.
-export const STEP_LAYOUTS = ['intro', 'intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'dual', 'scatter', 'explore'];
+export const STEP_LAYOUTS = ['intro', 'intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'dual', 'intro', 'scatter', 'explore'];
 export const STEP_COUNT = STEP_LAYOUTS.length;
 export const stepLayout = (step) =>
   step >= 0 && step < STEP_COUNT ? STEP_LAYOUTS[step] : 'explore';
@@ -300,6 +300,27 @@ export function buildSteps(ctx) {
         // Kein showRug: die Bühne dots2 mountet keinen Rug-Layer (Flag war No-op).
         storyFx: fx({ showPoints: true, showTrend: true, showBand: true }),
       }),
+    },
+    {
+      // Two-Currencies-Beat (V3): erste Nutzung von damage_kusd. Verlängert den
+      // Honesty-Akt: das Dollar-Register ist noch löchriger als das Menschen-Register
+      // (32 von 99), und ein einziger Record dominiert es. Alle Zahlen über Refs.
+      id: 'two-currencies',
+      layout: 'intro',
+      title: r('The toll has two currencies'),
+      html: r(`Suffering is counted twice, in people and in dollars — and the two ledgers barely
+        overlap. Of {{stat:eventCount}} storm-country records, only
+        <strong>{{stat:damageCount}}</strong> carry a damage figure, totalling
+        {{stat:damageTotal}}. Even that total is not spread: a single record, Typhoon Mawar
+        over Guam, accounts for <strong>{{stat:damageTopShare}}</strong> of every recorded
+        dollar. Vanuatu, the country whose tolls most often outran the wind, has a dollar
+        figure for just {{stat:damageDollarCount.VUT}} of its records. Dollars are counted
+        where insured assets and assessment teams are; people are counted where they suffer.
+        <strong>Neither ledger is the whole toll.</strong>`),
+      transition: 'Both ledgers agree on one thing: wind alone does not decide them.',
+      source: 'Reported damage & impacts: EM-DAT / CRED · Damage in current US$, as reported',
+      hint: 'One row per country, one dot per storm record with a recorded damage figure; the axis is logarithmic — each step is 10×. The note under each country counts how many of its records carry any dollar figure at all. The closing line counts the countries that never received one.',
+      apply: () => base({ storyFx: fx() }),
     },
     {
       id: 'conclusion',

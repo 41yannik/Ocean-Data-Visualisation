@@ -10,6 +10,19 @@ export const fmtInt = (v) => (v == null ? 'not reported' : intFmt(v));
 export const fmtPct = (v) => (v == null ? 'not reported' : pctFmt(v));
 export const fmtKt = (v) => (v == null ? 'not measured' : `${Math.round(v)} kt`);
 
+// Kompakte US$-Beträge aus EM-DAT-kUSD (Damage-Strip): 'US$4.3 bn' / 'US$600 m' /
+// 'US$500 k'. Fehlwert spricht die Register-Sprache: Schäden werden ERFASST.
+export function fmtUsdCompact(kusd) {
+  if (kusd == null) return 'not recorded';
+  const usd = kusd * 1000;
+  if (usd >= 995e6) {
+    const bn = usd / 1e9;
+    return `US$${bn >= 10 ? Math.round(bn) : Math.round(bn * 10) / 10} bn`;
+  }
+  if (usd >= 995e3) return `US$${Math.round(usd / 1e6)} m`;
+  return `US$${Math.round(usd / 1e3)} k`;
+}
+
 export function fmtCategory(cat) {
   if (cat == null) return 'uncategorised';
   return cat >= 1 ? `Category ${cat}` : 'below Cat 1';

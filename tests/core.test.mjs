@@ -5,6 +5,8 @@ import { isScatterable, matchesFilters } from '../app/src/core/filters.js';
 import { makeInitialState } from '../app/src/core/initialState.js';
 import { createStore } from '../app/src/core/state.js';
 import { buildConclusionSynthesisModel } from '../app/src/story/conclusionSynthesis.js';
+import { buildDamageStrip } from '../app/src/story/damageStrip.js';
+import { fmtUsdCompact } from '../app/src/core/format.js';
 import { computeResidualRows, computeSubregionRows, RR_R } from '../app/src/story/residualRows.js';
 import { resolveRefs } from '../app/src/story/refs.js';
 import { buildSteps, STEP_COUNT } from '../app/src/story/steps.js';
@@ -189,7 +191,7 @@ test('aboveCount stat renders a countable claim and fails loud on unknown countr
   assert.throws(() => resolveRefs('{{stat:aboveCount.XXX}}', ctx));
 });
 
-test('story has twelve steps and the row beats morph the dots2 stage', async () => {
+test('story has thirteen steps and the row beats morph the dots2 stage', async () => {
   const [events, meta, sst, trends] = await Promise.all([
     'events.json', 'meta.json', 'sst.json', 'trends.json',
   ].map(async (file) => JSON.parse(await readFile(new URL(`../app/public/data/${file}`, import.meta.url)))));
@@ -202,9 +204,9 @@ test('story has twelve steps and the row beats morph the dots2 stage', async () 
   const ctx = { data: { events, sst, trends, index: { byId, bySid } }, meta };
 
   const steps = buildSteps(ctx);
-  assert.equal(steps.length, 12);
+  assert.equal(steps.length, 13);
   assert.equal(steps.length, STEP_COUNT);
-  assert.equal(SECTIONS.length, 12);
+  assert.equal(SECTIONS.length, 13);
   assert.deepEqual(SECTIONS.map((section) => section.step), [...steps.keys()]);
   assert.ok(steps.every((step) => step.source?.trim()), 'every visualisation has a source');
   assert.ok(steps.every((step) => step.hint?.trim()), 'every visualisation has a How to read explanation');
@@ -254,6 +256,16 @@ test('story has twelve steps and the row beats morph the dots2 stage', async () 
   assert.equal(SECTIONS[sub].stage, 'dots2');
   assert.ok(steps[sub].html.includes('12 of 17'));
   assert.ok(steps[sub].html.includes('22 of 44'));
+
+  // Two-Currencies-Beat: nach dem Honesty-Beat, Akt „The people", eingefrorene Sektion;
+  // die Register-Zahlen stehen als generierte Behauptungen im Text.
+  const currencies = at('two-currencies');
+  assert.equal(currencies, at('honesty') + 1);
+  assert.equal(SECTIONS[currencies].act, 'The people');
+  assert.deepEqual(SECTIONS[currencies].views, ['damageStrip']);
+  assert.ok(steps[currencies].html.includes('US$6.3 bn'));
+  assert.ok(steps[currencies].html.includes('68%'));
+  assert.ok(steps[currencies].html.includes('2 of 12'));
 
   // patterns zeichnet die Stems; apply() liefert stets frische Objekte (Store-Konvention).
   const patterns = at('patterns');
@@ -340,6 +352,56 @@ test('residual lab groups by country, sorts by above-share, and switches fields 
   });
   assert.equal(filtered.rows.length, 1);
   assert.equal(filtered.rows[0].iso3, 'VUT');
+});
+
+test('damage strip lays out the recorded dollar ledger and keeps missingness explicit', async () => {
+  const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const model = buildDamageStrip(events, { W: 960, H: 560 });
+
+  // 11 Länder mit mindestens einem Dollarwert, nach Schadenssumme absteigend.
+  assert.deepEqual(model.rows.map((row) => row.key),
+    ['GUM', 'FJI', 'VUT', 'TON', 'ASM', 'WSM', 'NCL', 'NIU', 'FSM', 'PYF', 'SLB']);
+  assert.equal(model.nWith, 32);
+  assert.equal(model.nWithout, 67);
+  assert.equal(model.totalKusd, 6301099);
+  assert.deepEqual(model.silent, { countries: 9, records: 23 });
+
+  // Der eine dominante Record: Mawar/Guam 2023 = 68 % der Gesamtsumme.
+  assert.equal(model.topRecord.id, '2023-0300-GUM');
+  assert.ok(Math.abs(model.topRecord.share - 0.682) < 0.005);
+
+  // Jede Zeile zählt ehrlich („x of y"); jeder Punkt liegt im Achsenbereich.
+  assert.deepEqual([model.rows[0].nDollars, model.rows[0].nRecords], [4, 6]);
+  assert.deepEqual([model.rows[2].nDollars, model.rows[2].nRecords], [2, 12]);
+  assert.equal(model.rows.reduce((sum, row) => sum + row.nDollars, 0), 32);
+  const [x0, x1] = model.x.range();
+  assert.ok(model.rows.every((row) => row.dots.every((d) => d.x >= x0 && d.x <= x1)));
+
+  // Challenge-Guard: ohne damage_kusd-Feld leeres Modell statt Throw.
+  const stripped = events.map(({ damage_kusd, ...rest }) => rest);
+  const empty = buildDamageStrip(stripped, { W: 960, H: 560 });
+  assert.equal(empty.rows.length, 0);
+  assert.equal(empty.nWith, 0);
+});
+
+test('fmtUsdCompact speaks the ledger language including missing values', () => {
+  assert.equal(fmtUsdCompact(4300000), 'US$4.3 bn');
+  assert.equal(fmtUsdCompact(600000), 'US$600 m');
+  assert.equal(fmtUsdCompact(6301099), 'US$6.3 bn');
+  assert.equal(fmtUsdCompact(500), 'US$500 k');
+  assert.equal(fmtUsdCompact(null), 'not recorded');
+});
+
+test('damage refs resolve computed ledger numbers and fail loud without data', async () => {
+  const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const ctx = { data: { events } };
+  assert.equal(resolveRefs('{{stat:damageCount}}', ctx), '32');
+  assert.equal(resolveRefs('{{stat:damageMissing}}', ctx), '67');
+  assert.equal(resolveRefs('{{stat:damageTotal}}', ctx), 'US$6.3 bn');
+  assert.equal(resolveRefs('{{stat:damageTopShare}}', ctx), '68%');
+  assert.equal(resolveRefs('{{stat:damageDollarCount.VUT}}', ctx), '2 of 12');
+  const stripped = { data: { events: events.map(({ damage_kusd, ...rest }) => rest) } };
+  assert.throws(() => resolveRefs('{{stat:damageTotal}}', stripped));
 });
 
 test('country toll aggregates reported impacts per country and mode', () => {

@@ -22,6 +22,7 @@ import { createFilterPanel } from './ui/filterPanel.js';
 import { createTimeScrubber } from './ui/timeScrubber.js';
 import { createSstIntro } from './story/sstIntro.js';
 import { createStormTrend, createGenesisTrend } from './story/stormTrend.js';
+import { createDamageStrip } from './story/damageStrip.js';
 import { createImpactBars } from './story/impactBars.js';
 import { createPamMorph } from './story/pamMorph.js';
 import { createUnitChart } from './story/unitChart.js';
@@ -382,6 +383,7 @@ async function runApp() {
         if (v === 'map') components.push(createMap(el, ctx, sec.mapOpts ?? {}));
         if (v === 'bars') components.push(createImpactBars(el, ctx));
         if (v === 'pamMorph') components.push(createPamMorph(el, ctx));
+        if (v === 'damageStrip') components.push(createDamageStrip(el, ctx));
         if (v === 'unitChart') components.push(createUnitChart(el, ctx));
         if (v === 'conclusionSynthesis') components.push(createConclusionSynthesis(el, ctx));
         // ohne Brush-Layer: gesperrte Sektionen brauchen kein Selektions-Overlay

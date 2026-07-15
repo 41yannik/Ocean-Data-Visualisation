@@ -18,9 +18,12 @@
 //       aboveShare.<iso3>                    Anteil der Scatter-Punkte des Landes über der Linie
 //       aboveCount.<iso3>                    dito als Zähler, z. B. "8 of 10"
 //       subregionAboveCount.<name>           Zähler je Subregion, z. B. "12 of 17"
+//       damageCount · damageMissing          Records mit/ohne Schadenssumme
+//       damageTotal · damageTopShare         Gesamtsumme (US$) · Anteil des größten Records
+//       damageDollarCount.<iso3>             Zähler je Land, z. B. "2 of 12"
 //       affectedRatio.<idA>.<idB>            gerundetes Verhältnis affected(A)/affected(B)
 //       affectedPcRatio.<idA>.<idB>          gerundetes Verhältnis affected_pc(A)/affected_pc(B)
-import { fmtInt, fmtPct, fmtKt, fmtCategory } from '../core/format.js';
+import { fmtInt, fmtPct, fmtKt, fmtCategory, fmtUsdCompact } from '../core/format.js';
 import { isScatterable } from '../core/filters.js';
 
 const EVENT_FORMATTERS = {
@@ -147,6 +150,22 @@ function lookupStat([name, ...args], ctx, token) {
     const rows = events.filter((e) => e.subregion === args[0] && isScatterable(e));
     if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für Subregion ${args[0]} (${token})`);
     return `${rows.filter((e) => (e.residual_pc ?? 0) > 0).length} of ${rows.length}`;
+  }
+  // Damage-Register (Beat „two currencies"): alle Werte aus damage_kusd berechnet;
+  // ohne einen einzigen Dollarwert (Challenge-Variante) knallt der Ref als Banner.
+  if (name === 'damageCount' || name === 'damageMissing' || name === 'damageTotal' || name === 'damageTopShare') {
+    const dollars = events.filter((e) => e.damage_kusd != null);
+    if (!dollars.length) throw new Error(`Story-Referenz: keine damage-Werte (${token})`);
+    if (name === 'damageCount') return fmtInt(dollars.length);
+    if (name === 'damageMissing') return fmtInt(events.length - dollars.length);
+    const total = dollars.reduce((sum, e) => sum + e.damage_kusd, 0);
+    if (name === 'damageTotal') return fmtUsdCompact(total);
+    return fmtPct(Math.max(...dollars.map((e) => e.damage_kusd)) / total);
+  }
+  if (name === 'damageDollarCount') {
+    const rows = events.filter((e) => e.iso3 === args[0]);
+    if (!rows.length) throw new Error(`Story-Referenz: unbekanntes Land ${args[0]} (${token})`);
+    return `${rows.filter((e) => e.damage_kusd != null).length} of ${rows.length}`;
   }
   if (name === 'totalAffected') {
     const vals = events.map((e) => e.affected).filter((v) => v != null);

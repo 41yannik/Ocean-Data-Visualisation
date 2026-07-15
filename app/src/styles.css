@@ -745,6 +745,16 @@ body {
 .st-drift-span { stroke: var(--trend); stroke-width: 1.2; }
 .st-drift-note { font-size: 12px; font-weight: 600; fill: var(--accent-text); }
 
+/* ---------- Damage-Strip (Two-Currencies-Beat, Step 10) ---------- */
+.ds-grid { stroke: var(--graticule); }
+.ds-tick { font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.ds-row-label { font-size: 13px; font-weight: 600; fill: var(--text); }
+.ds-row-count { font-size: 11.5px; fill: var(--muted); }
+.ds-dot { fill: var(--point); }
+.ds-dot--top { fill: var(--accent); }
+.ds-annotation { font-size: 12px; font-weight: 600; fill: var(--accent-text); }
+.ds-ledger { font-size: 12.5px; font-style: italic; fill: var(--muted); }
+
 /* ---------- Tooltip ---------- */
 .tooltip {
   position: fixed;
