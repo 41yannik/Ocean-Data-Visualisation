@@ -192,7 +192,7 @@ test('aboveCount stat renders a countable claim and fails loud on unknown countr
   assert.throws(() => resolveRefs('{{stat:aboveCount.XXX}}', ctx));
 });
 
-test('story has thirteen steps and the row beats morph the dots2 stage', async () => {
+test('story has eleven steps and the row beats morph the dots2 stage', async () => {
   const [events, meta, sst, trends] = await Promise.all([
     'events.json', 'meta.json', 'sst.json', 'trends.json',
   ].map(async (file) => JSON.parse(await readFile(new URL(`../app/public/data/${file}`, import.meta.url)))));
@@ -205,9 +205,9 @@ test('story has thirteen steps and the row beats morph the dots2 stage', async (
   const ctx = { data: { events, sst, trends, index: { byId, bySid } }, meta };
 
   const steps = buildSteps(ctx);
-  assert.equal(steps.length, 13);
+  assert.equal(steps.length, 11);
   assert.equal(steps.length, STEP_COUNT);
-  assert.equal(SECTIONS.length, 13);
+  assert.equal(SECTIONS.length, 11);
   assert.deepEqual(SECTIONS.map((section) => section.step), [...steps.keys()]);
   assert.ok(steps.every((step) => step.source?.trim()), 'every visualisation has a source');
   assert.ok(steps.every((step) => step.hint?.trim()), 'every visualisation has a How to read explanation');
@@ -219,14 +219,6 @@ test('story has thirteen steps and the row beats morph the dots2 stage', async (
     assert.ok(index >= 0, `step ${id} exists`);
     return index;
   };
-
-  // Genesis-Beat: direkt nach dem no-trend-Beat, im Frage-Akt, neutraler Zustand.
-  const genesis = at('genesis-shift');
-  assert.equal(genesis, at('storm-trend') + 1);
-  assert.equal(SECTIONS[genesis].act, 'The question');
-  assert.deepEqual(SECTIONS[genesis].views, ['genesisTrend']);
-  assert.ok(steps[genesis].html.includes('322 km'));
-  assert.ok(steps[genesis].html.includes('0.710'), 'SP-Nullbefund steht im Text');
 
   const evidence = at('evidence');
   assert.equal(steps[evidence].caveat, undefined);
@@ -257,16 +249,6 @@ test('story has thirteen steps and the row beats morph the dots2 stage', async (
   assert.equal(SECTIONS[sub].stage, 'dots2');
   assert.ok(steps[sub].html.includes('12 of 17'));
   assert.ok(steps[sub].html.includes('22 of 44'));
-
-  // Two-Currencies-Beat: nach dem Honesty-Beat, Akt „The people", eingefrorene Sektion;
-  // die Register-Zahlen stehen als generierte Behauptungen im Text.
-  const currencies = at('two-currencies');
-  assert.equal(currencies, at('honesty') + 1);
-  assert.equal(SECTIONS[currencies].act, 'The people');
-  assert.deepEqual(SECTIONS[currencies].views, ['damageStrip']);
-  assert.ok(steps[currencies].html.includes('US$6.3 bn'));
-  assert.ok(steps[currencies].html.includes('68%'));
-  assert.ok(steps[currencies].html.includes('2 of 12'));
 
   // patterns zeichnet die Stems; apply() liefert stets frische Objekte (Store-Konvention).
   const patterns = at('patterns');

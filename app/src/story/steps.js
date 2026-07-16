@@ -35,7 +35,7 @@ export const HETA_FLY_MS = 1600;
 const IMPACT_SOURCE = 'Peak wind: IBTrACS / NOAA · Reported impacts: EM-DAT / CRED · Population: UN World Population Prospects';
 
 // Layout je Step - statisch, damit der layoutController ohne Daten-ctx auskommt.
-export const STEP_LAYOUTS = ['intro', 'intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'dual', 'intro', 'scatter', 'explore'];
+export const STEP_LAYOUTS = ['intro', 'intro', 'map', 'scatter', 'dual', 'dual', 'dual', 'dual', 'dual', 'scatter', 'explore'];
 export const STEP_COUNT = STEP_LAYOUTS.length;
 export const stepLayout = (step) =>
   step >= 0 && step < STEP_COUNT ? STEP_LAYOUTS[step] : 'explore';
@@ -109,26 +109,6 @@ export function buildSteps(ctx) {
         it is about who stands in their way.`),
       source: r('Every Pacific tropical storm, {{trend:yearMin}}–{{trend:yearMax}} · IBTrACS / NOAA'),
       hint: 'Top: each dot is the number of Pacific tropical storms in one season. Bottom: each dot is their average peak wind. The dashed lines show the linear trend across 2001–2025.',
-      apply: () => base({ storyFx: fx() }),
-    },
-    {
-      // Genesis-Drift-Beat (V1): das eine physische Signal, das sich messbar ändert -
-      // nicht Anzahl, nicht Stärke, sondern WO Stürme entstehen. Zwei Becken auf EINER
-      // Skala; nur der NW-Pazifik driftet (p 0.015, ~322 km). Kein Kausal-Claim zu
-      // Impacts - der Beat motiviert die Exposure-These („who stands in their way").
-      id: 'genesis-shift',
-      layout: 'intro',
-      title: r('Where storms are born is drifting'),
-      html: r(`One thing about these storms <strong>is</strong> changing: not how many, not how
-        strong, but where they begin. In the Northwest Pacific, the latitude where storms first
-        reach storm strength has crept poleward, from about {{trend:genesisWP.latFirst}}°N in
-        the early seasons to about {{trend:genesisWP.latLast}}°N in the recent ones, roughly
-        <strong>{{trend:genesisWP.northKm}} km</strong> (p = {{trend:genesisWP.p}}). South of
-        the equator, no such drift shows (p = {{trend:genesisSP.p}}). A shifting birthplace does
-        not make a storm worse, but it can change <strong>which islands lie in its path</strong>.
-        That is the thread this story follows: not the storms, but who stands in their way.`),
-      source: r('Every Pacific tropical storm, {{trend:yearMin}}–{{trend:yearMax}} · genesis = first fix at tropical-storm strength · IBTrACS / NOAA'),
-      hint: 'Each dot is one season’s average formation latitude, measured as distance from the equator. Top: the Northwest Pacific, where the dashed trend line climbs. Bottom: the South Pacific on the same scale, flat. The trend is statistically clear but modest: year-to-year scatter stays large.',
       apply: () => base({ storyFx: fx() }),
     },
     {
@@ -300,27 +280,6 @@ export function buildSteps(ctx) {
         // Kein showRug: die Bühne dots2 mountet keinen Rug-Layer (Flag war No-op).
         storyFx: fx({ showPoints: true, showTrend: true, showBand: true }),
       }),
-    },
-    {
-      // Two-Currencies-Beat (V3): erste Nutzung von damage_kusd. Verlängert den
-      // Honesty-Akt: das Dollar-Register ist noch löchriger als das Menschen-Register
-      // (32 von 99), und ein einziger Record dominiert es. Alle Zahlen über Refs.
-      id: 'two-currencies',
-      layout: 'intro',
-      title: r('The toll has two currencies'),
-      html: r(`Suffering is counted twice (in people and in dollars), and the two ledgers barely
-        overlap. Of {{stat:eventCount}} storm-country records, only
-        <strong>{{stat:damageCount}}</strong> carry a damage figure, totalling
-        {{stat:damageTotal}}. Even that total is not spread: a single record, Typhoon Mawar
-        over Guam, accounts for <strong>{{stat:damageTopShare}}</strong> of every recorded
-        dollar. Vanuatu, the country whose tolls most often outran the wind, has a dollar
-        figure for just {{stat:damageDollarCount.VUT}} of its records. Dollars are counted
-        where insured assets and assessment teams are; people are counted where they suffer.
-        <strong>Neither ledger is the whole toll.</strong>`),
-      transition: 'Both ledgers agree on one thing: wind alone does not decide them.',
-      source: 'Reported damage & impacts: EM-DAT / CRED · Damage in current US$, as reported',
-      hint: 'One row per country, one dot per storm record with a recorded damage figure; the axis is logarithmic: each step is 10×. The note under each country counts how many of its records carry any dollar figure at all. The closing line counts the countries that never received one.',
-      apply: () => base({ storyFx: fx() }),
     },
     {
       id: 'conclusion',
