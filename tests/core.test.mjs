@@ -15,6 +15,7 @@ import { SECTIONS } from '../app/src/story/sections.js';
 import { buildCountryRecurrence } from '../app/src/ui/countryRecurrence.js';
 import { aggregateHotZoneCells } from '../app/src/ui/trackHeatmap.js';
 import { buildResidualLab } from '../app/src/ui/residualLab.js';
+import { buildLabHeroStat } from '../app/src/ui/exploreLab.js';
 import { buildCountryToll } from '../app/src/ui/tollMap.js';
 import { readFile } from 'node:fs/promises';
 
@@ -402,6 +403,46 @@ test('damage refs resolve computed ledger numbers and fail loud without data', a
   assert.equal(resolveRefs('{{stat:damageDollarCount.VUT}}', ctx), '2 of 12');
   const stripped = { data: { events: events.map(({ damage_kusd, ...rest }) => rest) } };
   assert.throws(() => resolveRefs('{{stat:damageTotal}}', stripped));
+});
+
+test('residual lab groups by subregion and fixed-order size classes on demand', async () => {
+  const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+
+  // Subregion: 3 Zeilen, Summe 78, aboveShare-Sortierung wie gehabt.
+  const sub = buildResidualLab(events, { groupBy: 'subregion' });
+  assert.deepEqual(sub.rows.map((row) => [row.iso3, row.nAbove, row.n]),
+    [['Polynesia', 12, 17], ['Melanesia', 22, 44], ['Micronesia', 8, 17]]);
+  assert.equal(sub.rows.reduce((sum, row) => sum + row.n, 0), 78);
+
+  // Größenklassen: FESTE klein→groß-Reihenfolge (Ordinalkategorien sortieren
+  // nicht nach Anteil um); large = nur Papua-Neuguinea (n 4, ehrlich klein).
+  const size = buildResidualLab(events, { groupBy: 'sizeClass' });
+  assert.deepEqual(size.rows.map((row) => [row.iso3, row.nAbove, row.n]),
+    [['small', 9, 14], ['medium', 32, 60], ['large', 1, 4]]);
+
+  // Feste Reihenfolge bleibt auch unter Filtern stabil (nur PNG → nur large).
+  const filtered = buildResidualLab(events, {
+    groupBy: 'sizeClass',
+    filters: { yearRange: [2001, 2026], categories: null, countries: ['PNG'] },
+  });
+  assert.deepEqual(filtered.rows.map((row) => row.iso3), ['large']);
+
+  // Regression: Default-Gruppierung unverändert (19 Länder-Zeilen).
+  assert.equal(buildResidualLab(events).rows.length, 19);
+});
+
+test('lab hero stat reacts to view, filters and mode with computed numbers', async () => {
+  const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+
+  assert.deepEqual(buildLabHeroStat(events, { view: 'outliers' }), { view: 'outliers', above: 42, total: 78 });
+  assert.deepEqual(buildLabHeroStat(events, { view: 'residuals', mode: 'absolute' }),
+    { view: 'residuals', above: 40, total: 78 });
+  assert.deepEqual(buildLabHeroStat(events, {
+    view: 'residuals',
+    filters: { yearRange: [2001, 2026], categories: null, countries: ['VUT'] },
+  }), { view: 'residuals', above: 8, total: 10 });
+  assert.deepEqual(buildLabHeroStat(events, { view: 'countries' }), { view: 'countries', total: 99, reported: 79 });
+  assert.deepEqual(buildLabHeroStat(events, { view: 'geography' }), { view: 'geography', storms: 69 });
 });
 
 test('country toll aggregates reported impacts per country and mode', () => {

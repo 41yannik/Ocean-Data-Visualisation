@@ -19,16 +19,40 @@ const TICKS = [
   { v: 1, label: '×10' },
 ];
 
-export function buildResidualLab(events, { filters = null, mode = 'perCapita' } = {}) {
+// Größenklassen für groupBy 'sizeClass': natürliche Brüche der 20 Länder (kein Land
+// wechselt über die Jahre die Klasse; 'large' ist ehrlich klein - nur Papua-Neuguinea).
+// FESTE klein→groß-Reihenfolge: Ordinalkategorien sortieren nicht nach Anteil um.
+const SIZE_CLASSES = [
+  { key: 'small', label: 'under 100,000 people', max: 100_000 },
+  { key: 'medium', label: '100,000 – 1 million', max: 1_000_000 },
+  { key: 'large', label: 'over 1 million', max: Infinity },
+];
+const sizeClassOf = (pop) => SIZE_CLASSES.find((c) => (pop ?? 0) < c.max) ?? SIZE_CLASSES.at(-1);
+
+// Gruppierungen der Zeilen: key landet im Feld iso3 (Join-Schlüssel des Renderers),
+// label im Feld country - so bleibt die Row-Shape für alle Gruppierungen identisch.
+const GROUPINGS = {
+  country: { keyOf: (e) => e.iso3, labelOf: (e) => e.country, order: null },
+  subregion: { keyOf: (e) => e.subregion, labelOf: (e) => e.subregion, order: null },
+  sizeClass: {
+    keyOf: (e) => sizeClassOf(e.pop).key,
+    labelOf: (e) => sizeClassOf(e.pop).label,
+    order: SIZE_CLASSES.map((c) => c.key),
+  },
+};
+
+export function buildResidualLab(events, { filters = null, mode = 'perCapita', groupBy = 'country' } = {}) {
   const field = mode === 'absolute' ? 'residual_abs' : 'residual_pc';
+  const grouping = GROUPINGS[groupBy] ?? GROUPINGS.country;
   const visible = events.filter((event) => event[field] != null
     && (!filters || matchesFilters(event, filters)));
   const grouped = new Map();
   for (const event of visible) {
-    if (!grouped.has(event.iso3)) grouped.set(event.iso3, {
-      iso3: event.iso3, country: event.country, subregion: event.subregion, events: [],
+    const key = grouping.keyOf(event);
+    if (!grouped.has(key)) grouped.set(key, {
+      iso3: key, country: grouping.labelOf(event), events: [],
     });
-    grouped.get(event.iso3).events.push(event);
+    grouped.get(key).events.push(event);
   }
   const rows = [...grouped.values()].map((row) => {
     const sorted = [...row.events].sort((a, b) => a[field] - b[field] || a.id.localeCompare(b.id));
@@ -41,8 +65,10 @@ export function buildResidualLab(events, { filters = null, mode = 'perCapita' } 
       aboveShare: nAbove / sorted.length,
       median: d3median(sorted, (event) => event[field]),
     };
-  }).sort((a, b) => b.aboveShare - a.aboveShare
-    || b.n - a.n || a.country.localeCompare(b.country));
+  }).sort(grouping.order
+    ? (a, b) => grouping.order.indexOf(a.iso3) - grouping.order.indexOf(b.iso3)
+    : (a, b) => b.aboveShare - a.aboveShare
+      || b.n - a.n || a.country.localeCompare(b.country));
   return { rows, field };
 }
 
@@ -70,7 +96,8 @@ export function createResidualLab(container, ctx) {
   const factorText = (res) => `toll ≈ ${factor(res)}× ${res > 0 ? 'above' : 'below'} the wind-only expectation`;
 
   function render(state) {
-    const { rows, field } = buildResidualLab(data.events, { filters: state.filters, mode: state.mode });
+    const { rows, field } = buildResidualLab(data.events,
+      { filters: state.filters, mode: state.mode, groupBy: state.residualGroupBy ?? 'country' });
     const compact = container.clientWidth < 600;
     const W = compact ? 390 : 1000;
     const rowH = compact ? 26 : 30;
@@ -154,7 +181,7 @@ export function createResidualLab(container, ctx) {
 
   return {
     update(state, patch) {
-      if (!patch || 'filters' in patch || 'mode' in patch) render(state);
+      if (!patch || 'filters' in patch || 'mode' in patch || 'residualGroupBy' in patch) render(state);
       else if ('hover' in patch || 'selectedEventIds' in patch) applyClasses(state);
     },
     destroy() { tip.remove(); svg.remove(); },

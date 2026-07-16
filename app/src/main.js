@@ -91,6 +91,7 @@ function evidenceWorkbench(aria = {}) {
         <div class="evidence-metric"><span>Impact measure</span><div id="mode-toggle"></div></div>
         <div id="evidence-filter-summary" class="evidence-filter-summary" aria-live="polite" aria-atomic="true"></div>
       </div>
+      <p id="evidence-hero" class="evidence-hero" aria-live="polite" aria-atomic="true"></p>
       <div class="evidence-panels">
         <section id="evidence-outliers" class="evidence-panel" data-panel="outliers" role="tabpanel" aria-labelledby="question-outliers">
           <header><h3 id="question-outliers">Which impacts outran the wind-only expectation?</h3><p>Distance above or below the line shows where reported impact diverged from wind alone.</p></header>
@@ -100,7 +101,10 @@ function evidenceWorkbench(aria = {}) {
         <section id="evidence-residuals" class="evidence-panel" data-panel="residuals" role="tabpanel" aria-labelledby="question-residuals" hidden>
           <header><h3 id="question-residuals">Who suffers more than wind alone predicts?</h3><p>One row per country, every record placed by its distance from the wind-only line. Dots to the right took a heavier toll than the wind predicts; the emphasised marker is the country's median.</p></header>
           <div class="evidence-empty" hidden><p role="status">No complete wind-and-impact records match these filters.</p><button type="button" data-clear-filters>Clear filters</button></div>
-          <div class="evidence-panel-content"><figure id="residual-lab" class="residual-lab"></figure></div>
+          <div class="evidence-panel-content">
+            <div class="geo-controls"><div role="group" aria-label="Group rows by"><button data-residual-group="country" aria-pressed="true">Country</button><button data-residual-group="subregion" aria-pressed="false">Subregion</button><button data-residual-group="sizeClass" aria-pressed="false">State size</button></div></div>
+            <figure id="residual-lab" class="residual-lab"></figure>
+          </div>
         </section>
         <section id="evidence-countries" class="evidence-panel" data-panel="countries" role="tabpanel" aria-labelledby="question-countries" hidden>
           <header><h3 id="question-countries">Which countries appear repeatedly in the impact records?</h3><p>Each dot is one storm-country record. Hollow dots mean the human impact was not reported.</p></header>

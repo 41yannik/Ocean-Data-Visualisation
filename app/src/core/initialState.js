@@ -41,6 +41,9 @@ export function makeInitialState() {
     stormPin: null,
     // Step 6 (unit chart) - Sortierung: 'chrono' (chronologisch) | 'quality' (zwei Blöcke).
     unitSort: 'chrono',
+    // Evidence-Lab „Beyond the wind line": Zeilen-Gruppierung
+    // 'country' | 'subregion' | 'sizeClass'.
+    residualGroupBy: 'country',
     // Bühnen-Gruppe dots2: 'scatter' | 'residualRows' | 'subregion' | 'unit' -
     // Ziel-Formation der 99 Kreise.
     formation: 'scatter',

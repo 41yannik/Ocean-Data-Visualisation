@@ -2,6 +2,32 @@ import { isScatterable, matchesFilters } from '../core/filters.js';
 
 const VIEWS = ['outliers', 'residuals', 'countries', 'geography'];
 
+// Filterreaktive Kernaussage über den Panels - pur und getestet; der Renderer baut
+// daraus einen Satz. Zahlen IMMER berechnet, nie getippt (z. B. „42 of 78").
+export function buildLabHeroStat(events, { view = 'outliers', filters = null, mode = 'perCapita' } = {}) {
+  const visible = events.filter((event) => !filters || matchesFilters(event, filters));
+  if (view === 'countries') {
+    return { view, total: visible.length, reported: visible.filter((e) => e.affected != null).length };
+  }
+  if (view === 'geography') {
+    return { view, storms: new Set(visible.map((e) => e.sid).filter(Boolean)).size };
+  }
+  const field = mode === 'absolute' ? 'residual_abs' : 'residual_pc';
+  const complete = visible.filter((e) => e[field] != null);
+  return { view, above: complete.filter((e) => e[field] > 0).length, total: complete.length };
+}
+
+function heroSentence(stat) {
+  if (stat.view === 'countries') {
+    return `<strong>${stat.total}</strong> storm-country records · ${stat.reported} with a reported human impact.`;
+  }
+  if (stat.view === 'geography') {
+    return `<strong>${stat.storms}</strong> storm${stat.storms === 1 ? '' : 's'} cross the current filters.`;
+  }
+  if (!stat.total) return 'No complete records match these filters.';
+  return `<strong>${stat.above} of ${stat.total}</strong> complete records outran the wind-only expectation.`;
+}
+
 export function createExploreLab(sectionEl, ctx) {
   const { bus, data } = ctx;
   const tabs = [...sectionEl.querySelectorAll('[role=tab][data-explore-view]')];
@@ -13,6 +39,8 @@ export function createExploreLab(sectionEl, ctx) {
   const heatButtons = [...sectionEl.querySelectorAll('[data-hot-metric]')];
   const heatMetric = sectionEl.querySelector('.hot-metric-control');
   const geoNotes = [...sectionEl.querySelectorAll('[data-geo-note]')];
+  const groupButtons = [...sectionEl.querySelectorAll('[data-residual-group]')];
+  const heroEl = sectionEl.querySelector('#evidence-hero');
 
   const setFilterOpen = (open) => {
     filterToggle.setAttribute('aria-expanded', String(open));
@@ -49,6 +77,7 @@ export function createExploreLab(sectionEl, ctx) {
   });
   mapButtons.forEach((button) => button.addEventListener('click', () => bus.set({ mapLayer: button.dataset.mapLayer })));
   heatButtons.forEach((button) => button.addEventListener('click', () => bus.set({ hotZoneMetric: button.dataset.hotMetric })));
+  groupButtons.forEach((button) => button.addEventListener('click', () => bus.set({ residualGroupBy: button.dataset.residualGroup })));
 
   function visibleCount(view, filters) {
     const events = data.events.filter((event) => matchesFilters(event, filters));
@@ -77,6 +106,12 @@ export function createExploreLab(sectionEl, ctx) {
     metricControl.hidden = state.exploreView === 'geography' && state.mapLayer !== 'toll';
     mapButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.mapLayer === state.mapLayer)));
     heatButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.hotMetric === state.hotZoneMetric)));
+    groupButtons.forEach((button) => button.setAttribute('aria-pressed',
+      String(button.dataset.residualGroup === (state.residualGroupBy ?? 'country'))));
+    if (heroEl) {
+      heroEl.innerHTML = heroSentence(buildLabHeroStat(data.events,
+        { view: state.exploreView, filters: state.filters, mode: state.mode }));
+    }
     heatMetric.hidden = state.mapLayer !== 'hotzones';
     sectionEl.querySelectorAll('[data-geo-layer]').forEach((layer) => { layer.hidden = layer.dataset.geoLayer !== state.mapLayer; });
     geoNotes.forEach((note) => { note.hidden = note.dataset.geoNote !== state.mapLayer; });
@@ -85,7 +120,8 @@ export function createExploreLab(sectionEl, ctx) {
   return {
     update(state, patch) {
       if (!patch || 'exploreView' in patch || 'mapLayer' in patch
-        || 'hotZoneMetric' in patch || 'filters' in patch) render(state);
+        || 'hotZoneMetric' in patch || 'filters' in patch
+        || 'mode' in patch || 'residualGroupBy' in patch) render(state);
     },
     destroy() {},
   };
