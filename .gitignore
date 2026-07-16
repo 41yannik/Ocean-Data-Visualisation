@@ -10,9 +10,11 @@ dist/
 /Data
 /Developer API/
 
-# Hinweis: events*.json / meta*.json enthalten EM-DAT-Derivate. Bewusste Entscheidung
-# (2026-07): für das öffentliche GitHub-Pages-Deployment freigegeben (Lizenz vom Betreiber
-# abgeklärt). Die Roh-Quelle /Data (u. a. der große EM-DAT-Export) bleibt unten ignoriert.
+# Generierte Kurs-Artefakte enthalten EM-DAT-Derivate. Sie bleiben lokal, bis der genaue
+# Umfang einer schriftlichen Anbieterfreigabe dokumentiert ist. Bereits versionierte
+# Altstände werden durch diese Ignore-Regel nicht rückwirkend aus der Git-Historie entfernt.
+/app/public/data/events.json
+/app/public/data/meta.json
 
 # Python
 __pycache__/

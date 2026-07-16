@@ -157,7 +157,7 @@ function renderTrendPanels(container, ctx, { panelSpecs, aria, tipHtml, drift = 
       if (v == null) return;
       cursorDots.append('circle').attr('r', 4)
         .attr('cx', cx).attr('cy', p.y(v))
-        .attr('fill', s.fill).attr('stroke', '#fff').attr('stroke-width', 1.2);
+        .attr('fill', s.fill).attr('stroke', 'var(--mark-outline)').attr('stroke-width', 1.2);
     }));
 
     if (hoveredYear !== yr) {

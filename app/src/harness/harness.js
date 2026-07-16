@@ -4,12 +4,14 @@
 import { loadData } from '../core/dataLoader.js';
 import { createStore } from '../core/state.js';
 import { makeInitialState } from '../core/initialState.js';
-import { applyCssVars } from '../core/config.js';
+import { applyTheme } from '../core/theme.js';
 import { FIXTURES } from './fixtures.js';
 import { REGISTRY } from './registry.js';
 
 export async function runHarness(mountKey, fixtureKey) {
-  applyCssVars();
+  // Visuelle Komponenten-Snapshots bleiben unabhängig von einer lokal gespeicherten
+  // Nutzerwahl reproduzierbar im etablierten hellen Theme.
+  applyTheme('light', { persist: false, dispatch: false });
   document.body.innerHTML = `
     <div class="harness-bar" id="hb">
       <span class="hb-title"></span>

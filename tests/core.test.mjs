@@ -17,7 +17,85 @@ import { aggregateHotZoneCells } from '../app/src/ui/trackHeatmap.js';
 import { buildResidualLab } from '../app/src/ui/residualLab.js';
 import { buildLabHeroStat } from '../app/src/ui/exploreLab.js';
 import { buildCountryToll } from '../app/src/ui/tollMap.js';
+import { dataFilesForVariant } from '../app/src/core/dataLoader.js';
+import { METHOD_CATALOG, methodsHtml } from '../app/src/story/methods.js';
+import { THEME_PALETTES } from '../app/src/core/config.js';
+import {
+  applyTheme,
+  DEFAULT_THEME,
+  getActivePalette,
+  getInitialTheme,
+  THEME_CHANGE_EVENT,
+  THEME_STORAGE_KEY,
+} from '../app/src/core/theme.js';
 import { readFile } from 'node:fs/promises';
+
+
+function fakeThemeRoot(theme = 'light') {
+  const properties = new Map();
+  return {
+    dataset: { theme },
+    style: {
+      colorScheme: '',
+      setProperty(name, value) { properties.set(name, value); },
+    },
+    properties,
+  };
+}
+
+function contrastRatio(foreground, background) {
+  const luminance = (hex) => {
+    const channels = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255)
+      .map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  };
+  const first = luminance(foreground); const second = luminance(background);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+
+test('theme preference defaults safely and accepts only known stored values', () => {
+  const storage = (value) => ({ getItem: () => value });
+  assert.equal(getInitialTheme(storage(null)), DEFAULT_THEME);
+  assert.equal(getInitialTheme(storage('ocean')), 'ocean');
+  assert.equal(getInitialTheme(storage('sepia')), DEFAULT_THEME);
+  assert.equal(getInitialTheme({ getItem() { throw new Error('blocked'); } }), DEFAULT_THEME);
+});
+
+test('applyTheme updates semantic tokens, persistence and the public theme event', () => {
+  const root = fakeThemeRoot('light');
+  const writes = [];
+  const storage = { setItem: (...args) => writes.push(args) };
+  const events = [];
+  class FakeCustomEvent {
+    constructor(type, options) { this.type = type; this.detail = options.detail; }
+  }
+  const eventTarget = { CustomEvent: FakeCustomEvent, dispatchEvent: (event) => events.push(event) };
+
+  assert.equal(applyTheme('ocean', { root, storage, eventTarget }), 'ocean');
+  assert.equal(root.dataset.theme, 'ocean');
+  assert.equal(root.style.colorScheme, 'dark');
+  assert.equal(root.properties.get('--bg'), THEME_PALETTES.ocean.bg);
+  assert.equal(root.properties.get('--surface'), THEME_PALETTES.ocean.surface);
+  assert.deepEqual(writes, [[THEME_STORAGE_KEY, 'ocean']]);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].type, THEME_CHANGE_EVENT);
+  assert.equal(events[0].detail.theme, 'ocean');
+  assert.equal(getActivePalette(root), THEME_PALETTES.ocean);
+
+  applyTheme('unknown', { root, persist: false, eventTarget });
+  assert.equal(root.dataset.theme, DEFAULT_THEME);
+  assert.equal(root.style.colorScheme, 'light');
+});
+
+test('both theme palettes meet text and data-mark contrast floors on the page background', () => {
+  for (const [name, palette] of Object.entries(THEME_PALETTES)) {
+    assert.ok(contrastRatio(palette.text, palette.bg) >= 4.5, `${name} primary text contrast`);
+    assert.ok(contrastRatio(palette.muted, palette.bg) >= 4.5, `${name} muted text contrast`);
+    assert.ok(contrastRatio(palette.accentText, palette.bg) >= 4.5, `${name} accent text contrast`);
+    assert.ok(contrastRatio(palette.point, palette.bg) >= 3, `${name} data blue contrast`);
+  }
+});
 
 
 test('store only notifies for changed top-level values', () => {
@@ -211,6 +289,9 @@ test('story has eleven steps and the row beats morph the dots2 stage', async () 
   assert.deepEqual(SECTIONS.map((section) => section.step), [...steps.keys()]);
   assert.ok(steps.every((step) => step.source?.trim()), 'every visualisation has a source');
   assert.ok(steps.every((step) => step.hint?.trim()), 'every visualisation has a How to read explanation');
+  const repeatVictims = steps.find((step) => step.id === 'patterns');
+  assert.equal(repeatVictims.apply().storyFx.uniformPoints, true);
+  assert.match(repeatVictims.hint, /Every dot uses the same size/);
 
   // Index-Zugriff über die Step-id statt harter Zahlen: Einfügungen verschieben
   // Indizes, die inhaltlichen Zusicherungen je Beat bleiben stabil.
@@ -458,4 +539,57 @@ test('country toll aggregates reported impacts per country and mode', () => {
   assert.equal(buildCountryToll(events, {
     filters: { yearRange: [2001, 2026], categories: null, countries: ['BBB'] },
   }).length, 1);
+});
+
+test('data variant maps to the correct generated files', () => {
+  assert.deepEqual(dataFilesForVariant('kurs'), { events: 'events.json', meta: 'meta.json' });
+  assert.deepEqual(dataFilesForVariant('challenge'), {
+    events: 'events.challenge.json', meta: 'meta.challenge.json',
+  });
+  assert.throws(() => dataFilesForVariant('unknown'), /Unknown data variant/);
+});
+
+test('every story section resolves to one documented method and known sources', async () => {
+  const meta = JSON.parse(await readFile(new URL('../app/public/data/meta.json', import.meta.url)));
+  const methodIds = new Set(METHOD_CATALOG.map((method) => method.id));
+  const sourceIds = new Set(meta.sources.map((source) => source.id));
+
+  assert.equal(methodIds.size, METHOD_CATALOG.length);
+  assert.equal(SECTIONS.length, 11);
+  for (const section of SECTIONS) {
+    assert.ok(methodIds.has(section.methodId), `missing method ${section.methodId}`);
+    assert.ok(section.sourceIds.length > 0, `section ${section.step} has no sources`);
+    assert.deepEqual(section.sourceIds.filter((id) => !sourceIds.has(id)), []);
+  }
+});
+
+test('methods render structured course facts and permission-aware downloads', async () => {
+  const meta = JSON.parse(await readFile(new URL('../app/public/data/meta.json', import.meta.url)));
+  const html = methodsHtml(meta);
+
+  assert.match(html, /Data &amp; methods/);
+  assert.match(html, /Where the data comes from/);
+  assert.match(html, /How the data became the charts/);
+  assert.match(html, /How each visual was built/);
+  assert.match(html, /What the data cannot tell us/);
+  assert.match(html, /Reproduce this analysis/);
+  assert.match(html, /370 km gale-wind corridor/);
+  assert.match(html, /150 kt lifetime peak/);
+  assert.match(html, /78 of 99/);
+  assert.match(html, /Publication gate active/);
+  assert.doesNotMatch(html, /href="[^"]*events\.json" download/);
+  assert.match(html, /sst\.csv/);
+  for (const method of METHOD_CATALOG) assert.match(html, new RegExp(`id="method-${method.id}"`));
+});
+
+test('challenge methods do not leak restricted-source copy or unavailable impact cards', async () => {
+  const meta = JSON.parse(await readFile(new URL('../app/public/data/meta.challenge.json', import.meta.url)));
+  const html = methodsHtml(meta);
+
+  assert.doesNotMatch(html, /EM-DAT/);
+  assert.match(html, /Open-data placeholder/);
+  assert.match(html, /2 chapter methods/);
+  assert.match(html, /id="method-sst"/);
+  assert.match(html, /id="method-storm-trend"/);
+  assert.doesNotMatch(html, /id="method-scatter"/);
 });

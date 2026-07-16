@@ -1,6 +1,7 @@
 import { select, scaleSequentialSqrt, interpolateLab } from 'd3';
 import { makePacificProjection, makeGeoPath } from '../core/scales.js';
-import { COLORS, MAP } from '../core/config.js';
+import { MAP } from '../core/config.js';
+import { getActivePalette, onThemeChange } from '../core/theme.js';
 import { matchesFilters } from '../core/filters.js';
 import { fmtKt } from '../core/format.js';
 
@@ -62,7 +63,7 @@ export function createTrackHeatmap(container, ctx) {
   const cellsGroup = svg.append('g').attr('class', 'hot-zone-cells');
   const legend = svg.append('g').attr('class', 'hot-zone-legend').attr('transform', `translate(${MAP.width - 250},${MAP.height - 28})`);
   const tip = document.createElement('div'); tip.className = 'tooltip'; document.body.appendChild(tip);
-  let cells = null;
+  let cells = null; let lastState = null;
   const moveTip = (event) => {
     const box = tip.getBoundingClientRect(); let x = event.clientX + 14; let y = event.clientY + 14;
     if (x + box.width > innerWidth - 8) x = event.clientX - box.width - 14;
@@ -70,9 +71,10 @@ export function createTrackHeatmap(container, ctx) {
     tip.style.left = `${Math.max(8, x)}px`; tip.style.top = `${Math.max(8, y)}px`;
   };
   function render(state) {
+    const palette = getActivePalette();
     const metric = state.hotZoneMetric;
     const values = aggregateHotZoneCells(storms, state.filters, metric, state.activeYear);
-    const color = scaleSequentialSqrt([0, maxByMetric[metric]], interpolateLab(COLORS.bg, COLORS.point));
+    const color = scaleSequentialSqrt([0, maxByMetric[metric]], interpolateLab(palette.bg, palette.point));
     cells = cellsGroup.selectAll('rect').data(values, (cell) => cell.idx).join('rect')
       .attr('class', 'heat-cell').attr('x', (cell) => cell.idx % cols * CELL)
       .attr('y', (cell) => Math.floor(cell.idx / cols) * CELL).attr('width', CELL).attr('height', CELL)
@@ -88,9 +90,7 @@ export function createTrackHeatmap(container, ctx) {
     legend.selectAll('*').remove();
     legend.append('text').attr('class', 'heat-legend-label').attr('y', -7)
       .text(metric === 'frequency' ? 'fewer storms' : 'lower average wind');
-    legend.append('rect').attr('width', 210).attr('height', 8).attr('fill', `linear-gradient(90deg,${COLORS.bg},${COLORS.point})`);
     // SVG rect cannot use a CSS linear-gradient as fill; stepped swatches remain deterministic.
-    legend.select('rect').remove();
     for (let index = 0; index < 12; index++) legend.append('rect').attr('x', index * 17.5).attr('width', 18).attr('height', 8)
       .attr('fill', color(maxByMetric[metric] * index / 11));
     legend.append('text').attr('class', 'heat-legend-label').attr('x', 210).attr('y', -7).attr('text-anchor', 'end')
@@ -103,11 +103,15 @@ export function createTrackHeatmap(container, ctx) {
     cells.classed('hl', (cell) => active ? [...cell.events.keys()].some((id) => active.has(id)) : false)
       .classed('dim', (cell) => active ? ![...cell.events.keys()].some((id) => active.has(id)) : false);
   }
+  const unsubscribeTheme = onThemeChange(() => {
+    if (lastState) render(lastState);
+  });
   return {
     update(state, patch) {
+      lastState = state;
       if (!patch || 'filters' in patch || 'activeYear' in patch || 'hotZoneMetric' in patch) render(state);
       else if ('selectedEventIds' in patch || 'textSet' in patch || 'hover' in patch) applyClasses(state);
     },
-    destroy() { tip.remove(); svg.remove(); },
+    destroy() { unsubscribeTheme(); tip.remove(); svg.remove(); },
   };
 }

@@ -12,12 +12,13 @@ import '@fontsource-variable/bricolage-grotesque'; // self-hosted, offline (Chal
 import { loadData } from './core/dataLoader.js';
 import { createStore } from './core/state.js';
 import { makeInitialState } from './core/initialState.js';
-import { applyCssVars } from './core/config.js';
+import { applyTheme, getInitialTheme } from './core/theme.js';
 import { createMap } from './map/index.js';
 import { createScatter } from './scatter/index.js';
 import { createTooltip } from './ui/tooltip.js';
 import { createDetailPanel } from './ui/detailPanel.js';
 import { createModeToggle } from './ui/modeToggle.js';
+import { createThemeToggle } from './ui/themeToggle.js';
 import { createFilterPanel } from './ui/filterPanel.js';
 import { createTimeScrubber } from './ui/timeScrubber.js';
 import { createSstIntro } from './story/sstIntro.js';
@@ -40,7 +41,7 @@ import { createTollMap } from './ui/tollMap.js';
 import { createCountryRecurrence } from './ui/countryRecurrence.js';
 import { createResidualLab } from './ui/residualLab.js';
 import { createSelectionSummary } from './ui/selectionSummary.js';
-import { methodsHtml } from './story/methods.js';
+import { methodsHtml, wireMethodsSection } from './story/methods.js';
 import { resolveHighlightSpec } from './story/highlightSpecs.js';
 
 const params = new URLSearchParams(location.search);
@@ -127,7 +128,8 @@ function evidenceWorkbench(aria = {}) {
 }
 
 async function runApp() {
-  applyCssVars();
+  applyTheme(getInitialTheme(), { persist: false });
+  createThemeToggle(document.body);
   try {
     const { data, meta } = await loadData();
     const steps = buildSteps({ data, meta });
@@ -160,7 +162,8 @@ async function runApp() {
             ${s.questions ? `<ul class="guide-questions">${s.questions.map((q) => `<li>${q}</li>`).join('')}</ul>` : ''}
             ${s.caveat ? `<p class="section-caveat">${s.caveat}</p>` : ''}
             ${s.transition ? `<p class="transition">${s.transition}</p>` : ''}
-            ${s.source ? `<p class="source"><span class="source-label">Source</span> · ${s.source}</p>` : ''}
+            ${s.source ? `<p class="source"><span class="source-label">Source</span> · ${s.source}
+              <a class="source-method-link" href="#method-${sec.methodId}">Method</a></p>` : ''}
             ${s.hint ? `<p class="reading-hint">${s.hint}</p>` : ''}
             ${extra}
           </div>`;
@@ -246,6 +249,7 @@ async function runApp() {
     main.innerHTML = blocks.map((b) => (b.single ? sectionHtml(b.single) : groupHtml(b))).join('');
     // Methods & data als transparenter Abschluss - alle Zahlen aus meta.json, nie getippt.
     main.insertAdjacentHTML('beforeend', methodsHtml(meta));
+    wireMethodsSection(main);
 
     // Kapitel-Nav (Paket 10 Task 2): erst nach dem Sektions-Rendering, braucht die IDs.
     if (!storyOff) createChapterNav(document.body, { sections, steps });

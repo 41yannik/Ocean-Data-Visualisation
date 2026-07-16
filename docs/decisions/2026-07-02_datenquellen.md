@@ -29,3 +29,16 @@ Gewählt (Nutzer, 2026-07-02): **„Mean sea surface temperature anomalies"** (S
 1. Pipeline (Paket 03) wird von Beginn an mit `--variant`-Schalter gebaut; die y-Quelle ist eine austauschbare Funktion, kein hartverdrahteter Spaltenname.
 2. Feinkonzept §2 wird um die Varianten-Markierung und den SST-Kerndatensatz ergänzt (Paket 02).
 3. Teil B (Challenge-Quelle final prüfen/entscheiden, Story-Anpassung, Deployment) startet nach der Kursabgabe — siehe [docs/plan/01](../plan/01_Datenquellen-Entscheidung.md) Schritte B1–B4.
+
+## Status 2026-07-16
+
+Der Deploy-Commit vom 11.07. vermerkte eine mit dem Betreiber abgeklärte öffentliche Nutzung der erzeugten EM-DAT-Artefakte. Im Repository liegt jedoch kein prüfbarer Nachweis über Umfang, Laufzeit, erlaubte Artefakte oder die Challenge-Sublicenzierung. Dieser Commit-Vermerk ersetzt deshalb keine dokumentierte Freigabe.
+
+Bis ein belastbarer Nachweis privat archiviert und sein nicht-vertraulicher Umfang hier festgehalten ist, gilt konservativ:
+
+- `kurs` bleibt `publication.status=restricted`; `events.json` und `meta.json` dürfen keinen Public-Build passieren.
+- `challenge` bleibt `publication.status=blocked`, bis ein offenes Wirkungsmaß gewählt und die Story damit nachgerechnet wurde.
+- `npm run build:public` bricht für beide Zustände ab. Erst `open` oder `permissioned`, `publicBuild=true`, verifizierte Quellen und eine explizite Downloadliste geben einen Deploy frei.
+- Die sichtbare Methodik benennt diesen Status, statt Lizenzfelder auszublenden.
+
+Damit sind Pipeline, Metadaten, Dokumentation und Deployment wieder widerspruchsfrei. Eine spätere schriftliche Freigabe wird als neue Entscheidung mit Datum, Geltungsbereich und Nachweisreferenz ergänzt; vertrauliche Korrespondenz selbst gehört nicht ins öffentliche Repository.

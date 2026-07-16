@@ -61,25 +61,28 @@ export function createFormationLayer(gDots, layerCtx) {
       .attr('text-anchor', 'middle').text(unit.labels[key].text);
   }
 
-  // Statische Zustandslegende - nur in der Unit-Formation sichtbar (Review-Fix: die vier
-  // Zustände waren nur in Prosa/ARIA/Hover kodiert). Reused unit-* Klassen; gleichmäßig
-  // über die GESAMTE Innenbreite verteilt (Review 2026-07-13, statt Block-Zentrierung);
-  // Fade zusammen mit der Formation.
+  // Statische Zustandslegende - nur in der Unit-Formation sichtbar. Als kompaktes
+  // 2×2-Raster bleibt sie ungefähr so breit wie das Punkteraster; die Farberklärung
+  // bildet dadurch eine Einheit mit der Visualisierung statt eine zweite, breitere Achse.
   const gLegend = gDots.append('g').attr('class', 'uc-legend').attr('opacity', 0);
   const legItems = [
     { cls: 'unit-solid', label: 'complete' },
-    { cls: 'unit-nowind', label: 'impact, no wind' },
     { cls: 'unit-ghost', label: 'impact missing' },
+    { cls: 'unit-nowind', label: 'impact, no wind' },
     { cls: 'unit-recon', label: 'wind reconstructed' },
   ];
-  const legendSlot = inner.width / legItems.length;
+  const legendWidth = Math.min(320, inner.width);
+  const legendColumn = legendWidth / 2;
   legItems.forEach((it, i) => {
-    const slot = gLegend.append('g').attr('transform', `translate(${i * legendSlot + 8}, 0)`);
+    const slot = gLegend.append('g').attr('class', 'uc-legend-item')
+      .attr('transform', `translate(${i % 2 * legendColumn + 8}, ${Math.floor(i / 2) * 24})`);
     slot.append('circle').attr('class', `unit-dot ${it.cls}`)
       .attr('cx', 0).attr('cy', 0).attr('r', UNIT_R).style('pointer-events', 'none');
     slot.append('text').attr('class', 'uc-legend-label').attr('x', 12).attr('y', 4).text(it.label);
   });
-  gLegend.attr('transform', `translate(0, ${inner.height - 6})`);
+  const legendBox = gLegend.node().getBBox();
+  const legendX = inner.width / 2 - (legendBox.x + legendBox.width / 2);
+  gLegend.attr('transform', `translate(${legendX}, ${inner.height - 30})`);
 
   // Zeilen-Chrome der Zeilen-Formationen: Labels mit Above-Zähler, gestrichelte
   // Null-Linie (gleiche Dash-Sprache wie die wind-only line) und Faktor-Ticks. Kein
@@ -157,9 +160,12 @@ export function createFormationLayer(gDots, layerCtx) {
   function hideTip() { tip.classList.remove('visible'); }
 
   function scatterTarget(d) {
-    const { x, y, r } = layerCtx.scales;
+    const { x, y } = layerCtx.scales;
     if (!isScatterable(d)) return null; // Ghost: im Scatter unsichtbar
-    return { cx: x(d.intensity_kt), cy: y.scale(y.value(d)), r: r(d.deaths ?? 0), o: 1 };
+    // Todesfälle sind weder Teil der Aussage noch der erklärten Kodierung dieses Kapitels.
+    // Ein fixer Radius verhindert eine unbeabsichtigte dritte Variable und bleibt beim
+    // anschließenden Morph in Länderzeilen und Vollständigkeitsraster objektkonstant.
+    return { cx: x(d.intensity_kt), cy: y.scale(y.value(d)), r: UNIT_R, o: 1 };
   }
   function unitTarget(d, sort) {
     const [cx, cy] = sort === 'quality' ? unit.quality(d) : unit.chrono(d);

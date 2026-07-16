@@ -6,6 +6,7 @@ from pipeline import reference as ref
 IBTRACS_USECOLS = [
     "SID", "SEASON", "BASIN", "NAME", "ISO_TIME", "NATURE",
     "LAT", "LON", "TRACK_TYPE", "WMO_WIND", "USA_WIND", "USA_SSHS",
+    "USA_R34_NE", "USA_R34_SE", "USA_R34_SW", "USA_R34_NW",
 ]
 
 
@@ -27,7 +28,10 @@ def load_ibtracs(paths=ref.IBTRACS) -> pd.DataFrame:
     # Beckenübergreifende Stürme können in beiden Dateien stehen -> Trackpunkte deduplizieren
     ib = ib.drop_duplicates(subset=["SID", "ISO_TIME"], keep="first")
     ib["SEASON"] = pd.to_numeric(ib["SEASON"], errors="coerce").astype("Int64")
-    for col in ("LAT", "LON", "WMO_WIND", "USA_WIND", "USA_SSHS"):
+    for col in (
+        "LAT", "LON", "WMO_WIND", "USA_WIND", "USA_SSHS",
+        "USA_R34_NE", "USA_R34_SE", "USA_R34_SW", "USA_R34_NW",
+    ):
         ib[col] = pd.to_numeric(ib[col], errors="coerce")
     return ib
 

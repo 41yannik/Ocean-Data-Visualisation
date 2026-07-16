@@ -9,7 +9,7 @@
 // gleiche Länge). Keine Punkt-für-Punkt-Projektion (Antimeridian!) - d3.geoPath clippt.
 import { makeFittedProjection, makeGeoPath } from '../core/scales.js';
 import { DUR_DRAW } from '../core/config.js';
-import { HETA_FOCUS, SID_HETA, HETA_R34_KM, HETA_FLY_MS } from './steps.js';
+import { HETA_FOCUS, SID_HETA, HETA_FLY_MS } from './steps.js';
 
 const KM_PER_DEG_LAT = 111.32;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -22,6 +22,7 @@ export function computeHetaSequence(ctx) {
   if (cache) return cache;
 
   const track = ctx.data.tracks[SID_HETA];
+  const radiusKm = ctx.meta.analysis.storyEvidence.heta.radiusKm;
   const projection = makeFittedProjection(HETA_FOCUS);
   const path = makeGeoPath(projection);
   const line = { type: 'LineString', coordinates: track.map((p) => [p[0], p[1]]) };
@@ -29,7 +30,7 @@ export function computeHetaSequence(ctx) {
 
   // R34-Radius in Pixeln (Breitengrad-Delta; in der Äquirektangular-Projektion in y unverzerrt).
   const [, y1] = projection([0, -17]);
-  const [, y2] = projection([0, -17 + HETA_R34_KM / KM_PER_DEG_LAT]);
+  const [, y2] = projection([0, -17 + radiusKm / KM_PER_DEG_LAT]);
   const radiusPx = Math.abs(y2 - y1);
 
   // Pfad off-DOM vermessen (dieselbe Länge wie der animierte Track).

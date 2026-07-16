@@ -119,25 +119,27 @@ export function createUnitChart(container, ctx) {
     .attr('x', layoutFns.labels.b.x).attr('y', layoutFns.labels.b.y).attr('text-anchor', 'middle')
     .text(layoutFns.labels.b.text);
 
-  // Statische Legende der vier Zustände (Review-Fix: die Zustände waren nur in Prosa,
-  // ARIA und Hover kodiert - jetzt am Chart lesbar). Reused unit-* Klassen, pointer-events
-  // aus (kein Hover-Akzent); horizontal per getBBox zentriert.
+  // Statische Legende der vier Zustände. Das kompakte 2×2-Raster bleibt ungefähr so
+  // breit wie das Punkteraster und spiegelt die Formation-Legende im Story-Layout.
   const gLegend = svg.append('g').attr('class', 'uc-legend');
   const legItems = [
     { cls: 'unit-solid', label: 'complete' },
-    { cls: 'unit-nowind', label: 'impact, no wind' },
     { cls: 'unit-ghost', label: 'impact missing' },
+    { cls: 'unit-nowind', label: 'impact, no wind' },
     { cls: 'unit-recon', label: 'wind reconstructed' },
   ];
-  let lx = 0;
-  for (const it of legItems) {
-    gLegend.append('circle').attr('class', `unit-dot ${it.cls}`)
-      .attr('cx', lx).attr('cy', 0).attr('r', 8).style('pointer-events', 'none');
-    const t = gLegend.append('text').attr('class', 'uc-legend-label').attr('x', lx + 14).attr('y', 4).text(it.label);
-    lx += 14 + t.node().getComputedTextLength() + 30;
+  const legendWidth = 320;
+  const legendColumn = legendWidth / 2;
+  for (const [index, item] of legItems.entries()) {
+    const slot = gLegend.append('g').attr('class', 'uc-legend-item')
+      .attr('transform', `translate(${index % 2 * legendColumn + 8}, ${Math.floor(index / 2) * 26})`);
+    slot.append('circle').attr('class', `unit-dot ${item.cls}`)
+      .attr('cx', 0).attr('cy', 0).attr('r', 8).style('pointer-events', 'none');
+    slot.append('text').attr('class', 'uc-legend-label').attr('x', 14).attr('y', 4).text(item.label);
   }
-  const lbb = gLegend.node().getBBox();
-  gLegend.attr('transform', `translate(${(W - lbb.width) / 2 - lbb.x}, ${H - 18})`);
+  const legendBox = gLegend.node().getBBox();
+  const legendX = W / 2 - (legendBox.x + legendBox.width / 2);
+  gLegend.attr('transform', `translate(${legendX}, ${H - 48})`);
 
   // Kreise --------------------------------------------------------------------------
   const gDots = svg.append('g').attr('class', 'uc-dots');

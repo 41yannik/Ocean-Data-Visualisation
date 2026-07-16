@@ -79,6 +79,30 @@ def audit_page(browser, viewport):
     page.goto(BASE_URL, wait_until="networkidle")
 
     assert page.locator("h1").inner_text() == "From Track to Toll"
+    theme_toggle = page.locator(".theme-toggle")
+    light_button = theme_toggle.locator('[data-theme-choice="light"]')
+    ocean_button = theme_toggle.locator('[data-theme-choice="ocean"]')
+    assert theme_toggle.get_attribute("aria-label") == "Color theme"
+    assert light_button.get_attribute("aria-pressed") == "true"
+    assert ocean_button.get_attribute("aria-pressed") == "false"
+    assert page.locator("html").get_attribute("data-theme") == "light"
+    page.screenshot(path=f"/tmp/track-to-toll-theme-light-{viewport['name']}.png", full_page=False)
+
+    # Der beschriftete Theme-Schalter ist per Pfeiltasten bedienbar, setzt alle
+    # semantischen Tokens und überlebt einen Reload ohne auf Light zurückzufallen.
+    ocean_button.click()
+    assert page.locator("html").get_attribute("data-theme") == "ocean"
+    assert ocean_button.get_attribute("aria-pressed") == "true"
+    assert page.evaluate("localStorage.getItem('track-to-toll-theme')") == "ocean"
+    page.wait_for_function("getComputedStyle(document.body).backgroundColor === 'rgb(7, 26, 43)'")
+    ocean_button.focus()
+    page.keyboard.press("ArrowLeft")
+    assert page.locator("html").get_attribute("data-theme") == "light"
+    page.keyboard.press("ArrowRight")
+    assert page.locator("html").get_attribute("data-theme") == "ocean"
+    page.reload(wait_until="networkidle")
+    assert page.locator("html").get_attribute("data-theme") == "ocean"
+    assert page.locator('.theme-toggle [data-theme-choice="ocean"]').get_attribute("aria-pressed") == "true"
     assert page.locator("#step-0").count() == 1
     assert page.locator("#step-9").count() == 1
     assert page.locator("#step-10").count() == 1
@@ -97,6 +121,55 @@ def audit_page(browser, viewport):
         target.scroll_into_view_if_needed()
         page.wait_for_timeout(250)
 
+    # Heta comparison: map and the two right-hand counting views form one centered,
+    # equal-height stage on desktop; the stacked mobile frames share one center line.
+    page.locator("#step-2").scroll_into_view_if_needed()
+    page.wait_for_timeout(700)
+    heta_geometry = page.evaluate("""() => {
+      const box = selector => document.querySelector(selector).getBoundingClientRect();
+      const section = box('#step-2');
+      const row = box('#step-2 .viz-row--dual');
+      const map = box('#step-2 .viz-frame--map');
+      const bars = box('#step-2 .viz-frame--bars');
+      return {section, row, map, bars};
+    }""")
+    row_center = heta_geometry["row"]["x"] + heta_geometry["row"]["width"] / 2
+    section_center = heta_geometry["section"]["x"] + heta_geometry["section"]["width"] / 2
+    assert abs(row_center - section_center) <= 2, f"Heta stage off-center: {heta_geometry}"
+    if viewport["name"] in ("desktop", "compact-desktop"):
+        assert abs(heta_geometry["map"]["height"] - heta_geometry["bars"]["height"]) <= 4
+        map_mid = heta_geometry["map"]["y"] + heta_geometry["map"]["height"] / 2
+        bars_mid = heta_geometry["bars"]["y"] + heta_geometry["bars"]["height"] / 2
+        assert abs(map_mid - bars_mid) <= 2
+    else:
+        map_mid = heta_geometry["map"]["x"] + heta_geometry["map"]["width"] / 2
+        bars_mid = heta_geometry["bars"]["x"] + heta_geometry["bars"]["width"] / 2
+        assert abs(map_mid - bars_mid) <= 2
+
+    # Evidence scatter: a transient storm-group hover must disappear again even when
+    # the pointer leaves the whole SVG quickly (the former sticky-tooltip regression).
+    page.locator("#step-3").scroll_into_view_if_needed()
+    page.wait_for_timeout(550)
+    grouped_point_id = page.evaluate("""() => {
+      const points = [...document.querySelectorAll('#step-3 .point')];
+      const first = points.find(point => point.__data__?.sid
+        && points.filter(other => other.__data__?.sid === point.__data__.sid).length > 1);
+      return first ? points.filter(point => point.__data__?.sid === first.__data__.sid).at(-1)?.dataset.key : null;
+    }""")
+    assert grouped_point_id
+    grouped_point = page.locator(f'#step-3 .point[data-key="{grouped_point_id}"]')
+    grouped_point.hover()
+    page.wait_for_timeout(80)
+    assert page.locator(".tooltip.visible").count() == 1
+    assert page.locator("#step-3 .storm-spine").evaluate(
+        "el => getComputedStyle(el).display !== 'none'")
+    page.mouse.move(4, 4)
+    page.wait_for_timeout(80)
+    assert page.locator(".tooltip.visible").count() == 0
+    assert page.locator("#step-3 .storm-spine").evaluate(
+        "el => getComputedStyle(el).display === 'none'")
+    assert page.locator("#step-3 .point.hovered, #step-3 .point.hover-dim").count() == 0
+
     # Die dots2-Morph-Choreografie ist nur in der Desktop-Sticky-Bühne aktiv; unter
     # 1400 px stellt das CSS dieselben Kapitel bewusst als lineare Folge dar.
     if viewport["name"] == "desktop":
@@ -104,6 +177,10 @@ def audit_page(browser, viewport):
         page.wait_for_function("document.querySelectorAll('.g-formation circle.story-focus').length === 8")
         assert page.locator(".g-formation circle.story-focus").count() == 8
         assert page.locator(".fm-stems .residual-line").count() == 8
+        visible_radii = page.locator(".g-formation > circle.fm-dot").evaluate_all(
+            "els => els.map(el => Number(el.getAttribute('r'))).filter(r => r > 0)")
+        assert len(visible_radii) == 78
+        assert set(visible_radii) == {6}, f"repeat-victim radii still encode deaths: {set(visible_radii)}"
         page.locator("#step-6").evaluate("el => el.scrollIntoView({block: 'center'})")
         page.wait_for_function("document.querySelector('.g-formation.fm-residual') !== null")
         page.wait_for_timeout(1000)  # Formations-Morph 900 ms
@@ -121,6 +198,28 @@ def audit_page(browser, viewport):
         sub_above = page.locator(".g-formation circle.rr-above").count()
         sub_below = page.locator(".g-formation circle.rr-below").count()
         assert sub_above + sub_below == 78, f"subregion dots: {sub_above} + {sub_below}"
+
+        # The completeness legend is a compact 2×2 key centered under, and no wider
+        # than, the 99-dot matrix it explains.
+        page.locator("#step-8").evaluate("el => el.scrollIntoView({block: 'center'})")
+        page.wait_for_function("document.querySelector('.g-formation.fm-unit') !== null")
+        page.wait_for_timeout(1100)
+        assert page.locator(".g-formation > .uc-legend .uc-legend-item").count() == 4
+        legend_geometry = page.evaluate("""() => {
+          const legend = document.querySelector('.g-formation > .uc-legend').getBoundingClientRect();
+          const dots = [...document.querySelectorAll('.g-formation > circle.fm-dot')]
+            .map(el => el.getBoundingClientRect());
+          const left = Math.min(...dots.map(box => box.left));
+          const right = Math.max(...dots.map(box => box.right));
+          const rows = new Set([...document.querySelectorAll('.g-formation > .uc-legend .uc-legend-item')]
+            .map(el => Math.round(el.getBoundingClientRect().top)));
+          return {legend, dots: {left, right, width: right - left}, rows: rows.size};
+        }""")
+        assert legend_geometry["rows"] == 2
+        assert legend_geometry["legend"]["width"] <= legend_geometry["dots"]["width"] + 4, legend_geometry
+        legend_mid = legend_geometry["legend"]["x"] + legend_geometry["legend"]["width"] / 2
+        dots_mid = (legend_geometry["dots"]["left"] + legend_geometry["dots"]["right"]) / 2
+        assert abs(legend_mid - dots_mid) <= 3
 
     page.locator("#step-9").scroll_into_view_if_needed()
     page.wait_for_timeout(700)
@@ -158,6 +257,28 @@ def audit_page(browser, viewport):
         assert layout["thermo"]["x"] > layout["impact"]["x"] + layout["impact"]["width"]
         assert abs(layout["thermo"]["height"] - layout["wind"]["height"]) <= 55
         assert 0.9 <= layout["thermo"]["width"] / layout["wind"]["width"] <= 1.4
+
+    conclusion_alignment = page.evaluate("""() => {
+      const box = selector => document.querySelector(selector).getBoundingClientRect();
+      const section = box('#step-9');
+      const intro = box('#step-9 > .section-text');
+      const synthesis = box('#step-9 .conclusion-synthesis');
+      const head = box('#step-9 .cs-head');
+      const board = box('#step-9 .cs-board');
+      return {
+        section, intro, synthesis, head, board,
+        introAlign: getComputedStyle(document.querySelector('#step-9 > .section-text')).textAlign,
+        headAlign: getComputedStyle(document.querySelector('#step-9 .cs-head')).textAlign,
+        listHeadAlign: getComputedStyle(document.querySelector('#step-9 .cs-rank-list > header')).textAlign,
+      };
+    }""")
+    section_mid = conclusion_alignment["section"]["x"] + conclusion_alignment["section"]["width"] / 2
+    for key in ("intro", "head", "board"):
+        box = conclusion_alignment[key]
+        assert abs(box["x"] + box["width"] / 2 - section_mid) <= 3, f"conclusion {key} off-center: {conclusion_alignment}"
+    assert conclusion_alignment["introAlign"] == "center"
+    assert conclusion_alignment["headAlign"] == "center"
+    assert conclusion_alignment["listHeadAlign"] == "center"
 
     thermometers = page.locator("#step-9 .cs-thermo-row")
     assert thermometers.count() == 78
@@ -201,6 +322,31 @@ def audit_page(browser, viewport):
     page.wait_for_timeout(100)
     assert page.locator("#step-9 [data-record-id].active").count() == 0
     page.evaluate("document.activeElement?.blur()")
+
+    # The paired ribbons are themselves readable: hover and keyboard focus expose
+    # the storm, country, wind, affected share and the difference between both ranks.
+    ribbon_pair = page.locator("#step-9 .cs-thermo-row").nth(9)
+    ribbon_id = ribbon_pair.get_attribute("data-record-id")
+    ribbon_pair.hover()
+    page.wait_for_timeout(80)
+    ribbon_detail = page.locator("#step-9 .cs-record-detail").inner_text()
+    assert "storm-country pair" in ribbon_detail.lower()
+    assert "kt wind" in ribbon_detail
+    assert "reported affected" in ribbon_detail
+    assert "Wind #" in ribbon_detail and "affected share #" in ribbon_detail
+    assert page.locator(
+        f'#step-9 .cs-thermo-row[data-record-id="{ribbon_id}"].active').count() == 1
+    page.locator("#step-9 .cs-head h3").hover()
+    page.wait_for_timeout(80)
+    assert "Hover or focus any stripe pair" in page.locator("#step-9 .cs-record-detail").inner_text()
+    assert page.locator("#step-9 .cs-thermo-row.active").count() == 0
+    ribbon_pair.focus()
+    page.keyboard.press("ArrowDown")
+    assert page.locator("#step-9 .cs-thermo-row:focus").count() == 1
+    assert page.locator("#step-9 .cs-thermo-row.active").count() == 1
+    page.evaluate("document.activeElement?.blur()")
+    page.locator("#step-9 .cs-head h3").hover()
+    assert page.locator("#step-9 .cs-thermo-row.active").count() == 0
     assert page.locator(".filter-fab").is_hidden()
     page.locator("#step-9").screenshot(path=f"/tmp/track-to-toll-conclusion-{viewport['name']}.png")
 
@@ -329,6 +475,11 @@ def audit_page(browser, viewport):
     for text in page.locator("#step-10 .cr-count").all_text_contents():
         assert re.search(r"\b1 records\b", text) is None, f"plural glitch: {text}"
     assert "share" in page.locator("#step-10 .cr-legend").text_content()
+    ocean_country_fill = page.locator("#step-10 .cr-mark").first.get_attribute("style")
+    page.locator('.theme-toggle [data-theme-choice="light"]').click()
+    light_country_fill = page.locator("#step-10 .cr-mark").first.get_attribute("style")
+    assert light_country_fill != ocean_country_fill, "country color scale did not react to themechange"
+    page.locator('.theme-toggle [data-theme-choice="ocean"]').click()
     page.locator('#step-10 [data-mode="absolute"]').click()
     assert "people affected" in page.locator("#step-10 .cr-legend").text_content()
     page.locator('#step-10 [data-mode="perCapita"]').click()
@@ -354,12 +505,68 @@ def audit_page(browser, viewport):
     tick_boxes = [label.bounding_box() for label in tick_labels]
     for left, right in zip(tick_boxes, tick_boxes[1:]):
         assert left["x"] + left["width"] <= right["x"], "timeline labels overlap"
+
+    # A selected/playing year is a hard visual focus: matching tracks stay vivid and
+    # interactive, every other year becomes near-invisible and cannot intercept clicks.
+    timeline = page.locator("#step-10 .map-timeline")
+    timeline.locator(".mt-range").fill("2002")
+    page.wait_for_timeout(420)  # 350 ms track crossfade + one paint
+    assert timeline.locator(".mt-readout").inner_text().startswith("2002 · ")
+    active_tracks = page.locator("#step-10 .geo-stage .track.year-active")
+    context_tracks = page.locator("#step-10 .geo-stage .track.year-context")
+    assert active_tracks.count() > 0
+    assert context_tracks.count() > active_tracks.count()
+    track_focus_styles = page.evaluate("""() => ({
+      activeOpacity: Number(getComputedStyle(document.querySelector('#step-10 .geo-stage .track.year-active')).strokeOpacity),
+      contextOpacity: Number(getComputedStyle(document.querySelector('#step-10 .geo-stage .track.year-context')).strokeOpacity),
+      activePointer: getComputedStyle(document.querySelector('#step-10 .geo-stage .track.year-active')).pointerEvents,
+      contextPointer: getComputedStyle(document.querySelector('#step-10 .geo-stage .track.year-context')).pointerEvents,
+    })""")
+    assert track_focus_styles["activeOpacity"] >= .95
+    assert track_focus_styles["contextOpacity"] <= .02
+    assert track_focus_styles["activePointer"] == "stroke"
+    assert track_focus_styles["contextPointer"] == "none"
+
+    timeline.locator(".mt-play").click()
+    page.wait_for_timeout(780)
+    assert page.evaluate("window.store.get().activeYear") == 2003
+    assert timeline.locator(".mt-play").get_attribute("aria-pressed") == "true"
+    timeline.locator(".mt-play").click()
+    assert page.evaluate("window.store.get().playing") is False
+
+    # Opening one of the current year's tracks fills the drawer with a larger track,
+    # four summary values, the country table, a comparison profile and a reading note.
+    active_tracks = page.locator("#step-10 .geo-stage .track.year-active")
+    assert active_tracks.count() > 0
+    # SVG paths have sparse bounding boxes; dispatch on the actual stroke element so
+    # the test does not accidentally click empty map space inside that box.
+    active_tracks.first.dispatch_event("click")
+    assert page.locator("#detail.open").count() == 1
+    assert page.locator("#detail .dp-stats > div").count() == 4
+    assert page.locator("#detail .dp-map svg").count() == 1
+    assert page.locator("#detail .dp-records tbody tr").count() > 0
+    assert page.locator("#detail .dp-country-profile li").count() > 0
+    assert "storm-country pair" in page.locator("#detail .dp-reading").inner_text().lower()
+    drawer_geometry = page.evaluate("""() => {
+      const drawer = document.querySelector('#detail').getBoundingClientRect();
+      const table = document.querySelector('#detail .dp-records').getBoundingClientRect();
+      const reading = document.querySelector('#detail .dp-reading').getBoundingClientRect();
+      return {drawer, table, reading};
+    }""")
+    expected_drawer_width = 470 if viewport["name"] != "mobile" else 350
+    assert drawer_geometry["drawer"]["width"] >= expected_drawer_width
+    assert drawer_geometry["reading"]["top"] > drawer_geometry["table"]["bottom"]
+    page.locator("#detail .dp-close").click()
+    timeline.locator(".mt-all").click()
+    assert page.locator("#step-10 .geo-stage .track.year-active, #step-10 .geo-stage .track.year-context").count() == 0
+
     # "Human toll" layer: one circle per country, sized by the impact measure.
     assert page.locator("#step-10 .evidence-metric").is_hidden()
     page.locator('#step-10 [data-map-layer="toll"]').click()
     assert page.locator('#step-10 [data-geo-layer="toll"]').is_visible()
     assert page.locator('#step-10 [data-geo-layer="tracks"]').is_hidden()
-    assert page.locator("#step-10 .toll-circles circle").count() == 20
+    toll_circle_count = page.locator("#step-10 .toll-circles circle").count()
+    assert toll_circle_count == 20, f"toll circles after theme switches: {toll_circle_count}"
     assert page.locator("#step-10 .evidence-metric").is_visible()
     assert page.locator("#step-10 .hot-metric-control").is_hidden()
     fji_share_r = page.locator('#step-10 [data-iso3="FJI"]').get_attribute("r")
@@ -378,6 +585,11 @@ def audit_page(browser, viewport):
     assert page.locator("#step-10 .heat-cell").count() > 0
     page.locator('#step-10 [data-hot-metric="averageWind"]').click()
     assert page.locator('#step-10 [data-hot-metric="averageWind"]').get_attribute("aria-pressed") == "true"
+    ocean_heat_fill = page.locator("#step-10 .heat-cell").first.get_attribute("fill")
+    page.locator('.theme-toggle [data-theme-choice="light"]').click()
+    light_heat_fill = page.locator("#step-10 .heat-cell").first.get_attribute("fill")
+    assert light_heat_fill != ocean_heat_fill, "hot-zone color scale did not react to themechange"
+    page.locator('.theme-toggle [data-theme-choice="ocean"]').click()
     page.locator('#step-10 [data-panel="geography"]').screenshot(path=f"/tmp/evidence-hotzones-{viewport['name']}.png")
     page.locator("#step-10 .heat-cell").first.click()
     page.get_by_role("tab", name="Wind outliers", exact=True).click()
@@ -393,6 +605,32 @@ def audit_page(browser, viewport):
     assert page.locator('#step-10 [data-panel="outliers"] .evidence-empty').is_visible()
     page.locator('#step-10 [data-panel="outliers"] [data-clear-filters]').click()
     page.locator("#step-10 .evidence-refine").click()
+
+    # Kompakter Data-&-Methods-Abschluss: zunächst nur eine Zeile; der erste Klick
+    # öffnet den Überblick, technische Ebenen bleiben unabhängig geschlossen.
+    page.locator("#methods").scroll_into_view_if_needed()
+    page.wait_for_timeout(250)
+    assert page.locator("#methods-root > summary").text_content().strip() == "Data & methods"
+    assert page.locator("#methods-root").get_attribute("open") is None
+    assert page.locator("#methods .methods-facts").is_hidden()
+    page.locator("#methods-root > summary").click()
+    assert page.locator("#methods-root").get_attribute("open") is not None
+    assert page.locator("#methods .methods-facts").is_visible()
+    assert page.locator("#methods .methods-facts > div").count() == 4
+    assert page.locator("#methods .methods-block").count() == 5
+    assert page.locator("#methods-sources").get_attribute("open") is None
+    page.locator("#methods-sources > summary").click()
+    assert page.locator("#methods .methods-source").count() == 7
+    assert page.locator("#methods .methods-downloads a").count() == 5
+    assert page.locator("#methods .methods-publication").inner_text().startswith("Publication gate active")
+    page.locator("#methods-visuals > summary").click()
+    assert page.locator("#methods .method-card").count() == 11
+    page.locator("#step-0 .source-method-link").click()
+    page.wait_for_timeout(300)
+    assert "#method-sst" in page.url
+    assert page.locator("#methods-visuals").get_attribute("open") is not None
+    assert page.locator("#method-sst").evaluate("el => document.activeElement === el")
+    page.locator("#methods").screenshot(path=f"/tmp/data-methods-{viewport['name']}.png")
 
     body_widths = page.evaluate(
         "() => ({scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth})"

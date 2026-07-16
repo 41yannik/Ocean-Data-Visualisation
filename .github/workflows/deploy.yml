@@ -31,7 +31,11 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
-      - run: npm run build
+      - run: npm run build:public
+        env:
+          VITE_DATA_VARIANT: challenge
+          VITE_PUBLIC_BUILD: "1"
+          VITE_COMMIT_SHA: ${{ github.sha }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: app/dist

@@ -62,7 +62,9 @@ export function createTimeScrubber(container, ctx) {
   function stopClock() { if (clock) { clock.stop(); clock = null; } }
   function pause() { stopClock(); if (bus.get().playing) bus.set({ playing: false }); }
   function setYear(y, announce) {
-    bus.set({ activeYear: y });
+    // Ein Track aus dem vorherigen Jahr darf weder als Tooltip noch im Drawer über den
+    // neuen Jahresfokus gelegt bleiben.
+    bus.set({ activeYear: y, hover: null, detailSid: null });
     if (announce) live.textContent = y == null ? 'All years' : `Year ${y}, ${countFor(y)} storms`;
   }
   function play() {
@@ -70,11 +72,14 @@ export function createTimeScrubber(container, ctx) {
     const cur = bus.get().activeYear;
     const start = (cur == null || cur >= hi) ? lo : cur;
     stopClock();
-    bus.set({ activeYear: start, playing: true });
+    bus.set({ activeYear: start, playing: true, hover: null, detailSid: null });
     let lastY = start;
     clock = timer((elapsed) => {
       const y = Math.min(hi, start + Math.floor(elapsed / CADENCE));
-      if (y !== lastY) { lastY = y; bus.set({ activeYear: y }); }
+      if (y !== lastY) {
+        lastY = y;
+        bus.set({ activeYear: y, hover: null, detailSid: null });
+      }
       if (y >= hi) { stopClock(); bus.set({ playing: false }); }
     });
   }

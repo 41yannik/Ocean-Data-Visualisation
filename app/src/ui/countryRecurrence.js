@@ -2,7 +2,7 @@
 // Sturm-Land-Datensatz. Gefüllt = Betroffenheit gemeldet, hohl = unbekannt.
 import { select, scaleLinear, scaleSequentialSqrt, interpolateLab } from 'd3';
 import { matchesFilters } from '../core/filters.js';
-import { COLORS } from '../core/config.js';
+import { getActivePalette, onThemeChange } from '../core/theme.js';
 import { fmtInt, fmtPct } from '../core/format.js';
 
 export function buildCountryRecurrence(events, filters = null) {
@@ -28,13 +28,11 @@ export function createCountryRecurrence(container, ctx) {
   const yearMin = Math.min(...years); const yearMax = Math.max(...years);
   const maxShare = Math.max(...data.events.map((event) => event.affected_pc ?? 0));
   const maxAffected = Math.max(...data.events.map((event) => event.affected ?? 0));
-  const shareColor = scaleSequentialSqrt([0, maxShare], interpolateLab('#d7e3ec', COLORS.point));
-  const absoluteColor = scaleSequentialSqrt([0, maxAffected], interpolateLab('#d7e3ec', COLORS.point));
 
   const svg = select(container).append('svg').attr('role', 'img')
     .attr('aria-label', 'Country-by-year matrix of storm impact records from 2001 to 2026; filled dots have reported human impact and hollow dots are missing impact records');
   const tip = document.createElement('div'); tip.className = 'tooltip'; document.body.appendChild(tip);
-  let marks = null; let currentRows = [];
+  let marks = null; let currentRows = []; let lastState = null;
 
   const moveTip = (event) => {
     const box = tip.getBoundingClientRect(); let x = event.clientX + 14; let y = event.clientY + 14;
@@ -44,6 +42,9 @@ export function createCountryRecurrence(container, ctx) {
   };
 
   function render(state) {
+    const palette = getActivePalette();
+    const shareColor = scaleSequentialSqrt([0, maxShare], interpolateLab(palette.scaleLow, palette.point));
+    const absoluteColor = scaleSequentialSqrt([0, maxAffected], interpolateLab(palette.scaleLow, palette.point));
     currentRows = buildCountryRecurrence(data.events, state.filters);
     const compact = container.clientWidth < 600;
     const W = compact ? 390 : 1000;
@@ -143,11 +144,16 @@ export function createCountryRecurrence(container, ctx) {
       .classed('muted', (d) => !!(hoverId || active?.size) && d.event.id !== hoverId && !(active?.has(d.event.id) ?? false));
   }
 
+  const unsubscribeTheme = onThemeChange(() => {
+    if (lastState) render(lastState);
+  });
+
   return {
     update(state, patch) {
+      lastState = state;
       if (!patch || 'filters' in patch || 'mode' in patch) render(state);
       else if ('hover' in patch || 'selectedEventIds' in patch) applyClasses(state);
     },
-    destroy() { tip.remove(); svg.remove(); },
+    destroy() { unsubscribeTheme(); tip.remove(); svg.remove(); },
   };
 }

@@ -1,15 +1,17 @@
-"""Frontend-Ausgaben: events/tracks/meta/sst als kompakte JSONs — variantenabhängig (Lizenz!).
-
-Kurs-Variante:      EM-DAT-basiert, NUR intern (events.json/meta.json sind gitignored).
-Challenge-Variante: ausschließlich offene Felder (IBTrACS/WPP); y-Quelle folgt in Teil B.
-"""
+"""Frontend-Ausgaben und strukturierte Provenienz — variantenabhängig (Lizenz!)."""
+import csv
+import hashlib
 import json
 from datetime import date
+from pathlib import Path
 
 import pandas as pd
 
 from pipeline.reference import COUNTRY_NAMES, SUBREGION, CENTROIDS, YEAR_MIN, YEAR_MAX
 from pipeline.normalize import normalize_name
+from pipeline.provenance import (
+    build_analysis, git_build_info, publication_policy, source_catalog, transformations,
+)
 
 # Felder, die in der Challenge-Variante NIE auftauchen dürfen (EM-DAT-Derivate)
 EMDAT_FIELDS = {
@@ -69,11 +71,14 @@ def assemble_events(ev: pd.DataFrame, variant: str) -> list:
     return records
 
 
-def build_meta(ev: pd.DataFrame, fits: dict, bands: dict, tracks: dict, variant: str) -> dict:
+def build_meta(ev: pd.DataFrame, fits: dict, bands: dict, tracks: dict, variant: str,
+               sst_raw: pd.DataFrame, sst: list, trends: dict, story_evidence: dict) -> dict:
     matched = ev["sid"].notna()
     meta = {
         "variant": variant,
         "generated": date.today().isoformat(),
+        "publication": publication_policy(variant),
+        "build": git_build_info(),
         "window": [YEAR_MIN, YEAR_MAX],
         "unit": "storm-country pair",
         "coverage": {
@@ -83,20 +88,21 @@ def build_meta(ev: pd.DataFrame, fits: dict, bands: dict, tracks: dict, variant:
             "matched_sids": int(ev.loc[matched, "sid"].nunique()),
             "tracks": len(tracks),
         },
-        "caveats": [
-            "2025 has no recorded events; 2026 entries are recent and subject to EM-DAT revision.",
-            "Population for 2024+ is forward-filled from WPP 2023 (flag: pop_extrapolated).",
-            "Storm-country pairs of one storm share the same peak intensity (clustered points).",
-            "Intensity is basin-lifetime peak USA_WIND (1-min, kt), not wind at landfall.",
-        ],
-        "sources": [
-            {"name": "IBTrACS v04r01 (SP+WP)", "provider": "NOAA/NCEI", "license": "Public Domain"},
-            {"name": "UN World Population Prospects", "provider": "UN DESA", "license": "CC BY 3.0 IGO"},
-            {"name": "Mean sea surface temperature anomalies", "provider": "SPC / Pacific Data Hub", "license": "official challenge dataset"},
-        ],
+        "caveats": [],
+        "sources": source_catalog(variant),
+        "transformations": transformations(variant),
+        "analysis": build_analysis(ev, sst_raw, sst, trends, story_evidence, variant),
+        "artifacts": [],
         "centroids": {iso3: [lon, lat] for iso3, (lon, lat) in CENTROIDS.items()},
     }
     if variant == "kurs":
+        meta["caveats"] = [
+            "2025 has no recorded events; 2026 entries are recent and subject to source revision.",
+            "Population for 2024+ is forward-filled from WPP 2023 (flag: pop_extrapolated).",
+            "Storm-country pairs of one storm share the same peak intensity (clustered points).",
+            "Intensity is basin-lifetime peak USA_WIND (1-min, kt), not wind at landfall.",
+            "Reported impact depends on what institutions were able to record; missing does not mean zero.",
+        ]
         meta["coverage"].update({
             "with_intensity": int(ev["intensity_kt"].notna().sum()),
             "with_affected": int(ev["total_affected"].notna().sum()),
@@ -107,13 +113,14 @@ def build_meta(ev: pd.DataFrame, fits: dict, bands: dict, tracks: dict, variant:
         })
         meta["fits"] = fits
         meta["bands"] = bands
-        meta["sources"].append({
-            "name": "EM-DAT (CRED / UCLouvain)", "provider": "CRED",
-            "license": "INTERNAL USE ONLY — educational; do not redistribute or publish derivatives",
-        })
-        meta["license_note"] = "Kurs-Variante: enthält EM-DAT-Derivate — nicht veröffentlichen (siehe docs/decisions/2026-07-02_datenquellen.md)."
+        meta["license_note"] = meta["publication"]["note"]
     else:
-        meta["note"] = "Challenge-Variante: y-Quelle (Schadensmaß) folgt in Teil B nach der Kursabgabe; enthält ausschließlich offene Daten."
+        meta["caveats"] = [
+            "The open-data outcome measure has not been selected, so this placeholder cannot support the impact story.",
+            "Population after 2023 would use the last observed value unless a newer verified series is adopted.",
+            "Intensity is basin-lifetime peak USA_WIND (1-min, kt), not wind at landfall.",
+        ]
+        meta["note"] = meta["publication"]["note"]
     return meta
 
 
@@ -122,3 +129,53 @@ def write_json(obj, path):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     return path.stat().st_size
+
+
+def write_csv(rows: list[dict], path: Path) -> int:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fields = list(rows[0]) if rows else []
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    return path.stat().st_size
+
+
+def trends_csv_rows(trends: dict) -> list[dict]:
+    s = trends["series"]
+    return [
+        {
+            "season": season,
+            "storm_count": s["count"][i],
+            "mean_peak_wind_kt": s["meanWind"][i],
+        }
+        for i, season in enumerate(s["season"])
+    ]
+
+
+def attach_artifacts(meta: dict, out_dir: Path, filenames: list[str]) -> None:
+    """Hashwerte nach dem Schreiben ergänzen; meta.json hasht sich bewusst nicht selbst."""
+    allowed = set(meta["publication"]["allowedDownloads"])
+    labels = {
+        "sst.json": "Annual SST anomaly series (JSON)",
+        "sst.csv": "Annual SST anomaly series (CSV)",
+        "trends.json": "Seasonal storm trends and fits (JSON)",
+        "trends.csv": "Seasonal storm trends (CSV)",
+        "tracks.json": "Processed cyclone tracks (JSON)",
+        "land-110m.json": "Natural Earth 110m land boundary (TopoJSON)",
+    }
+    artifacts = []
+    for filename in filenames:
+        path = out_dir / filename
+        if not path.exists():
+            continue
+        artifacts.append({
+            "id": filename.replace(".", "-"),
+            "name": labels.get(filename, filename),
+            "file": filename,
+            "format": path.suffix.removeprefix(".").upper(),
+            "bytes": path.stat().st_size,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "downloadable": filename in allowed,
+        })
+    meta["artifacts"] = artifacts

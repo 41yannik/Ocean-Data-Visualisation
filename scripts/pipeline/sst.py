@@ -4,9 +4,10 @@ import pandas as pd
 from pipeline.io_load import load_sst
 
 
-def build_sst_series() -> list:
+def build_sst_series(sst: pd.DataFrame | None = None) -> list:
     """[{year, anom}] — Mittel der SST-Anomalien über die PICTs, 1850–heute, 3 Dezimalstellen."""
-    sst = load_sst()
+    if sst is None:
+        sst = load_sst()
     yearly = (
         sst.groupby("TIME_PERIOD")["OBS_VALUE"].mean().reset_index()
            .rename(columns={"TIME_PERIOD": "year", "OBS_VALUE": "anom"})

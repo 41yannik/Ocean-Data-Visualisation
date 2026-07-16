@@ -3,9 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
   <title>From Track to Toll: Pacific cyclones, wind speed vs. human toll</title>
   <!-- relativ (nicht /favicon.png): base './' hält den Build file://-tauglich -->
   <link rel="icon" type="image/png" href="./favicon.png" />
+  <script>
+    (() => {
+      const key = 'track-to-toll-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored === 'light' || stored === 'ocean') theme = stored;
+      } catch (_) {
+        // Storage kann in restriktiven Browsermodi fehlen; Light bleibt der sichere Default.
+      }
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme === 'ocean' ? 'dark' : 'light';
+    })();
+  </script>
   <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>

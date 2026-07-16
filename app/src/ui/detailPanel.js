@@ -4,11 +4,29 @@
 import { select, geoEquirectangular, geoPath } from 'd3';
 import { fmtInt, fmtPct, fmtKt, fmtSource, fmtCategory } from '../core/format.js';
 
-const MINI = { width: 340, height: 190, pad: 14 };
+const MINI = { width: 440, height: 240, pad: 18 };
 
 // Fehlwerte in der dichten 4-Spalten-Tabelle als "–" (die Fußnote erklärt die
 // Bedeutung) - der lange globale Fallback "not reported" würde die Spalten sprengen.
 const cell = (v, fmt) => (v == null ? '–' : fmt(v));
+const esc = (value) => String(value ?? '')
+  .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const reportedSum = (events, key) => {
+  const values = events.map((event) => event[key]).filter((value) => value != null);
+  return values.length ? values.reduce((sum, value) => sum + value, 0) : null;
+};
+
+function comparisonText(events) {
+  const shares = events.map((event) => event.affected_pc).filter((value) => value != null);
+  if (shares.length > 1) {
+    const low = Math.min(...shares);
+    const high = Math.max(...shares);
+    return `Across the countries linked to this track, reported affected share ranges from ${fmtPct(low)} to ${fmtPct(high)}.`;
+  }
+  if (shares.length === 1) return `One country linked to this track has a reported affected share of ${fmtPct(shares[0])}.`;
+  return 'No affected-share value is reported for the countries linked to this track.';
+}
 
 export function createDetailPanel(container, ctx) {
   const { bySid } = ctx.data.index;
@@ -28,35 +46,74 @@ export function createDetailPanel(container, ctx) {
     const events = bySid.get(sid) ?? [];
     const first = events[0];
     if (!first) return;
+    const affectedTotal = reportedSum(events, 'affected');
+    const deathsTotal = reportedSum(events, 'deaths');
+    const shareEvents = [...events]
+      .filter((event) => event.affected_pc != null)
+      .sort((a, b) => b.affected_pc - a.affected_pc || a.country.localeCompare(b.country));
+    const maxShare = Math.max(...shareEvents.map((event) => event.affected_pc), 0);
+    const countryCount = new Set(events.map((event) => event.iso3)).size;
 
     container.innerHTML = `
       <button class="dp-close" aria-label="Close details">×</button>
-      <h2>${first.name ?? 'Unnamed storm'} · ${first.year}</h2>
-      <p class="dp-sub">${fmtCategory(first.category)} · max sustained wind ${fmtKt(first.intensity_kt)} · ${fmtSource(first.intensity_source)}</p>
-      <div class="dp-map"></div>
-      <table>
-        <thead><tr><th>Country</th><th class="num">Affected</th><th class="num">Share</th><th class="num">Deaths</th></tr></thead>
-        <tbody>
-          ${events.map((e) => `
-            <tr>
-              <td>${e.country}</td>
-              <td class="num">${cell(e.affected, fmtInt)}</td>
-              <td class="num">${cell(e.affected_pc, fmtPct)}</td>
-              <td class="num">${cell(e.deaths, fmtInt)}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="dp-note">Same storm, same maximum sustained wind, different reported toll per country (unit: storm-country pair). "–" = not reported.</p>`;
+      <div class="dp-shell">
+        <header class="dp-head">
+          <span class="dp-eyebrow">Selected track</span>
+          <h2>${esc(first.name ?? 'Unnamed storm')} · ${first.year}</h2>
+          <p class="dp-sub">${fmtCategory(first.category)} · ${fmtSource(first.intensity_source)}</p>
+        </header>
+        <dl class="dp-stats" aria-label="Storm summary">
+          <div><dt>Peak wind</dt><dd>${fmtKt(first.intensity_kt)}</dd></div>
+          <div><dt>Countries</dt><dd>${countryCount}</dd></div>
+          <div><dt>Reported affected</dt><dd>${cell(affectedTotal, fmtInt)}</dd></div>
+          <div><dt>Reported deaths</dt><dd>${cell(deathsTotal, fmtInt)}</dd></div>
+        </dl>
+        <div class="dp-map" role="img" aria-label="Track of ${esc(first.name ?? 'the selected storm')} and linked countries"></div>
+        <section class="dp-records" aria-labelledby="dp-records-title">
+          <div class="dp-section-head"><h3 id="dp-records-title">Country records</h3><span>${events.length} ${events.length === 1 ? 'pair' : 'pairs'}</span></div>
+          <div class="dp-table-wrap">
+            <table>
+              <thead><tr><th>Country</th><th class="num">Affected</th><th class="num">Share</th><th class="num">Deaths</th></tr></thead>
+              <tbody>
+                ${events.map((e) => `
+                  <tr>
+                    <td>${esc(e.country)}</td>
+                    <td class="num">${cell(e.affected, fmtInt)}</td>
+                    <td class="num">${cell(e.affected_pc, fmtPct)}</td>
+                    <td class="num">${cell(e.deaths, fmtInt)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        ${shareEvents.length ? `
+          <section class="dp-country-profile" aria-labelledby="dp-profile-title">
+            <div class="dp-section-head"><h3 id="dp-profile-title">How the reported shares compare</h3><span>Highest = full bar</span></div>
+            <ul>
+              ${shareEvents.map((event) => `
+                <li>
+                  <span>${esc(event.country)}</span>
+                  <i aria-hidden="true"><b style="--dp-share:${maxShare ? event.affected_pc / maxShare * 100 : 0}%"></b></i>
+                  <strong>${fmtPct(event.affected_pc)}</strong>
+                </li>`).join('')}
+            </ul>
+          </section>` : ''}
+        <aside class="dp-reading">
+          <strong>What this comparison says</strong>
+          <p>${comparisonText(events)} The unit is one storm-country pair; “–” means not reported.</p>
+        </aside>
+      </div>`;
 
     container.setAttribute('aria-label', `Details for ${first.name ?? 'unnamed storm'} ${first.year}`);
     container.querySelector('.dp-close').addEventListener('click', close);
     renderMiniTrack(container.querySelector('.dp-map'), sid, events);
 
-    lastFocused = document.activeElement;
+    if (!container.classList.contains('open')) lastFocused = document.activeElement;
     container.classList.add('open');
     container.setAttribute('aria-hidden', 'false');
     container.focus();
 
+    if (escListener) document.removeEventListener('keydown', escListener);
     escListener = (ev) => { if (ev.key === 'Escape') close(); };
     document.addEventListener('keydown', escListener);
   }

@@ -1,6 +1,12 @@
-// Lädt alle Pipeline-JSONs, baut die Indizes - wirft mit klarer Anleitung, wenn die
-// (gitignorten!) EM-DAT-Derivate fehlen.
+// Lädt die gewählte Pipeline-Variante und baut die Indizes. Der Public-Build-Check
+// entscheidet separat, ob eine Variante veröffentlicht werden darf.
 import { feature } from 'topojson-client';
+
+export function dataFilesForVariant(variant = 'kurs') {
+  if (!['kurs', 'challenge'].includes(variant)) throw new Error(`Unknown data variant: ${variant}`);
+  const suffix = variant === 'challenge' ? '.challenge' : '';
+  return { events: `events${suffix}.json`, meta: `meta${suffix}.json` };
+}
 
 async function fetchJson(url) {
   let res;
@@ -16,27 +22,35 @@ async function fetchJson(url) {
 }
 
 function missingMsg(url) {
+  const variant = import.meta.env?.VITE_DATA_VARIANT || 'kurs';
   return [
     `Data file missing or invalid: ${url}`,
     '',
-    'events.json/meta.json are EM-DAT derivatives and intentionally not in the repo (license).',
-    'Generate them once locally:',
-    '  python3 scripts/build_track_to_toll.py --variant kurs',
+    `The ${variant} pipeline artifacts are missing. Generate them locally:`,
+    `  python3 scripts/build_track_to_toll.py --variant ${variant}`,
   ].join('\n');
 }
 
 export async function loadData() {
+  const variant = import.meta.env?.VITE_DATA_VARIANT || 'kurs';
+  const files = dataFilesForVariant(variant);
   const base = `${import.meta.env.BASE_URL}data`;
   const [events, tracks, meta, sst, trends, world] = await Promise.all([
-    fetchJson(`${base}/events.json`),
+    fetchJson(`${base}/${files.events}`),
     fetchJson(`${base}/tracks.json`),
-    fetchJson(`${base}/meta.json`),
+    fetchJson(`${base}/${files.meta}`),
     fetchJson(`${base}/sst.json`),
     fetchJson(`${base}/trends.json`),
     fetchJson(`${base}/land-110m.json`),
   ]);
 
   const land = feature(world, world.objects.land);
+  const deployedCommit = import.meta.env?.VITE_COMMIT_SHA;
+  if (deployedCommit && meta.build) {
+    meta.build.gitCommit = deployedCommit;
+    meta.build.gitDirty = false;
+    meta.build.codeUrl = `https://github.com/41yannik/Ocean-Data-Visualisation/tree/${deployedCommit}`;
+  }
 
   const bySid = new Map();
   const byId = new Map();

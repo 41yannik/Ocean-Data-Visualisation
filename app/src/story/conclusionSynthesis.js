@@ -68,6 +68,15 @@ function rankRows(rows, side, maxValue) {
   }).join('');
 }
 
+function rankExplanation(row) {
+  const gap = Math.abs(row.windRank - row.impactRank);
+  if (gap === 0) return 'Its wind and affected-share ranks are the same.';
+  if (row.impactRank < row.windRank) {
+    return `Its affected-share rank sits ${gap} ${gap === 1 ? 'place' : 'places'} higher than its wind rank.`;
+  }
+  return `Its wind rank sits ${gap} ${gap === 1 ? 'place' : 'places'} higher than its affected-share rank.`;
+}
+
 export function createConclusionSynthesis(container, ctx) {
   const model = buildConclusionSynthesisModel(ctx.data.events);
   // Divergierende Rampe aus den zwei Story-Farben (--point → neutral → --accent).
@@ -114,26 +123,44 @@ export function createConclusionSynthesis(container, ctx) {
           <button type="button" data-order="wind" aria-pressed="true">Wind</button>
           <button type="button" data-order="impact" aria-pressed="false">Affected</button>
         </div>
+        <div class="cs-record-detail" id="cs-record-detail" aria-live="polite" aria-atomic="true"></div>
         <div class="cs-thermo-chart">
           <div class="cs-thermo-axis" aria-hidden="true"><strong>High</strong><i></i><strong>Low</strong></div>
           <div class="cs-thermo-plot">
             <div class="cs-thermo-heads"><span>Wind strength</span><span>Affected share</span></div>
-            <div class="cs-thermo-rows" aria-label="Every complete record ordered vertically from low to high"></div>
+            <div class="cs-thermo-rows" role="listbox" aria-label="Every complete storm-country pair ordered vertically from low to high"
+              aria-describedby="cs-record-detail"></div>
           </div>
         </div>
       </section>
     </div>`;
 
   const thermoRows = container.querySelector('.cs-thermo-rows');
+  const recordDetail = container.querySelector('.cs-record-detail');
+
+  function renderRecordDetail(row) {
+    if (!row) {
+      recordDetail.innerHTML = `
+        <span class="cs-record-detail__label">Read a pair</span>
+        <p>Hover or focus any stripe pair to see the storm-country record behind both colours.</p>`;
+      return;
+    }
+    recordDetail.innerHTML = `
+      <span class="cs-record-detail__label">Storm-country pair</span>
+      <strong>${esc(row.name ?? 'Unnamed storm')} · ${esc(row.country)} · ${row.year}</strong>
+      <span>${wind(row.intensity_kt)} wind · ${fmtPct(row.affected_pc)} reported affected</span>
+      <small>Wind #${row.windRank} · affected share #${row.impactRank}. ${esc(rankExplanation(row))}</small>`;
+  }
 
   function renderThermometer() {
     // DOM order is high → low so the strongest value sits at the top.
-    thermoRows.innerHTML = [...model.orders[orderMode]].reverse().map((d) => `
-      <span class="cs-thermo-row" data-record-id="${esc(d.id)}" data-wind="${d.intensity_kt}"
-        data-impact="${d.affected_pc}" aria-hidden="true">
+    thermoRows.innerHTML = [...model.orders[orderMode]].reverse().map((d, index) => `
+      <div class="cs-thermo-row" data-record-id="${esc(d.id)}" data-wind="${d.intensity_kt}"
+        data-impact="${d.affected_pc}" role="option" aria-selected="false" tabindex="${index === 0 ? 0 : -1}"
+        aria-label="${esc(`${d.name ?? 'Unnamed storm'}, ${d.country}, ${d.year}: ${wind(d.intensity_kt)} wind, ${fmtPct(d.affected_pc)} reported affected. Wind rank ${d.windRank}, affected-share rank ${d.impactRank}.`)}">
         <i class="cs-thermo-cell cs-thermo-cell--wind" style="--cs-color:${temperature(d.windPercentile)}"></i>
         <i class="cs-thermo-cell cs-thermo-cell--impact" style="--cs-color:${temperature(d.impactPercentile)}"></i>
-      </span>`).join('');
+      </div>`).join('');
     container.querySelectorAll('[data-order]').forEach((button) =>
       button.setAttribute('aria-pressed', String(button.dataset.order === orderMode)));
     renderFocus();
@@ -144,26 +171,30 @@ export function createConclusionSynthesis(container, ctx) {
     container.querySelectorAll('[data-record-id]').forEach((node) => {
       node.classList.toggle('active', !!d && node.dataset.recordId === d.id);
       node.classList.toggle('muted', !!d && node.dataset.recordId !== d.id);
+      if (node.matches('.cs-thermo-row')) {
+        node.setAttribute('aria-selected', String(!!d && node.dataset.recordId === d.id));
+      }
     });
+    renderRecordDetail(d);
   }
 
   container.addEventListener('pointerover', (event) => {
-    const row = event.target.closest('.cs-rank-row');
+    const row = event.target.closest('.cs-rank-row, .cs-thermo-row');
     if (!row) return;
     hoverId = row.dataset.recordId; renderFocus();
   }, { signal: controller.signal });
   container.addEventListener('pointerout', (event) => {
-    const row = event.target.closest('.cs-rank-row');
+    const row = event.target.closest('.cs-rank-row, .cs-thermo-row');
     if (!row || row.contains(event.relatedTarget)) return;
     hoverId = null; renderFocus();
   }, { signal: controller.signal });
   container.addEventListener('focusin', (event) => {
-    const row = event.target.closest('.cs-rank-row');
+    const row = event.target.closest('.cs-rank-row, .cs-thermo-row');
     if (!row) return;
     hoverId = row.dataset.recordId; renderFocus();
   }, { signal: controller.signal });
   container.addEventListener('focusout', (event) => {
-    const row = event.target.closest('.cs-rank-row');
+    const row = event.target.closest('.cs-rank-row, .cs-thermo-row');
     if (!row || row.contains(event.relatedTarget)) return;
     hoverId = null; renderFocus();
   }, { signal: controller.signal });
@@ -171,6 +202,19 @@ export function createConclusionSynthesis(container, ctx) {
     const order = event.target.closest('[data-order]');
     if (!order) return;
     orderMode = order.dataset.order; renderThermometer();
+  }, { signal: controller.signal });
+  container.addEventListener('keydown', (event) => {
+    const current = event.target.closest('.cs-thermo-row');
+    if (!current || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+    const rows = [...thermoRows.querySelectorAll('.cs-thermo-row')];
+    const currentIndex = rows.indexOf(current);
+    const nextIndex = event.key === 'Home' ? 0
+      : event.key === 'End' ? rows.length - 1
+        : event.key === 'ArrowUp' ? Math.max(0, currentIndex - 1)
+          : Math.min(rows.length - 1, currentIndex + 1);
+    event.preventDefault();
+    rows.forEach((row, index) => row.setAttribute('tabindex', index === nextIndex ? '0' : '-1'));
+    rows[nextIndex]?.focus();
   }, { signal: controller.signal });
 
   renderThermometer();

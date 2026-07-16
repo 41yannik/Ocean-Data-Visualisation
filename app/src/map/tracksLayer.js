@@ -32,24 +32,33 @@ export function createTracksLayer(g, layerCtx) {
     .attr('d', (d) => geo.path(d.lineString))
     .attr('stroke-width', (d) => strokeForCategory(d.events[0]?.category))
     .style('pointer-events', 'stroke')
-    .on('mousemove', (event, d) => {
-      if (!bus.get().exploreUnlocked) return; // Story-Gate: keine Hover-Ausgabe
+    .on('pointerenter pointermove', (event, d) => {
+      const state = bus.get();
+      if (!state.exploreUnlocked || (state.activeYear != null && d.year !== state.activeYear)) return;
       bus.set({ hover: { sid: d.sid, eventId: null, x: event.clientX, y: event.clientY, source: 'map' } });
     })
-    .on('mouseleave', () => {
+    .on('pointerleave pointercancel', () => {
       if (!bus.get().exploreUnlocked) return;
-      bus.set({ hover: null });
+      if (bus.get().hover?.source === 'map') bus.set({ hover: null });
     })
     .on('click', (event, d) => {
-      if (!bus.get().exploreUnlocked) return;
+      const state = bus.get();
+      if (!state.exploreUnlocked || (state.activeYear != null && d.year !== state.activeYear)) return;
       bus.set({ detailSid: d.sid });
     });
+
+  const svgNode = g.node()?.ownerSVGElement;
+  const clearMapHover = () => {
+    if (bus.get().hover?.source === 'map') bus.set({ hover: null });
+  };
+  svgNode?.addEventListener('pointerleave', clearMapHover);
+  svgNode?.addEventListener('pointercancel', clearMapHover);
 
   function render(state) {
     const selectedSids = state.selectedEventIds
       ? new Set(storms.filter((s) => s.events.some((e) => state.selectedEventIds.has(e.id))).map((s) => s.sid))
       : null;
-    const hoverSid = state.hover?.sid ?? null;
+    const rawHoverSid = state.hover?.sid ?? null;
     const focus = state.storyFx?.focusSids ? new Set(state.storyFx.focusSids) : null;
     // textSet (Trend-Dot-/Heatmap-Zellen-Hover): 1:n-Kanal, Mitglieder heben sich,
     // Rest dimmt - nur in der Erkundung relevant, Story nutzt eigene storyFx-Felder.
@@ -58,6 +67,13 @@ export function createTracksLayer(g, layerCtx) {
     // Zeit-Scrubber: aktives Jahr leuchtet, alle anderen werden zur Kontext-Kulisse gedimmt.
     // null = „Alle Jahre" → beide Klassen aus, heutiges Verhalten. filtered-out behält Vorrang.
     const activeYear = state.activeYear ?? null;
+    const hoveredStorm = rawHoverSid ? storms.find((storm) => storm.sid === rawHoverSid) : null;
+    const hoverSid = activeYear != null && hoveredStorm?.year !== activeYear ? null : rawHoverSid;
+    if (rawHoverSid && hoverSid == null && state.hover?.source === 'map') {
+      queueMicrotask(() => {
+        if (bus.get().hover?.source === 'map' && bus.get().hover?.sid === rawHoverSid) clearMapHover();
+      });
+    }
 
     paths
       .classed('filtered-out', (d) => !d.events.some((e) => matchesFilters(e, state.filters)))
@@ -72,6 +88,9 @@ export function createTracksLayer(g, layerCtx) {
       .classed('story-focus', (d) => focus?.has(d.sid) ?? false)
       .classed('story-faded', (d) => focus != null && !focus.has(d.sid) && !state.storyFx?.focusOnly)
       .classed('story-hidden', (d) => focus != null && !focus.has(d.sid) && state.storyFx?.focusOnly === true)
+      // Die initiale Inline-Style aus dem D3-Join gewinnt sonst gegen CSS. Fremdjahre
+      // dürfen im Fokusmodus weder sichtbar dominieren noch Pointer-Ereignisse abfangen.
+      .style('pointer-events', (d) => (activeYear != null && d.year !== activeYear ? 'none' : 'stroke'))
       .attr('stroke-width', (d) => {
         const base = strokeForCategory(d.events[0]?.category);
         const lifted = d.sid === hoverSid || d.sid === state.detailSid
@@ -119,6 +138,10 @@ export function createTracksLayer(g, layerCtx) {
       }
       if ('storyFx' in patch) drawIn(state);
     },
-    destroy() { g.selectAll('*').remove(); },
+    destroy() {
+      svgNode?.removeEventListener('pointerleave', clearMapHover);
+      svgNode?.removeEventListener('pointercancel', clearMapHover);
+      g.selectAll('*').remove();
+    },
   };
 }

@@ -41,11 +41,29 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
   };
   const queueHoverClear = () => {
     pendingHover = null;
+    // Ein bereits geplanter Pointer-Frame darf nach dem Verlassen des Charts keinen
+    // alten Hover mehr in den Store schreiben. Das war die Ursache für den gelegentlich
+    // stehenbleibenden Gruppen-Tooltip im Evidence-Schritt.
+    if (hoverFrame != null) cancelAnimationFrame(hoverFrame);
+    hoverFrame = null;
     cancelPendingLeave();
     leaveFrame = requestAnimationFrame(() => {
       leaveFrame = null;
-      bus.set({ hover: null });
+      if (bus.get().hover?.source === 'scatter') bus.set({ hover: null });
     });
+  };
+
+  const canHover = () => {
+    const state = bus.get();
+    return state.exploreUnlocked || state.storyFx?.hoverPoints;
+  };
+  const hoverPayload = (event, d) => {
+    const state = bus.get();
+    const variant = state.storyFx?.hoverPoints ? 'simple' : undefined;
+    return {
+      sid: d.sid, eventId: d.id, x: event.clientX, y: event.clientY,
+      source: 'scatter', variant,
+    };
   };
 
   const circles = gPoints.selectAll('circle')
@@ -57,16 +75,13 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
     .classed('no-deaths', (d) => d.deaths == null)
     .attr('tabindex', 0)
     .attr('aria-label', (d) => `${d.name ?? 'Unnamed storm'} ${d.year}, ${d.country}`)
-    .on('mousemove', (event, d) => {
-      const s = bus.get();
+    .on('pointerenter pointermove', (event, d) => {
       // Story-Gate: Hover nur in der Erkundung ODER wenn ein Step ihn ausdrücklich freigibt (Step 3).
-      if (!s.exploreUnlocked && !s.storyFx?.hoverPoints) return;
-      const variant = s.storyFx?.hoverPoints ? 'simple' : undefined; // einfache Sprache im Story-Step
-      queueHover({ sid: d.sid, eventId: d.id, x: event.clientX, y: event.clientY, source: 'scatter', variant });
+      if (!canHover()) return;
+      queueHover(hoverPayload(event, d));
     })
-    .on('mouseleave', () => {
-      const s = bus.get();
-      if (!s.exploreUnlocked && !s.storyFx?.hoverPoints) return;
+    .on('pointerleave pointercancel', () => {
+      if (!canHover()) return;
       queueHoverClear();
     })
     .on('focus', (event, d) => {
@@ -123,6 +138,20 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
     bus.set({ stormPin: null, hover: null });
   };
   document.addEventListener('keydown', onDocumentKeydown);
+
+  // Sicherheitsnetz für schnelle Bewegungen, Scrollen und Browser-Tabwechsel: Nicht alle
+  // Browser liefern in diesen Fällen zuverlässig ein pointerleave am winzigen SVG-Kreis.
+  const svgNode = gPoints.node()?.ownerSVGElement;
+  const onScatterBoundaryLeave = () => {
+    if (pendingHover || bus.get().hover?.source === 'scatter') queueHoverClear();
+  };
+  const onVisibilityChange = () => {
+    if (document.hidden) onScatterBoundaryLeave();
+  };
+  svgNode?.addEventListener('pointerleave', onScatterBoundaryLeave);
+  svgNode?.addEventListener('pointercancel', onScatterBoundaryLeave);
+  window.addEventListener('blur', onScatterBoundaryLeave);
+  document.addEventListener('visibilitychange', onVisibilityChange);
 
   const interactionKey = (state) => [
     state.hover?.eventId ?? '', state.hover?.sid ?? '',
@@ -409,6 +438,10 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
       if (hoverFrame != null) cancelAnimationFrame(hoverFrame);
       if (leaveFrame != null) cancelAnimationFrame(leaveFrame);
       document.removeEventListener('keydown', onDocumentKeydown);
+      svgNode?.removeEventListener('pointerleave', onScatterBoundaryLeave);
+      svgNode?.removeEventListener('pointercancel', onScatterBoundaryLeave);
+      window.removeEventListener('blur', onScatterBoundaryLeave);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       gPoints.selectAll('*').remove();
       gConnectors.selectAll('*').remove();
     },

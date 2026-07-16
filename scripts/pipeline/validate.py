@@ -1,4 +1,7 @@
 """Validierung der Pipeline-Ausgaben — bricht laut ab, statt still falsche Story-Zahlen zu liefern."""
+import json
+import re
+
 from pipeline.outputs import EMDAT_FIELDS
 
 
@@ -56,6 +59,51 @@ def validate_challenge(events: list, meta: dict, tracks: dict):
         _fail("EM-DAT als Quelle in Challenge-Meta gelistet")
     _validate_tracks(tracks, {e["sid"] for e in events})
     print(f"validate(challenge): OK — {len(events)} offene Zeilen, {len(tracks)} Tracks, keine EM-DAT-Felder")
+
+
+def validate_provenance(meta: dict):
+    publication = meta.get("publication", {})
+    if publication.get("status") not in {"open", "permissioned", "restricted", "blocked"}:
+        _fail(f"unbekannter publication.status: {publication.get('status')}")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", publication.get("checked", "")):
+        _fail("publication.checked ist kein ISO-Datum")
+
+    sources = meta.get("sources", [])
+    source_ids = [source.get("id") for source in sources]
+    if not sources or len(source_ids) != len(set(source_ids)) or None in source_ids:
+        _fail(f"Quellen-IDs fehlen oder sind doppelt: {source_ids}")
+    for source in sources:
+        for field in ("name", "provider", "version", "subset", "usedFor", "accessed"):
+            if not source.get(field):
+                _fail(f"Quelle {source['id']} ohne {field}")
+        for field in ("url", "citationUrl"):
+            if not source.get(field, "").startswith("https://"):
+                _fail(f"Quelle {source['id']} mit ungültiger {field}: {source.get(field)}")
+        if not source.get("license", {}).get("url", "").startswith("https://"):
+            _fail(f"Quelle {source['id']} ohne HTTPS-Lizenzlink")
+
+    for step in meta.get("transformations", []):
+        unknown = set(step.get("sourceIds", [])) - set(source_ids)
+        if unknown:
+            _fail(f"Transformation {step.get('id')} mit unbekannten Quellen: {unknown}")
+
+    evidence = meta.get("analysis", {}).get("storyEvidence", {})
+    if evidence.get("heta", {}).get("radiusKm") != 370:
+        _fail(f"Heta-R34 unerwartet: {evidence.get('heta')}")
+    pam = evidence.get("pam", {})
+    if pam.get("peakWindKt") != 150 or len(pam.get("windFields", [])) != 2:
+        _fail(f"Pam-Evidenz unerwartet: {pam}")
+
+    for artifact in meta.get("artifacts", []):
+        if not re.fullmatch(r"[0-9a-f]{64}", artifact.get("sha256", "")):
+            _fail(f"Artefakt ohne SHA-256: {artifact}")
+        if artifact.get("downloadable") and artifact["file"] not in publication.get("allowedDownloads", []):
+            _fail(f"Nicht freigegebener Download: {artifact['file']}")
+
+    if meta.get("variant") == "challenge" and "EM-DAT" in json.dumps(meta, ensure_ascii=False):
+        _fail("Challenge-Meta enthält EM-DAT-spezifischen Text")
+    print(f"validate(provenance): OK — {len(sources)} Quellen, "
+          f"Status {publication['status']}, {len(meta.get('artifacts', []))} Artefakte")
 
 
 def _validate_tracks(tracks: dict, needed_sids: set):

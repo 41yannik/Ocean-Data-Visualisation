@@ -5,7 +5,7 @@ import { select, geoPath } from 'd3';
 import { makeFittedProjection } from '../core/scales.js';
 import { isScatterable } from '../core/filters.js';
 import { fmtPct } from '../core/format.js';
-import { PAM_IMPACTS, PAM_WIND_FIELDS } from './pamImpactData.js';
+import { PAM_IMPACTS } from './pamImpactData.js';
 
 const SID_PAM = '2015066S08170';
 const W = 960;
@@ -56,6 +56,8 @@ function windFieldPolygon(field) {
 
 export function createPamMorph(container, ctx) {
   const { data, bus } = ctx;
+  const pamEvidence = ctx.meta.analysis.storyEvidence.pam;
+  const windFields = pamEvidence.windFields;
   const reducedMotion = bus.get().reducedMotion;
   const eventsByIso = new Map(
     (data.index.bySid.get(SID_PAM) ?? []).filter(isScatterable).map((event) => [event.iso3, event]),
@@ -91,7 +93,7 @@ export function createPamMorph(container, ctx) {
   svg.append('path').datum(data.land).attr('class', 'land').attr('d', path);
 
   const gFields = svg.append('g').attr('class', 'pm-fields');
-  for (const field of PAM_WIND_FIELDS) {
+  for (const field of windFields) {
     gFields.append('path').datum(windFieldPolygon(field))
       .attr('class', 'pm-wind-field').attr('d', path);
   }
@@ -106,7 +108,7 @@ export function createPamMorph(container, ctx) {
   peakG.append('circle').attr('r', 4.5);
   peakG.append('line').attr('x1', 6).attr('y1', 0).attr('x2', 14).attr('y2', 0);
   peakG.append('text').attr('x', 18).attr('y', -2).attr('text-anchor', 'start')
-    .text('150 kt peak near Vanuatu');
+    .text(`${pamEvidence.peakWindKt} kt peak near Vanuatu`);
 
   const fieldLabelAt = projection([166.5, -9.0]);
   const fieldLabel = gFields.append('text').attr('class', 'pm-field-label')

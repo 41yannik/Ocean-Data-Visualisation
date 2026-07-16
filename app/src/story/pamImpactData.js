@@ -33,19 +33,3 @@ export const PAM_IMPACTS = [
     label: { coordinates: [148.00, -5.38], dx: 14, dy: -5, anchor: 'start' },
   },
 ];
-
-// IBTrACS USA-agency 34-kt radii (largest quadrant) at two documented moments.
-// The radius is converted from nautical miles to kilometres for the map label.
-// It is deliberately not treated as a local wind estimate for any country.
-export const PAM_WIND_FIELDS = [
-  {
-    coordinates: [169.6, -11.1],
-    radiiKm: { NE: 241, SE: 250, SW: 259, NW: 296 },
-    label: '34 kt wind field · 11 Mar',
-  },
-  {
-    coordinates: [168.8, -16.6],
-    radiiKm: { NE: 315, SE: 333, SW: 315, NW: 296 },
-    label: '34 kt wind field at 150 kt peak',
-  },
-];

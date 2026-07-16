@@ -17,11 +17,6 @@ export const SID_HETA = '2003359S15177';
 export const SID_PAM = '2015066S08170';
 export const SID_GUBA = '2007317S10150';
 
-// Sturmwind-Radius (R34, max. Quadrant) für Heta aus IBTrACS-Rohdaten: median 370 km,
-// nahe Peak 407 km (geprüft 2026-07-03). Damit liegen ASM (287 km Trackabstand) und
-// NIU (84 km) beide belegbar im Sturmwindfeld - Grundlage des Wind-Korridors im Hook.
-export const HETA_R34_KM = 370;
-
 // Fokus-Ausschnitt des Hooks: ASM, Niue und die Zugbahn dazwischen (inkl. Korridor-Luft).
 export const HETA_FOCUS = {
   type: 'MultiPoint',
@@ -70,6 +65,7 @@ const base = (over = {}) => ({
 
 export function buildSteps(ctx) {
   const r = (template) => resolveRefs(template, ctx);
+  const hetaRadiusKm = ctx.meta.analysis.storyEvidence.heta.radiusKm;
 
   const pamIds = (ctx.data.index.bySid.get(SID_PAM) ?? []).map((e) => e.id);
   const vutAboveIds = ctx.data.events
@@ -126,7 +122,7 @@ export function buildSteps(ctx) {
       apply: () => base({
         storyFx: fx({
           focusSids: [SID_HETA], drawSid: SID_HETA, emphasisIso3: ['ASM', 'NIU'],
-          swath: { sid: SID_HETA, radiusKm: HETA_R34_KM },
+          swath: { sid: SID_HETA, radiusKm: hetaRadiusKm },
           impactBubbles: [{ eventId: '2004-0004-ASM' }, { eventId: '2004-0004-NIU' }],
           camera: { flyMs: HETA_FLY_MS },
           focusOnly: true,
@@ -198,13 +194,14 @@ export function buildSteps(ctx) {
         <strong>vulnerability</strong>, not wind. The data suggests this; it does not prove it.`),
       transition: 'Line the countries up, and the pattern gets even clearer.',
       source: IMPACT_SOURCE,
-      hint: "Orange dots are Vanuatu's storms; each thin line drops to the dashed wind-only line. The longer the line, the more that storm's toll outran its wind.",
+      hint: "Orange dots are Vanuatu's storms; each thin line drops to the dashed wind-only line. The longer the line, the more that storm's toll outran its wind. Every dot uses the same size; deaths are not encoded.",
       apply: () => base({
         formation: 'scatter', // Bühnen-Gruppe dots2 (Paket 10 Task 8)
         storyFx: fx({
           // Band bewusst aus (Vereinfachung): die gestrichelte Wind-Linie ist die Referenz für
           // „über der Erwartung"; das wellige Quantilband lenkte nur ab. Label bleibt via showFitLabel.
           showPoints: true, showTrend: true, showBand: false, showFitLabel: true,
+          uniformPoints: true,
           // Bewusst NUR Vanuatu (Review 2026-07-13): zwei hervorgehobene Länder verwässerten
           // das Ein-Insel-Argument - Tonga/Gita kommt erst im Residual-Beat wieder ins Bild.
           focusEventIds: [...vutAboveIds],
