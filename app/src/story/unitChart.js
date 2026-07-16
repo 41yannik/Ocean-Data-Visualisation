@@ -88,10 +88,10 @@ export function unitTipContent(d) {
   const head = `<div class="tt-title">${name} · ${d.year}</div>`
     + `<div class="tt-sub">${country}</div>`;
   if (cat === 'ghost') {
-    return `${head}<div class="tt-emph">Impact never officially recorded — the human toll is unknown, not zero.</div>`;
+    return `${head}<div class="tt-emph">Impact never officially recorded: the human toll is unknown, not zero.</div>`;
   }
   if (cat === 'nowind') {
-    return `${head}<div class="tt-emph">Impact recorded, but the storm’s wind was never measured — so this pair can’t join the scatter.</div>`;
+    return `${head}<div class="tt-emph">Impact recorded, but the storm’s wind was never measured, so this pair can’t join the scatter.</div>`;
   }
   const quality = cat === 'recon'
     ? 'Wind reconstructed from disaster records'

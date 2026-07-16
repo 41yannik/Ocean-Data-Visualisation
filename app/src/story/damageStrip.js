@@ -98,7 +98,7 @@ export function createDamageStrip(container, ctx) {
     .attr('aria-label',
       'Dot plot of recorded storm damage per country on a logarithmic US-dollar axis. '
       + 'Eleven countries carry at least one recorded damage figure, led by Guam, where a single '
-      + 'record — Typhoon Mawar 2023 — accounts for about two thirds of every recorded dollar. '
+      + 'record (Typhoon Mawar 2023) accounts for about two thirds of every recorded dollar. '
       + 'A closing note counts the countries whose storm records never received a dollar figure.');
   const root = svg.append('g');
 

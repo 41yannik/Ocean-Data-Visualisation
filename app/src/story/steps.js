@@ -81,15 +81,15 @@ export function buildSteps(ctx) {
       id: 'sst-intro',
       layout: 'intro',
       title: r('A warming ocean'),
-      html: r(`The Pacific has warmed for more than a century — in {{sst:latest.year}},
+      html: r(`The Pacific has warmed for more than a century: in {{sst:latest.year}},
         sea-surface temperatures ran {{sst:latest.anom}} above the long-term average. Warmer
         water fuels tropical cyclones, but it doesn't decide who suffers. So this story asks a
         narrower question: once a cyclone exists, does its <strong>wind speed</strong> explain
         who is affected?`),
-      hint: r(`Each stripe is one year's sea-surface temperature — blue below, red above the
+      hint: r(`Each stripe is one year's sea-surface temperature: blue below, red above the
         long-term average; the line below traces the same anomaly. Temperature reaches back to
         {{sst:first.year}}, but the wind and human-impact records this story analyses begin only
-        in {{stat:yearMin}} — where the orange marker sits.`),
+        in {{stat:yearMin}}, where the orange marker sits.`),
       source: 'Sea-surface temperature anomalies: Pacific Data Hub (SPC)',
       apply: () => base({ storyFx: fx() }),
     },
@@ -100,12 +100,12 @@ export function buildSteps(ctx) {
       id: 'storm-trend',
       layout: 'intro',
       title: r('Not more storms, not stronger'),
-      html: r(`If a warmer ocean meant worse cyclones, we would expect more of them — or
+      html: r(`If a warmer ocean meant worse cyclones, we would expect more of them, or
         stronger ones. Counting every Pacific tropical storm from {{trend:yearMin}} to
         {{trend:yearMax}}, neither shows up. The number of storms each year is
         <strong>flat</strong>: the first five seasons averaged {{trend:count.first5}}, the last
         five {{trend:count.last5}}. Their <strong>average strength has not risen</strong> either.
-        So the growing human toll in this story is not because the storms themselves got worse —
+        So the growing human toll in this story is not because the storms themselves got worse:
         it is about who stands in their way.`),
       source: r('Every Pacific tropical storm, {{trend:yearMin}}–{{trend:yearMax}} · IBTrACS / NOAA'),
       hint: 'Top: each dot is the number of Pacific tropical storms in one season. Bottom: each dot is their average peak wind. The dashed lines show the linear trend across 2001–2025.',
@@ -122,13 +122,13 @@ export function buildSteps(ctx) {
       html: r(`One thing about these storms <strong>is</strong> changing: not how many, not how
         strong, but where they begin. In the Northwest Pacific, the latitude where storms first
         reach storm strength has crept poleward, from about {{trend:genesisWP.latFirst}}°N in
-        the early seasons to about {{trend:genesisWP.latLast}}°N in the recent ones — roughly
+        the early seasons to about {{trend:genesisWP.latLast}}°N in the recent ones, roughly
         <strong>{{trend:genesisWP.northKm}} km</strong> (p = {{trend:genesisWP.p}}). South of
         the equator, no such drift shows (p = {{trend:genesisSP.p}}). A shifting birthplace does
         not make a storm worse, but it can change <strong>which islands lie in its path</strong>.
         That is the thread this story follows: not the storms, but who stands in their way.`),
       source: r('Every Pacific tropical storm, {{trend:yearMin}}–{{trend:yearMax}} · genesis = first fix at tropical-storm strength · IBTrACS / NOAA'),
-      hint: 'Each dot is one season’s average formation latitude, measured as distance from the equator. Top: the Northwest Pacific — its dashed trend line climbs. Bottom: the South Pacific, on the same scale — flat. The trend is statistically clear but modest: year-to-year scatter stays large.',
+      hint: 'Each dot is one season’s average formation latitude, measured as distance from the equator. Top: the Northwest Pacific, where the dashed trend line climbs. Bottom: the South Pacific on the same scale, flat. The trend is statistically clear but modest: year-to-year scatter stays large.',
       apply: () => base({ storyFx: fx() }),
     },
     {
@@ -136,12 +136,12 @@ export function buildSteps(ctx) {
       layout: 'map',
       title: r('One storm, two ways to count impact'),
       html: r(`In January {{event:2004-0004-NIU.year}}, Cyclone Heta swept past both American
-        Samoa and Niue — both inside its gale-force wind field. By raw count, American Samoa was
+        Samoa and Niue, both inside its gale-force wind field. By raw count, American Samoa was
         hit <strong>{{stat:affectedRatio.2004-0004-ASM.2004-0004-NIU}}× harder</strong>; but
         measured against each island's population, the two were struck at almost the same scale.
         That is why the rest of this story counts storms by <strong>share of population
         affected</strong>, not by raw totals.`),
-      hint: "Left: the pale band is Heta's gale-force wind field over both islands; the orange line is its track. Right: the same two tolls — first as raw counts, then as a share of each island's population.",
+      hint: "Left: the pale band is Heta's gale-force wind field over both islands; the orange line is its track. Right: the same two tolls, first as raw counts, then as a share of each island's population.",
       source: 'Track & wind field: IBTrACS / NOAA · Reported impacts: EM-DAT / CRED',
       apply: () => base({
         storyFx: fx({
@@ -160,7 +160,7 @@ export function buildSteps(ctx) {
       layout: 'scatter',
       title: r('Stronger winds, widely different impacts'),
       html: r(`Each dot represents one storm affecting one country. One storm can create several
-        dots — one for every country with a reported impact. Farther right means stronger wind;
+        dots: one for every country with a reported impact. Farther right means stronger wind;
         higher means a larger reported affected share. The dashed line shows the average
         relationship from wind alone. The points spread widely around it: across these
         {{stat:scatterCount}} records, wind speed accounts for only about
@@ -183,14 +183,14 @@ export function buildSteps(ctx) {
       layout: 'dual',
       title: r('One storm, several kinds of exposure'),
       html: r(`Cyclone Pam ({{event:2015-0093-VUT.year}}, {{event:2015-0093-VUT.category:cat}})
-        is linked to reported impacts in five Pacific countries — but that does not mean all five
+        is linked to reported impacts in five Pacific countries, but that does not mean all five
         experienced the same wind. Pam’s <strong>{{event:2015-0093-VUT.intensity_kt:kt}} lifetime
         peak occurred near Vanuatu</strong>. Parts of Solomon Islands also lay near the track;
         Tuvalu and Kiribati mainly reported remote swell and coastal flooding. Papua New Guinea’s
         record sits amid impacts from Pam and another system, Nathan. The reported affected share
         still ranges from <strong>{{event:2015-0093-VUT.affected_pc:pct}}</strong> to
-        <strong>{{event:2015-0093-PNG.affected_pc:pct}}</strong> — a
-        {{stat:affectedPcRatio.2015-0093-VUT.2015-0093-PNG}}× span — but it compares different
+        <strong>{{event:2015-0093-PNG.affected_pc:pct}}</strong> (a
+        {{stat:affectedPcRatio.2015-0093-VUT.2015-0093-PNG}}× span), but it compares different
         exposure pathways, not equal local wind.`),
       transition: 'Pam separates the storm’s physical footprint from the outcomes reported across countries.',
       source: 'Track & gale-force radii: IBTrACS / NOAA · Reported impacts & locations: EM-DAT / CRED · Impact mechanisms: IFRC & WMO · Population: UN World Population Prospects',
@@ -212,9 +212,9 @@ export function buildSteps(ctx) {
       title: r('The repeat victims'),
       html: r(`Zoom out, and a pattern appears: some countries sit above the wind-only line
         <strong>again and again</strong>. Take Vanuatu: <strong>{{stat:aboveCount.VUT}}</strong>
-        of its storms ({{stat:aboveShare.VUT}}) hit harder than wind alone would predict —
+        of its storms ({{stat:aboveShare.VUT}}) hit harder than wind alone would predict:
         cyclones Judy and Kevin, a week apart, among the worst. That points to
-        <strong>exposure</strong> — how many people stand in a storm's path — and likely
+        <strong>exposure</strong> (how many people stand in a storm's path) and likely
         <strong>vulnerability</strong>, not wind. The data suggests this; it does not prove it.`),
       transition: 'Line the countries up, and the pattern gets even clearer.',
       source: IMPACT_SOURCE,
@@ -244,11 +244,11 @@ export function buildSteps(ctx) {
       html: r(`Strip the wind axis away and line the same storms up by country: each dot's
         distance to the <strong>right</strong> of the dashed line is how far its toll outran
         the wind-only expectation. <strong>{{stat:aboveCount.VUT}}</strong> of Vanuatu's storms
-        land on the heavy side — no other country with that many storms comes close. Tonga and
+        land on the heavy side: no other country with that many storms comes close. Tonga and
         Micronesia lean the same way; Fiji, with nearly twice the storms, splits almost evenly.`),
       transition: 'Countries tell one story. Do whole regions tell another?',
       source: IMPACT_SOURCE,
-      hint: 'Orange dots took a heavier toll than wind alone predicts, blue dots a lighter one — the note under each country simply counts its orange dots. ÷10 and ×10 mark tolls ten times below or above that expectation; countries with fewer than four complete records are folded into “Other”.',
+      hint: 'Orange dots took a heavier toll than wind alone predicts, blue dots a lighter one. The note under each country simply counts its orange dots. ÷10 and ×10 mark tolls ten times below or above that expectation; countries with fewer than four complete records are folded into “Other”.',
       apply: () => base({
         formation: 'residualRows', // Bühnen-Gruppe dots2: Morph Scatter → Zeilen
         storyFx: fx({ showPoints: true }),
@@ -266,8 +266,8 @@ export function buildSteps(ctx) {
       html: r(`Merge the same rows into the three Pacific subregions and the picture changes
         character. Polynesia’s records lean heavy:
         <strong>{{stat:subregionAboveCount.Polynesia}}</strong> outran the wind-only
-        expectation, and the group’s midpoint sits well right of the line. But Melanesia —
-        home to Vanuatu — splits almost evenly
+        expectation, and the group’s midpoint sits well right of the line. But Melanesia,
+        home to Vanuatu, splits almost evenly
         ({{stat:subregionAboveCount.Melanesia}}): Fiji’s balanced record dilutes Vanuatu’s
         within the same row. Geography sets who lies in the storm belt, but it does not
         assign the burden by region. <strong>The pattern lives at the level of countries,
@@ -308,7 +308,7 @@ export function buildSteps(ctx) {
       id: 'two-currencies',
       layout: 'intro',
       title: r('The toll has two currencies'),
-      html: r(`Suffering is counted twice, in people and in dollars — and the two ledgers barely
+      html: r(`Suffering is counted twice (in people and in dollars), and the two ledgers barely
         overlap. Of {{stat:eventCount}} storm-country records, only
         <strong>{{stat:damageCount}}</strong> carry a damage figure, totalling
         {{stat:damageTotal}}. Even that total is not spread: a single record, Typhoon Mawar
@@ -319,7 +319,7 @@ export function buildSteps(ctx) {
         <strong>Neither ledger is the whole toll.</strong>`),
       transition: 'Both ledgers agree on one thing: wind alone does not decide them.',
       source: 'Reported damage & impacts: EM-DAT / CRED · Damage in current US$, as reported',
-      hint: 'One row per country, one dot per storm record with a recorded damage figure; the axis is logarithmic — each step is 10×. The note under each country counts how many of its records carry any dollar figure at all. The closing line counts the countries that never received one.',
+      hint: 'One row per country, one dot per storm record with a recorded damage figure; the axis is logarithmic: each step is 10×. The note under each country counts how many of its records carry any dollar figure at all. The closing line counts the countries that never received one.',
       apply: () => base({ storyFx: fx() }),
     },
     {

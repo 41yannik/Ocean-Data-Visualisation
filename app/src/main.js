@@ -112,7 +112,7 @@ function evidenceWorkbench(aria = {}) {
           <div class="evidence-panel-content"><figure id="country-recurrence" class="country-recurrence"></figure></div>
         </section>
         <section id="evidence-geography" class="evidence-panel" data-panel="geography" role="tabpanel" aria-labelledby="question-geography" hidden>
-          <header><h3 id="question-geography">Where do storms concentrate — and where does the toll land?</h3><p>Switch between individual tracks, an aggregate view and the reported human toll of the same filtered storms.</p></header>
+          <header><h3 id="question-geography">Where do storms concentrate, and where does the toll land?</h3><p>Switch between individual tracks, an aggregate view and the reported human toll of the same filtered storms.</p></header>
           <div class="evidence-empty" hidden><p role="status">No storm tracks match these filters.</p><button type="button" data-clear-filters>Clear filters</button></div>
           <div class="evidence-panel-content">
             <div class="geo-controls"><div role="group" aria-label="Map layer"><button data-map-layer="tracks" aria-pressed="true">Tracks</button><button data-map-layer="hotzones" aria-pressed="false">Hot zones</button><button data-map-layer="toll" aria-pressed="false">Human toll</button></div><div class="hot-metric-control" role="group" aria-label="Hot-zone metric" hidden><button data-hot-metric="frequency" aria-pressed="true">Frequency</button><button data-hot-metric="averageWind" aria-pressed="false">Average wind</button></div></div>
@@ -120,7 +120,7 @@ function evidenceWorkbench(aria = {}) {
             <div id="map-timeline"></div>
             <p class="geo-context" data-geo-note="tracks">Track width indicates storm category. Hover or click a track to follow that storm across the evidence lab.</p>
             <p class="geo-context" data-geo-note="hotzones" hidden>Each cell aggregates the filtered tracks that cross it. Click a cell to select its contributing storm records.</p>
-            <p class="geo-context" data-geo-note="toll" hidden>Circle area sums each country's reported affected people — switch the impact measure to compare median population shares instead. Hollow rings mark countries whose filtered records report no human impact. Click a circle to select that country's records.</p>
+            <p class="geo-context" data-geo-note="toll" hidden>Circle area sums each country's reported affected people. Switch the impact measure to compare median population shares instead. Hollow rings mark countries whose filtered records report no human impact. Click a circle to select that country's records.</p>
           </div>
         </section>
       </div>

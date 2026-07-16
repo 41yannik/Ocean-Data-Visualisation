@@ -76,7 +76,7 @@ function renderTrendPanels(container, ctx, { panelSpecs, aria, tipHtml, drift = 
       .call((s) => s.append('text').attr('class', 'tt-axis-label')
         .attr('x', -10).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => p.yFmt(d)));
 
-    // Trendlinien (gestrichelt, --trend) — nur wo ein Fit hinterlegt ist
+    // Trendlinien (gestrichelt, --trend) - nur wo ein Fit hinterlegt ist
     p.series.forEach((s) => {
       if (!s.trend) return;
       const yAt = (yr) => clamp(s.trend.slope * yr + s.trend.intercept, p.yDomain[0], p.yDomain[1]);
@@ -202,7 +202,7 @@ function renderTrendPanels(container, ctx, { panelSpecs, aria, tipHtml, drift = 
   }
 
   return {
-    update() {}, // statisch (frozen Section) — Layout blendet die View ein/aus
+    update() {}, // statisch (frozen Section) - Layout blendet die View ein/aus
     destroy() { svg.remove(); tip.remove(); },
   };
 }
@@ -212,7 +212,7 @@ export function createStormTrend(container, ctx) {
   const S = t.series;
   return renderTrendPanels(container, ctx, {
     aria: 'Two stacked line charts, 2001 to 2025: the number of Pacific tropical storms per year '
-      + 'and their average wind strength. Both are essentially flat — no clear trend — so storms '
+      + 'and their average wind strength. Both are essentially flat (no clear trend), so storms '
       + 'here are not becoming more frequent or stronger.',
     panelSpecs: [
       {
@@ -231,7 +231,7 @@ export function createStormTrend(container, ctx) {
     tipHtml: (idx, yr) => {
       const c = S.count[idx], w = S.meanWind[idx];
       return `<div class="tt-title">${yr}</div>`
-        + `<div class="tt-sub">${c} storm${c === 1 ? '' : 's'} · ${w == null ? '—' : `${Math.round(w)} kt`} average wind</div>`;
+        + `<div class="tt-sub">${c} storm${c === 1 ? '' : 's'} · ${w == null ? '–' : `${Math.round(w)} kt`} average wind</div>`;
     },
   });
 }
@@ -273,7 +273,7 @@ export function createGenesisTrend(container, ctx) {
   const t = ctx.data.trends;
   const S = t.series;
   const model = buildGenesisModel(t);
-  const deg = (v, suffix) => (v == null ? '—' : `${v.toFixed(1)}${suffix}`);
+  const deg = (v, suffix) => (v == null ? '–' : `${v.toFixed(1)}${suffix}`);
   return renderTrendPanels(container, ctx, {
     aria: 'Two stacked line charts, 2001 to 2025, on one shared latitude scale: the average '
       + 'latitude where Pacific storms first reach tropical-storm strength. In the Northwest '

@@ -9,12 +9,12 @@ export function methodsHtml(meta) {
   const c = meta.coverage;
   const rows = [
     ['Time period', `${meta.window[0]}–${meta.window[1]}`],
-    ['Unit of analysis', `${meta.unit} — ${c.rows} pairs from ${c.distinct_storms} storms`],
+    ['Unit of analysis', `${meta.unit}: ${c.rows} pairs from ${c.distinct_storms} storms`],
     ['Outcome', 'reported share of national population affected (EM-DAT affected ÷ UN WPP population)'],
     ['Predictor', 'maximum sustained wind (USA agency, kt; basin-lifetime peak, not wind at landfall)'],
-    ['Model', `simple wind-only baseline — per capita: ${fitLabel(meta.fits.perCapita)} · absolute: ${fitLabel(meta.fits.absolute)}`],
+    ['Model', `simple wind-only baseline · per capita: ${fitLabel(meta.fits.perCapita)} · absolute: ${fitLabel(meta.fits.absolute)}`],
     ['Data completeness', `${c.scatterable} of ${c.rows} pairs have both a measured wind and a reported impact`],
-    ['Sources', meta.sources.map((s) => `${s.name} — ${s.provider}`).join(' · ')],
+    ['Sources', meta.sources.map((s) => `${s.name} (${s.provider})`).join(' · ')],
   ];
   return `
     <section class="section section--methods" id="methods">
@@ -29,7 +29,7 @@ export function methodsHtml(meta) {
           </ul>
           <p class="methods-note">Reported impacts are incomplete and shaped by reporting
             quality. This piece compares reported impact patterns against a simple wind-only
-            baseline — it does not prove causal vulnerability. Impact figures are EM-DAT
+            baseline; it does not prove causal vulnerability. Impact figures are EM-DAT
             derivatives, used for educational purposes only.</p>
         </details>
       </div>

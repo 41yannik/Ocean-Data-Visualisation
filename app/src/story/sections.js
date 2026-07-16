@@ -10,7 +10,7 @@ import { HETA_FOCUS } from './steps.js';
 const ARIA = {
   sst: 'Warming stripes with an aligned annual line chart: Pacific sea-surface temperature anomalies since 1850',
   stormTrend: 'Two stacked line charts, 2001 to 2025: the number of Pacific tropical storms per year '
-    + 'and their average wind strength, both essentially flat with a near-horizontal trend line — no clear trend',
+    + 'and their average wind strength, both essentially flat with a near-horizontal trend line: no clear trend',
   map: 'Map of Pacific tropical-cyclone tracks; track width shows storm category',
   scatter: 'Scatterplot of maximum sustained wind against share of national population reported affected',
 };
@@ -24,7 +24,7 @@ export const SECTIONS = [
     step: 2, act: 'The question', views: ['genesisTrend'],
     aria: { genesisTrend: 'Two stacked line charts, 2001 to 2025, on one shared latitude scale: '
       + 'the average latitude where storms first reach tropical-storm strength. The Northwest Pacific '
-      + 'panel trends clearly poleward, about 322 kilometres; the South Pacific panel is flat — no clear trend' },
+      + 'panel trends clearly poleward, about 322 kilometres; the South Pacific panel is flat: no clear trend' },
   },
   {
     step: 3, act: 'The question', views: ['map', 'bars'],
@@ -33,7 +33,7 @@ export const SECTIONS = [
     mapOpts: { fitTo: HETA_FOCUS, labelScope: 'story' },
     aria: {
       map: 'Map zoomed to American Samoa and Niue: a shaded band marks Heta’s gale-force wind field covering both islands; circle area shows reported affected people, labels also give the affected share of each island’s population',
-      bars: 'Comparison for American Samoa versus Niue: tall bars show reported affected people (a 33× gap), short bars below show the affected share of population (about 41% vs 38%) — nearly equal',
+      bars: 'Comparison for American Samoa versus Niue: tall bars show reported affected people (a 33× gap), short bars below show the affected share of population (about 41% vs 38%), nearly equal',
     },
   },
   {
@@ -92,7 +92,7 @@ export const SECTIONS = [
     step: 10, act: 'The people', views: ['damageStrip'],
     aria: { damageStrip: 'Dot plot of recorded storm damage per country on a logarithmic US-dollar '
       + 'axis: eleven countries carry at least one recorded damage figure, led by Guam, where a single '
-      + 'record — Typhoon Mawar 2023 — accounts for about two thirds of every recorded dollar; a closing '
+      + 'record (Typhoon Mawar 2023) accounts for about two thirds of every recorded dollar; a closing '
       + 'note counts nine further countries whose 23 storm records never received a dollar figure' },
   },
   {

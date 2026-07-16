@@ -6,9 +6,9 @@ import { fmtInt, fmtPct, fmtKt, fmtSource, fmtCategory } from '../core/format.js
 
 const MINI = { width: 340, height: 190, pad: 14 };
 
-// Fehlwerte in der dichten 4-Spalten-Tabelle als "—" (die Fußnote erklärt die
+// Fehlwerte in der dichten 4-Spalten-Tabelle als "–" (die Fußnote erklärt die
 // Bedeutung) - der lange globale Fallback "not reported" würde die Spalten sprengen.
-const cell = (v, fmt) => (v == null ? '—' : fmt(v));
+const cell = (v, fmt) => (v == null ? '–' : fmt(v));
 
 export function createDetailPanel(container, ctx) {
   const { bySid } = ctx.data.index;
@@ -46,7 +46,7 @@ export function createDetailPanel(container, ctx) {
             </tr>`).join('')}
         </tbody>
       </table>
-      <p class="dp-note">Same storm, same maximum sustained wind, different reported toll per country (unit: storm-country pair). "—" = not reported.</p>`;
+      <p class="dp-note">Same storm, same maximum sustained wind, different reported toll per country (unit: storm-country pair). "–" = not reported.</p>`;
 
     container.setAttribute('aria-label', `Details for ${first.name ?? 'unnamed storm'} ${first.year}`);
     container.querySelector('.dp-close').addEventListener('click', close);

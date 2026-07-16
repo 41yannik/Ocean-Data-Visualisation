@@ -5,7 +5,7 @@ const intFmt = format(',d');
 const pctFmt = format('.2~p');
 
 // Fehlwerte sprechen die Methodik-Sprache: Impacts sind BERICHTET (not reported),
-// Wind ist GEMESSEN (not measured). Dichte Tabellen nutzen lokal "—" (detailPanel).
+// Wind ist GEMESSEN (not measured). Dichte Tabellen nutzen lokal "–" (detailPanel).
 export const fmtInt = (v) => (v == null ? 'not reported' : intFmt(v));
 export const fmtPct = (v) => (v == null ? 'not reported' : pctFmt(v));
 export const fmtKt = (v) => (v == null ? 'not measured' : `${Math.round(v)} kt`);

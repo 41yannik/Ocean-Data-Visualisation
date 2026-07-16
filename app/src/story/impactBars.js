@@ -53,7 +53,7 @@ export function createImpactBars(container, ctx) {
       .text('Population share does not.');
     svg.append('text').attr('class', 'ib-sub')
       .attr('x', W / 2).attr('y', 62).attr('text-anchor', 'middle')
-      .text(`${ratio}× apart in raw numbers — nearly the same as a share of people`);
+      .text(`${ratio}× apart in raw numbers, nearly the same as a share of people`);
 
     // ---- Ebene 1: absolute Betroffene (vertikale Balken) ----
     // Caption über der Wertzeile des höchsten Balkens (Wert sitzt bei ABS_TOP-10).
