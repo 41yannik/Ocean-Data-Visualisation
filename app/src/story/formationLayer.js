@@ -111,7 +111,9 @@ export function createFormationLayer(gDots, layerCtx) {
   }
   const gRR = gDots.append('g').attr('class', 'rr-chrome').attr('opacity', 0);
   drawRowChrome(gRR, rr);
-  const gRRSub = gDots.append('g').attr('class', 'rr-chrome').attr('opacity', 0);
+  // Modifier-Klasse: unterscheidbar für Styling/Audit (beide Chromes liegen im DOM,
+  // nur die aktive Formation blendet ihres ein).
+  const gRRSub = gDots.append('g').attr('class', 'rr-chrome rr-chrome--sub').attr('opacity', 0);
   drawRowChrome(gRRSub, rrSub, { medianTick: true });
 
   // Lokaler Tooltip - Wortlaut identisch zum eigenständigen Unit Chart

@@ -1593,8 +1593,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 }
 .evidence-metric .mode-toggle button[aria-pressed="true"] { background: var(--point); border-color: var(--point); color: #fff; }
 .evidence-filter-summary { min-height: 32px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 7px; }
-/* Filterreaktive Kernaussage über den Panels: Betonung nur über <strong>, Token-Farben */
-.evidence-hero { margin: 2px 0 10px; font-size: 17px; color: var(--muted); }
+/* Filterreaktive Kernaussage IN der Controls-Zeile (kostet keine Panel-Höhe):
+   Betonung nur über <strong>, Token-Farben */
+.evidence-hero { flex: 1; margin: 0; font-size: 14.5px; text-align: center; color: var(--muted); }
 .evidence-hero strong { color: var(--text); font-variant-numeric: tabular-nums; }
 .evidence-all-records { color: var(--muted); font-size: 12px; }
 .evidence-filter-chip {

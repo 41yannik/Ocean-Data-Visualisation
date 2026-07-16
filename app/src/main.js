@@ -89,9 +89,9 @@ function evidenceWorkbench(aria = {}) {
       </div>
       <div class="evidence-context-controls">
         <div class="evidence-metric"><span>Impact measure</span><div id="mode-toggle"></div></div>
+        <p id="evidence-hero" class="evidence-hero" aria-live="polite" aria-atomic="true"></p>
         <div id="evidence-filter-summary" class="evidence-filter-summary" aria-live="polite" aria-atomic="true"></div>
       </div>
-      <p id="evidence-hero" class="evidence-hero" aria-live="polite" aria-atomic="true"></p>
       <div class="evidence-panels">
         <section id="evidence-outliers" class="evidence-panel" data-panel="outliers" role="tabpanel" aria-labelledby="question-outliers">
           <header><h3 id="question-outliers">Which impacts outran the wind-only expectation?</h3><p>Distance above or below the line shows where reported impact diverged from wind alone.</p></header>
