@@ -2,61 +2,67 @@
 
 Interaktive D3-Visualisierung über tropische Wirbelstürme und gemeldete menschliche Auswirkungen in pazifischen Inselstaaten. Die Seite verbindet eine geführte Story mit einem frei filterbaren Evidence Lab und einem öffentlich lesbaren Provenienzbereich.
 
-## Datenvarianten und Veröffentlichung
+## Ordnerstruktur der Abgabe
 
-Die Codebasis unterstützt zwei Varianten:
+```
+.
+├── project/      # der gesamte Code (Visualisierung + Datenpipeline + Tests)
+│   ├── app/          # Vanilla-JS/Vite/D3-Frontend (deployt als GitHub Pages)
+│   ├── scripts/      # Python-Datenpipeline
+│   └── tests/        # Unit-, Pipeline- und Playwright-Prüfungen
+├── data/         # Rohdaten der Quellen + SOURCES.md (Herkunft/Lizenzen)
+├── last weeks presentation/
+└── short paper/
+```
 
-- `kurs`: ereignisbasierte Auswertung mit EM-DAT-Derivaten. Der aktuelle Metadatensatz ist `restricted`, bis der genaue Umfang der berichteten Anbieterfreigabe schriftlich archiviert und geprüft ist.
-- `challenge`: ausschließlich für eine spätere offene Wirkungsquelle vorgesehen. Diese Variante ist derzeit `blocked`, weil das öffentliche Wirkungsmaß noch nicht gewählt wurde.
+## Datenbasis und Veröffentlichung
 
-`npm run build:public` prüft den Status vor dem Build. Nur `publication.status=open|permissioned`, `publicBuild=true`, vollständig verifizierte Quellen und erlaubte Downloads passieren dieses Gate.
+Die Visualisierung nutzt eine einzige, vollständig offene Datenbasis auf Land-Jahr-Auflösung:
+
+- Wirkungsmaß: [PDH SDG 11.5.1 „directly affected persons attributed to disasters"](https://pacificdata.org/data/dataset/sustainable-development-goals-sdg) (SPC/Pacific Data Hub, Jahreswerte 2005–2023, kompiliert aus dem UNDRR Sendai Framework Monitor).
+- Sturm-Verknüpfung: je Land und Jahr der stärkste IBTrACS-Sturm, dessen Track innerhalb von 500 km um das Länderzentroid verlief.
+
+Die Rohdaten liegen unter `data/` (Herkunft und Lizenzen: [`data/SOURCES.md`](data/SOURCES.md)). `npm run build:public` prüft den Publikationsstatus vor dem Build. Nur `publication.status=open|permissioned`, `publicBuild=true`, vollständig verifizierte Quellen und erlaubte Downloads passieren dieses Gate; ein Leck-Guard blockiert gesperrte Felder und Quelltexte dauerhaft.
 
 ## Quellen
 
 - [IBTrACS v04r01, NOAA/NCEI](https://www.ncei.noaa.gov/products/international-best-track-archive): Tracks, Intensität, Kategorien, R34-Radien und saisonale Trends.
+- [SPC/PDH SDG-Indikatoren](https://pacificdata.org/data/dataset/sustainable-development-goals-sdg): jährliche Betroffenenzahlen (`VC_DSR_AFFCT`, SDG 11.5.1).
 - [SPC/PDH Climate Change Indicators](https://pacificdata.org/data/dataset/climate-change-indicators-df-climate-change): jährliche SST-Anomalien.
-- [UN World Population Prospects 2024](https://population.un.org/wpp/): Bevölkerungsnormalisierung; verarbeitet aus `WPP2024_GEN_F01_DEMOGRAPHIC_INDICATORS_FULL.xlsx`.
+- [UN World Population Prospects 2024](https://population.un.org/wpp/): Bevölkerungsnormalisierung (CC BY 3.0 IGO, Namensnennung erforderlich).
 - [Natural Earth über world-atlas](https://github.com/topojson/world-atlas): 110m-Basiskarte, Public Domain.
-- EM-DAT, IFRC und WMO werden nur in der Kursvariante verwendet; genaue Teilmengen, Felder, Abrufdaten und Lizenzlinks stehen im generierten `meta.json` und im Seitenabschnitt „Data & methods“.
+
+Genaue Teilmengen, Felder, Abrufdaten und Lizenzlinks stehen im generierten `project/app/public/data/meta.json` und im Seitenabschnitt „Data & methods".
 
 ## Lokal ausführen
 
-Voraussetzungen: Node.js 20+, Python 3 mit pandas, NumPy und SciPy sowie die nicht versionierten Rohdaten unter `Data/`.
+Voraussetzungen: Node.js 20+, Python 3 mit pandas, NumPy und SciPy. Die erzeugten Artefakte sind eingecheckt, das Frontend läuft ohne Pipeline-Lauf.
 
 ```bash
-python3 scripts/build_track_to_toll.py --variant kurs
-cd app
+cd project/app
 npm ci
 npm run dev
 ```
 
-Die offene Platzhaltervariante wird mit `--variant challenge` erzeugt und per `VITE_DATA_VARIANT=challenge` geladen. Sie ist noch keine vollständige öffentliche Story.
-
 ## Reproduzieren und prüfen
 
 ```bash
-python3 scripts/build_track_to_toll.py --variant beide
+cd project
+python3 scripts/build_track_to_toll.py     # liest ../data, schreibt app/public/data
 cd app
-npm run check
-npm run test:browser
+npm run check                              # Unit- + Pipeline-Tests + Build
+npm run test:browser                       # Playwright-Audit
 ```
 
-Die Pipeline erzeugt JSON-Artefakte sowie CSV-Exporte für die offenen SST- und Sturmtrendserien. `meta*.json` enthält Quellenkatalog, Transformationen, Story-Evidenz, Git-Stand und SHA-256-Prüfsummen. Heta-R34 und Pams Windfelder werden direkt aus den IBTrACS-Quadranten berechnet.
+Die Pipeline erzeugt JSON-Artefakte sowie CSV-Exporte für die offenen SST- und Sturmtrendserien. `meta.json` enthält Quellenkatalog, Transformationen, Story-Evidenz, Git-Stand und SHA-256-Prüfsummen.
 
-Ein Public-Build ist absichtlich strenger:
+Der Public-Build:
 
 ```bash
-cd app
-VITE_DATA_VARIANT=challenge npm run build:public
+cd project/app
+npm run build:public
 ```
 
-Solange die Challenge-Variante `blocked` ist, muss dieser Befehl fehlschlagen.
+## Was die Visualisierung nicht behauptet
 
-## Projektstruktur
-
-- `scripts/pipeline/`: Laden, Join, Statistik, Evidenz, Provenienz und Validierung.
-- `app/src/story/`: Story-Konfiguration, Kapitelmethoden und Visualisierungen.
-- `app/src/ui/`, `app/src/map/`, `app/src/scatter/`: verknüpfte Exploration und D3-Layer.
-- `tests/`: Unit-, Pipeline- und Playwright-Prüfungen.
-
-Die Visualisierung beweist keine kausale Verwundbarkeit. Gemeldete Auswirkungen sind unvollständig, mehrere Länderzeilen können zum selben Sturm gehören, Peakwind ist nicht gleich lokaler Wind am Landfall, und fehlende Werte bedeuten nicht null Betroffene.
+Die Visualisierung beweist keine kausale Verwundbarkeit. Die Betroffenenzahlen sind Jahreswerte über alle Katastrophen (nicht sturm-spezifisch), gemeldete Auswirkungen sind unvollständig, Peakwind ist nicht gleich lokaler Wind am Landfall, und fehlende Werte bedeuten nicht null Betroffene.

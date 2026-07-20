@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>From Track to Toll: Pacific cyclone wind vs. reported affected share</title>
+  <!-- relativ (nicht /favicon.png): base './' hält den Build file://-tauglich -->
+  <link rel="icon" type="image/png" href="./favicon.png" />
+  <script>
+    (() => {
+      const key = 'track-to-toll-theme';
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored === 'light' || stored === 'ocean') theme = stored;
+      } catch (_) {
+        // Storage kann in restriktiven Browsermodi fehlen; Light bleibt der sichere Default.
+      }
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme === 'ocean' ? 'dark' : 'light';
+    })();
+  </script>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Layout v5 (2026-07-03): nativer linearer One-Pager. Kein Sticky, kein
+         Scroll-Hijacking - strikte vertikale Sektionsfolge (Text über zentrierter
+         Grafik, viel Weißraum). Sektionen rendert main.js; Instanzen mounten lazy
+         per IntersectionObserver, wenn die Grafik sichtbar wird. -->
+    <header class="hero" id="hero">
+      <div class="hero-inner">
+        <p class="kicker">Pacific Dataviz · 2001–2026</p>
+        <h1>From Track to Toll</h1>
+        <p class="hero-tagline">Does stronger wind really explain who suffers most?</p>
+        <p class="hero-lead">Using Pacific cyclone records from 2001–2026, this story tests how
+          far lifetime peak wind aligns with the reported share of people affected. Here,
+          “toll” means reported people affected—not a death count. Follow the path from physical
+          storm tracks to country-level impact records across Pacific islands.</p>
+        <p class="hint">Scroll on ↓</p>
+      </div>
+    </header>
+
+    <main id="sections"><!-- Sektionen (main.js, Layout v5) --></main>
+  </div>
+
+  <aside id="detail" class="detail-panel" aria-hidden="true"></aside>
+  <!-- Tooltip appendet sich selbst an <body> -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

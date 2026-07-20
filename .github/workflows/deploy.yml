@@ -1,7 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Baut die Vite-App in app/ und veröffentlicht app/dist auf GitHub Pages.
-# Custom-Domain: ozeanvisualisierung.yannik-h-huber.de (siehe app/public/CNAME).
+# Baut die Vite-App in project/app/ und veröffentlicht project/app/dist auf GitHub Pages.
+# Custom-Domain: ozeanvisualisierung.yannik-h-huber.de (siehe project/app/public/CNAME).
 on:
   push:
     branches: [main]
@@ -22,23 +22,22 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: app
+        working-directory: project/app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: project/app/package-lock.json
       - run: npm ci
       - run: npm run build:public
         env:
-          VITE_DATA_VARIANT: challenge
           VITE_PUBLIC_BUILD: "1"
           VITE_COMMIT_SHA: ${{ github.sha }}
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: app/dist
+          path: project/app/dist
 
   deploy:
     needs: build

@@ -4,21 +4,14 @@
 # Dependencies & Build
 node_modules/
 dist/
-
-# Rohdaten — nicht im Repo (Größe + Lizenzen; EM-DAT: internal use only)
-# ohne Slash: matcht auch den Data-Symlink in der Arbeitskopie
-/Data
-/Developer API/
-
-# Generierte Kurs-Artefakte enthalten EM-DAT-Derivate. Sie bleiben lokal, bis der genaue
-# Umfang einer schriftlichen Anbieterfreigabe dokumentiert ist. Bereits versionierte
-# Altstände werden durch diese Ignore-Regel nicht rückwirkend aus der Git-Historie entfernt.
-/app/public/data/events.json
-/app/public/data/meta.json
+.vite/
 
 # Python
 __pycache__/
 *.pyc
 
-# Playwright/Verifikations-Screenshots (lokale Prüfung, nicht ins Repo)
-.playwright-mcp/
+# Tool-Cache (Claude Code / impeccable)
+.impeccable/
+
+# Hinweis: Die Rohdaten unter data/ und die erzeugten Artefakte unter
+# project/app/public/data/ werden bewusst mit veröffentlicht.
