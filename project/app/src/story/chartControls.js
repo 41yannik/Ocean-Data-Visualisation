@@ -8,18 +8,21 @@ import { COUNTRY_LOOKUP } from '../map/countryNames.js';
 import { resolveRefs } from './refs.js';
 import { resolveHighlightSpec } from './highlightSpecs.js';
 
-// Gegenbeispiele aus den offenen Land-Jahr-Daten: Harold/Vanuatu weit über der
-// Wind-only-Linie (83 % betroffen), Donna/Neukaledonien weit darunter (125 kt, 4 Gemeldete).
+// Gegenbeispiele aus den offenen Land-Jahr-Daten. Beide erlebten einen sehr starken
+// Wind, und die gemeldeten Anteile liegen um Größenordnungen auseinander - genau die
+// Aussage des Beats. Der dritte Button zeigt die gemeldeten Nullen als Klasse.
+// (Vorher hießen die Buttons „above/below fit" und ein Set „Largest gaps from fit";
+// da es keinen erklärenden Fit mehr gibt, benennen sie jetzt die Sache selbst.)
 const BUTTONS = [
   {
-    key: 'harold', eventId: 'VUT-2020', label: 'Harold · above fit',
+    key: 'harold', eventId: 'VUT-2020', label: 'Harold · Vanuatu',
     anno: 'Harold · {{event:VUT-2020.affected_pc:pct}} affected at {{event:VUT-2020.intensity_kt:kt}}',
   },
   {
-    key: 'donna', eventId: 'NCL-2017', label: 'Donna · below fit',
+    key: 'donna', eventId: 'NCL-2017', label: 'Donna · New Caledonia',
     anno: 'Donna · {{event:NCL-2017.affected_pc:pct}} affected at {{event:NCL-2017.intensity_kt:kt}}',
   },
-  { key: 'outliers', spec: 'outliers', label: 'Largest gaps from fit' },
+  { key: 'zero', spec: 'zero', label: 'Reported zero' },
 ];
 
 const DEFAULT_FILTERS = { yearRange: [2005, 2023], categories: null, countries: null };

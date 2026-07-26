@@ -34,6 +34,8 @@ import { createStageGroup } from './story/stageGroup.js';
 import { createFormationLayer } from './story/formationLayer.js';
 import { createChartControls } from './story/chartControls.js';
 import { createConclusionSynthesis } from './story/conclusionSynthesis.js';
+import { createHaroldComparison } from './story/haroldComparison.js';
+import { createWinstonRank } from './story/winstonRank.js';
 import { createTrackHeatmap } from './ui/trackHeatmap.js';
 import { createTollMap } from './ui/tollMap.js';
 import { createCountryRecurrence } from './ui/countryRecurrence.js';
@@ -56,6 +58,18 @@ const params = new URLSearchParams(location.search);
 // Kompakter Scatter für das stabile Analysefenster des Evidence Labs.
 const EXPLORE_SCATTER = { width: 720, height: 500, margin: { top: 24, right: 20, bottom: 68, left: 64 } };
 
+// Eigene, größere Box NUR für die dots2-Bühne (Länderzeilen + Unit-Raster, Audit
+// 2026-07): 15 Länderzeilen in der globalen SCATTER-Box (562×416) waren mit ~24,5px
+// Zeilenhöhe zu eng. Die dots2-Bühne zeigt nie die 'scatter'-Formation, daher ist die
+// dort sonst reservierte Achsen-Bodenhöhe (76px) toter Raum, den diese Box in
+// Zeilenhöhe umwandelt (bottom: 20 statt 76 → rowH = (696-28-20-14-34)/15 = 40px genau).
+// Bewusst LOKAL hier, NICHT in core/config.js: SCATTER dort bleibt unangetastet, weil es
+// auch von den Explore-Thumbnails und dem Evidence-Panel-Scatter genutzt wird.
+const DOTS2_SCATTER = {
+  width: 640, height: 696,
+  margin: { top: 28, right: 20, bottom: 20, left: 58 },
+};
+
 function evidenceWorkbench(aria = {}) {
   return `
     <div class="evidence-lab">
@@ -67,7 +81,7 @@ function evidenceWorkbench(aria = {}) {
           </button>
           <button id="tab-residuals" role="tab" data-explore-view="residuals" aria-controls="evidence-residuals" aria-selected="false" tabindex="-1">
             <span class="thumb-viz" data-thumb="residuals" aria-hidden="true"></span>
-            <span class="thumb-label">Beyond the wind line</span>
+            <span class="thumb-label">Impact by country</span>
           </button>
           <button id="tab-countries" role="tab" data-explore-view="countries" aria-controls="evidence-countries" aria-selected="false" tabindex="-1">
             <span class="thumb-viz" data-thumb="countries" aria-hidden="true"></span>
@@ -92,12 +106,12 @@ function evidenceWorkbench(aria = {}) {
       </div>
       <div class="evidence-panels">
         <section id="evidence-outliers" class="evidence-panel" data-panel="outliers" role="tabpanel" aria-labelledby="question-outliers">
-          <header><h3 id="question-outliers">Which impacts outran the wind-only expectation?</h3><p>Distance above or below the line shows where reported impact diverged from wind alone.</p></header>
+          <header><h3 id="question-outliers">Does the wind a country got predict its reported impact?</h3><p>Right means a stronger wind reached that country; higher means a larger share reported affected. The band below holds the country-years reported as exactly zero.</p></header>
           <div class="evidence-empty" hidden><p role="status">No complete wind-and-impact records match these filters.</p><button type="button" data-clear-filters>Clear filters</button></div>
           <div class="evidence-panel-content outlier-layout"><figure class="viz-frame viz-frame--scatter" data-view="scatter" aria-label="${aria.scatter ?? ''}"></figure><aside id="selection-summary" class="evidence-summary"></aside></div>
         </section>
         <section id="evidence-residuals" class="evidence-panel" data-panel="residuals" role="tabpanel" aria-labelledby="question-residuals" hidden>
-          <header><h3 id="question-residuals">Who suffers more than wind alone predicts?</h3><p>One row per country, every record placed by its distance from the wind-only line. Dots to the right took a heavier toll than the wind predicts; the emphasised marker is the country's median.</p></header>
+          <header><h3 id="question-residuals">How does reported impact vary by country size?</h3><p>One row per country, ordered by population from smallest to largest, every record placed by its reported impact. The dashed line is the median across all records; the emphasised marker is the country's median.</p></header>
           <div class="evidence-empty" hidden><p role="status">No complete wind-and-impact records match these filters.</p><button type="button" data-clear-filters>Clear filters</button></div>
           <div class="evidence-panel-content">
             <div class="geo-controls"><div role="group" aria-label="Group rows by"><button data-residual-group="country" aria-pressed="true">Country</button><button data-residual-group="subregion" aria-pressed="false">Subregion</button><button data-residual-group="sizeClass" aria-pressed="false">State size</button></div></div>
@@ -292,7 +306,7 @@ async function runApp() {
       const builders = {
         dots2: (el, groupCtx) => {
           const scatter = createScatter(el.querySelector('[data-view=scatter]'), groupCtx,
-            { layers: ['axes', 'trend', 'annotations'] });
+            { layers: ['axes', 'trend', 'annotations'], dims: DOTS2_SCATTER });
           const gDots = scatter.root.append('g').attr('class', 'g-formation');
           const formation = createFormationLayer(gDots,
             { ...groupCtx, scales: scatter.scales, inner: scatter.inner });
@@ -387,6 +401,8 @@ async function runApp() {
         if (v === 'stormTrend') components.push(createStormTrend(el, ctx));
         if (v === 'map') components.push(createMap(el, ctx, sec.mapOpts ?? {}));
         if (v === 'conclusionSynthesis') components.push(createConclusionSynthesis(el, ctx));
+        if (v === 'haroldComparison') components.push(createHaroldComparison(el, ctx));
+        if (v === 'winstonRank') components.push(createWinstonRank(el, ctx));
         // ohne Brush-Layer: gesperrte Sektionen brauchen kein Selektions-Overlay
         if (v === 'scatter') {
           components.push(createScatter(el, ctx, { layers: ['axes', 'rug', 'trend', 'points', 'annotations'] }));

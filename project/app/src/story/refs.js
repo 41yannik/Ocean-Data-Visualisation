@@ -15,13 +15,22 @@
 //   {{stat:<name>[.<args>]}}                 abgeleitete Statistik, vor-formatiert:
 //       scatterCount · eventCount · missingPairs · missingToll · missingWind
 //       yearMin · yearMax · totalAffected
-//       aboveShare.<iso3>                    Anteil der Scatter-Punkte des Landes über der Linie
-//       aboveCount.<iso3>                    dito als Zähler, z. B. "8 of 10"
-//       subregionAboveCount.<name>           Zähler je Subregion, z. B. "12 of 17"
+//       zeroCount · zeroWithStorm · zeroStrong · noReport · stormExposed
+//       medianShare                          Median-Anteil über alle Fit-Records
+//       smallCountryAbove                    "12 of 14" - Records kleiner Länder über dem Median
+//       smallCountryMax                      Bevölkerungsschwelle „klein" (formatiert)
 //       affectedRatio.<idA>.<idB>            gerundetes Verhältnis affected(A)/affected(B)
 //       affectedPcRatio.<idA>.<idB>          gerundetes Verhältnis affected_pc(A)/affected_pc(B)
+//
+// Entfallen (Audit 2026-07): aboveShare/aboveCount/subregionAboveCount zählten Punkte
+// über einer wind-only line, die nichts erklärt - bei einer Basisrate von 56 % war
+// „über der Linie" der Normalfall und kein Befund.
 import { fmtInt, fmtPct, fmtKt, fmtCategory } from '../core/format.js';
-import { isScatterable } from '../core/filters.js';
+import { isScatterable, isZeroLane } from '../core/filters.js';
+
+// Schwelle „kleines Land" für den Landesgrößen-Beat: unter 60 000 Einwohnern.
+// Bewusst eine runde Zahl, die im Text steht - keine aus den Daten optimierte Grenze.
+export const SMALL_COUNTRY_POP = 60000;
 
 const EVENT_FORMATTERS = {
   int: fmtInt, pct: fmtPct, kt: fmtKt, cat: fmtCategory,
@@ -119,6 +128,14 @@ function lookupTrend([group, key], ctx, token) {
   throw new Error(`Story-Referenz auf unbekannten Trend-Schlüssel: ${token}`);
 }
 
+// Median des gemeldeten Anteils über alle Fit-Records - Bezugsgröße des Landesgrößen-Beats.
+function medianShare(events) {
+  const vals = events.filter(isScatterable).map((e) => e.affected_pc).sort((a, b) => a - b);
+  if (!vals.length) return 0;
+  const mid = vals.length >> 1;
+  return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+}
+
 function lookupStat([name, ...args], ctx, token) {
   const events = ctx.data.events;
   if (name === 'scatterCount') return fmtInt(events.filter(isScatterable).length);
@@ -127,7 +144,14 @@ function lookupStat([name, ...args], ctx, token) {
   // Ehrliche Zerlegung der nicht-scatterbaren Records: ohne gemeldeten Impact vs.
   // mit Impact, aber ohne Sturm im Naehe-Radius (missingWind).
   if (name === 'missingToll') return fmtInt(events.filter((e) => e.affected == null).length);
-  if (name === 'missingWind') return fmtInt(events.filter((e) => e.affected != null && !isScatterable(e)).length);
+  // NUR Records mit POSITIVEM Toll und ohne Sturm im Radius. Die Vorgaengerformel
+  // (affected != null && !isScatterable) zaehlte die 75 gemeldeten Nullen mit und ergab
+  // 104 - die Nullen stehen im selben Satz aber schon separat, und eine gemeldete Null
+  // ist kein "reported toll". 29 ist zugleich der Wert in meta.coverage.missing_wind,
+  // den der Methodenabschnitt ausweist (Audit 2026-07-26).
+  if (name === 'missingWind') {
+    return fmtInt(events.filter((e) => (e.affected ?? 0) > 0 && e.intensity_kt == null).length);
+  }
   // Challenge-Ehrlichkeit: Land-Jahre, die ein Sturm im Nähe-Radius erreichte (aus meta.coverage).
   if (name === 'stormExposed') {
     const n = ctx.meta?.coverage?.storm_exposed;
@@ -136,23 +160,27 @@ function lookupStat([name, ...args], ctx, token) {
   }
   if (name === 'yearMin') return String(Math.min(...events.map((e) => e.year)));
   if (name === 'yearMax') return String(Math.max(...events.map((e) => e.year)));
-  if (name === 'aboveShare') {
-    const rows = events.filter((e) => e.iso3 === args[0] && isScatterable(e));
-    if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für ${args[0]} (${token})`);
-    return fmtPct(rows.filter((e) => (e.residual_pc ?? 0) > 0).length / rows.length);
+  // Ehrlichkeits-Beat: ausdrücklich als 0 gemeldete Land-Jahre.
+  if (name === 'zeroCount') return fmtInt(events.filter((e) => e.affected === 0).length);
+  if (name === 'zeroWithStorm') return fmtInt(events.filter(isZeroLane).length);
+  if (name === 'zeroStrong') {
+    // Wie viele der gemeldeten Nullen trafen ein Land mit Hurrikanstärke (>= 64 kt)?
+    return fmtInt(events.filter((e) => isZeroLane(e) && e.intensity_kt >= 64).length);
   }
-  if (name === 'aboveCount') {
-    // Zähler-Variante von aboveShare: macht die Behauptung im Chart abzählbar ("8 of 10").
-    const rows = events.filter((e) => e.iso3 === args[0] && isScatterable(e));
-    if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für ${args[0]} (${token})`);
-    return `${rows.filter((e) => (e.residual_pc ?? 0) > 0).length} of ${rows.length}`;
+  if (name === 'noReport') {
+    const n = ctx.meta?.coverage?.no_report;
+    if (n == null) throw new Error(`Story-Referenz: coverage.no_report fehlt (${token})`);
+    return fmtInt(n);
   }
-  if (name === 'subregionAboveCount') {
-    // Zähler je Subregion (Subregion-Beat): "12 of 17" für Polynesia.
-    const rows = events.filter((e) => e.subregion === args[0] && isScatterable(e));
-    if (!rows.length) throw new Error(`Story-Referenz: keine Scatter-Punkte für Subregion ${args[0]} (${token})`);
-    return `${rows.filter((e) => (e.residual_pc ?? 0) > 0).length} of ${rows.length}`;
+  // Landesgrößen-Beat: Median-Anteil und die Bilanz der kleinsten Länder.
+  if (name === 'medianShare') return fmtPct(medianShare(events));
+  if (name === 'smallCountryAbove') {
+    const med = medianShare(events);
+    const rows = events.filter((e) => isScatterable(e) && e.pop < SMALL_COUNTRY_POP);
+    if (!rows.length) throw new Error(`Story-Referenz: keine Records kleiner Länder (${token})`);
+    return `${rows.filter((e) => e.affected_pc > med).length} of ${rows.length}`;
   }
+  if (name === 'smallCountryMax') return `${Math.round(SMALL_COUNTRY_POP / 1000)},000`;
   if (name === 'totalAffected') {
     const vals = events.map((e) => e.affected).filter((v) => v != null);
     if (!vals.length) throw new Error(`Story-Referenz: keine affected-Werte (${token})`);

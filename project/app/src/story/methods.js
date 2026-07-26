@@ -18,10 +18,13 @@ const sourceNames = (meta, ids) => {
 };
 
 const r2Words = (meta) => {
-  const r2 = meta.fits?.perCapita?.r2;
-  if (r2 == null) return 'No public impact model is available in this build.';
-  const percent = (r2 * 100).toFixed(1).replace('.0', '');
-  return `Wind accounts for about ${percent}% of the observed differences in reported affected share.`;
+  const fit = meta.fits?.perCapita;
+  if (fit?.r2 == null) return 'No public impact model is available in this build.';
+  const pct = fit.r2 * 100;
+  const percent = pct < 1 ? 'less than 1' : pct.toFixed(1).replace('.0', '');
+  const sig = fit.p >= 0.05 ? ', which is within the range of chance' : '';
+  return `Wind accounts for about ${percent}% of the observed differences in reported affected share`
+    + `${sig} (p = ${fit.p >= 0.001 ? fit.p.toFixed(2) : '<0.001'}).`;
 };
 
 // Methodenkatalog der offenen Story (Land-Jahr-Auflösung, nur offene Quellen).
@@ -41,67 +44,53 @@ export const METHOD_CATALOG = [
     limit: 'A flat trend in this window does not show that ocean warming has no effect on cyclone physics. It only describes these two basin-wide measures.',
   },
   {
-    id: 'hook-harold', title: 'Harold: one storm, two scales',
+    id: 'hook', title: 'Two countries, two storms, two scales',
     dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected', 'wpp', 'natural-earth']),
-    calculated: (m) => `Harold's ${m.analysis.impact.windRule.split(';')[0]} is drawn from IBTrACS. Reported people affected that year are divided by each country's population.`,
-    seen: 'Circle area shows reported people; the second scale shows each toll as a share of population.',
-    limit: 'Near-equal raw counts hide very different population shares. The comparison changes the denominator, not the storm.',
+    calculated: (m) => 'For each country the pipeline keeps the storm that reached the highest wind speed inside the 500 km radius that year: Harold over Vanuatu, Yasa over Fiji. Reported people affected that year are divided by each country\'s population.',
+    seen: 'Circle area shows reported people inside a ring for the population, so the filled fraction is the share.',
+    limit: 'Both counts are annual totals for all disasters, not the toll of the named storm. Near-equal raw counts hide very different population shares.',
   },
   {
-    id: 'open-scatter', title: 'The wind-only baseline',
+    id: 'open-scatter', title: 'Wind against reported impact',
     dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected', 'wpp']),
-    calculated: (m) => `${m.analysis.join.matchedRows} of ${m.analysis.join.totalRows} country-years were linked by ${m.analysis.join.rule}. The chart fits ${m.analysis.model.perCapitaFormula}. ${r2Words(m)}`,
-    seen: 'Right means stronger lifetime peak wind. Higher means a larger reported affected share. The dashed line is the fitted average relationship.',
-    limit: 'The affected count is annual and covers all disasters, not the named cyclone alone. The line is descriptive, not causal.',
+    calculated: (m) => `${m.analysis.join.matchedRows} of ${m.analysis.join.totalRows} country-years were linked by ${m.analysis.join.rule}. Of those, ${m.coverage.scatterable} have a positive toll and enter ${m.analysis.model.perCapitaFormula}; ${m.coverage.zero_lane} reported exactly zero and sit in a separate band, because zero has no logarithm. ${r2Words(m)}`,
+    seen: 'Right means a stronger wind actually reached that country. Higher means a larger reported affected share. The horizontal line is the median, not a fitted trend.',
+    limit: 'No trend line is drawn because the relationship is not statistically detectable. The affected count is annual and covers all disasters, not the named cyclone alone.',
   },
   {
-    id: 'winston', title: 'Winston: the strongest storm reaching Fiji',
+    id: 'winston', title: 'Winston: the strongest wind in the record',
     dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected', 'wpp', 'natural-earth']),
-    calculated: (m) => "Winston's IBTrACS track and lifetime peak are shown over Fiji; the reported affected share is Fiji's PDH count for that year divided by population.",
+    calculated: (m) => "Winston's IBTrACS track is shown over Fiji with the maximum wind measured inside the radius; the reported affected share is Fiji's PDH count for that year divided by population.",
     seen: "The orange path is Winston's track; the circle is Fiji's reported affected share in 2016.",
     limit: 'One well-aligned case does not make wind a reliable predictor across the record.',
   },
   {
-    id: 'open-residuals', title: 'Residuals and country rows',
+    id: 'country-size', title: 'Country size against reported impact',
     dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected', 'wpp']),
-    calculated: (m) => `For each complete country-year, the residual is ${m.analysis.model.residual}. Records are regrouped by country without refitting the model.`,
-    seen: 'Dots to the right had a larger reported toll than the line predicts; dots to the left had a smaller one.',
-    limit: 'A positive residual is an unexplained difference, not a direct measurement of vulnerability, exposure or preparedness.',
-  },
-  {
-    id: 'open-country-rows', title: 'Country rows',
-    dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected', 'wpp']),
-    calculated: (m) => `The same residuals from ${m.fits.perCapita.n} complete country-years are regrouped by country without refitting the model.`,
-    seen: 'Dots to the right had a larger reported toll than the line predicts; dots to the left had a smaller one.',
-    limit: 'Countries with few complete records are folded into “Other”, and medians do not remove differences in reporting quality.',
-  },
-  {
-    id: 'open-subregions', title: 'Subregion rows',
-    dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected', 'wpp']),
-    calculated: (m) => `The same residuals from ${m.fits.perCapita.n} complete country-years are regrouped into Melanesia, Micronesia and Polynesia; the model is not refitted.`,
-    seen: 'Each row shows every record and a short median marker for that subregion.',
-    limit: 'Regional aggregation can hide opposite country-level patterns. It should not be used to assign a single regional fate.',
+    calculated: (m) => `The same ${m.fits.perCapita.n} records are regrouped into one row per country, ordered by population. A second regression, ${m.analysis.model.popSizeFormula}, gives R² ${m.fits.popSize.r2} (p = ${m.fits.popSize.p}) on exactly the same records as the wind fit, so the two numbers are comparable.`,
+    seen: 'Rows run from the smallest population at the top to the largest at the bottom; the dashed line is the median share across all records.',
+    limit: 'Part of this is arithmetic: dividing by a small population produces a large share from few people. It measures the denominator as much as the disaster, and says nothing about cause.',
   },
   {
     id: 'open-completeness', title: 'What the records contain',
     dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected']),
-    calculated: (m) => `Every record is a reported toll. Of ${m.coverage.storm_exposed} country-years a cyclone reached within range, ${m.coverage.scatterable} carry a reported toll and a measured wind; ${m.coverage.missing_wind} tolls had no cyclone within range.`,
-    seen: 'Filled and hollow circles keep the two kinds of records visible.',
-    limit: 'Missing impact is unknown, not zero. The annual count includes non-cyclone disasters.',
+    calculated: (m) => `Every circle is a reported country-year: ${m.coverage.positive_toll} with a positive toll and ${m.coverage.zero_toll} reported as exactly zero. Of ${m.coverage.storm_exposed} country-years a cyclone reached within range, ${m.coverage.scatterable} carry a positive toll, ${m.coverage.zero_with_storm} report zero, and ${m.coverage.no_report} carry no entry at all; a further ${m.coverage.missing_wind} tolls had no cyclone within range.`,
+    seen: 'Filled, outlined and faint circles keep the three kinds of records visible.',
+    limit: 'A reported zero is not proof that nobody was affected, and a missing row is not proof of nothing. The annual count includes non-cyclone disasters.',
   },
   {
     id: 'open-conclusion', title: 'Ranking wind against impact',
     dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected', 'wpp']),
-    calculated: (m) => `The same ${m.fits.perCapita.n} complete country-years are independently ordered by lifetime peak wind and reported affected share. No new model is fitted.`,
+    calculated: (m) => `The same ${m.fits.perCapita.n} records are independently ordered by the wind that reached the country and by reported affected share. No new model is fitted.`,
     seen: 'The lists show the high ends of both measures; the paired columns keep every record visible while the order changes.',
     limit: 'A rank mismatch shows the measures order events differently. It cannot reveal which social condition caused an outcome.',
   },
   {
     id: 'open-explore', title: 'Evidence Lab',
     dataUsed: (m) => sourceNames(m, ['ibtracs', 'pdh-affected', 'wpp', 'natural-earth']),
-    calculated: (m) => `All views reuse the same country-year table, shared filters and selection. Residuals come from ${m.analysis.model.perCapitaFormula}; map hot zones aggregate sampled track points into fixed geographic cells.`,
-    seen: 'Outliers, country rows, recurrence marks and map layers are linked views of the same filtered records.',
-    limit: 'Filtering changes the visible subset but does not refit the baseline. Country circles use representative centroids, not exact impact footprints.',
+    calculated: (m) => `All views reuse the same country-year table, shared filters and selection. Country rows place each record on the same logarithmic impact scale as the story; map hot zones aggregate sampled track points into fixed geographic cells.`,
+    seen: 'Wind, country rows, recurrence marks and map layers are linked views of the same filtered records.',
+    limit: 'Filtering changes the visible subset but does not recompute the fits reported here. Country circles use representative centroids, not exact impact footprints.',
   },
 ];
 

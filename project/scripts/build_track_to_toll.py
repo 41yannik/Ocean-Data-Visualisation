@@ -5,7 +5,7 @@
 
 Offene Datenbasis (Land-Jahr): PDH-SDG-11.5.1-Betroffene × IBTrACS-Track-Nähe.
 Ausgaben nach app/public/data/ (alle offen, eingecheckt):
-  events.json, meta.json, tracks.json, sst.json/csv, trends.json/csv
+  events.json, exposure.json, meta.json, tracks.json, sst.json/csv, trends.json/csv
 """
 import argparse
 import sys
@@ -15,15 +15,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pipeline import reference as ref
 from pipeline.io_load import load_ibtracs, load_wpp, load_sst, load_pdh_affected
-from pipeline.challenge import build_challenge_events, storm_exposed_count
+from pipeline.challenge import build_challenge_events, storm_exposed_count, exposure_rows
 from pipeline.tracks import build_tracks
 from pipeline.population import join_population
-from pipeline.fits import fit, residuals, quantile_band
+from pipeline.fits import fit, quantile_band
 from pipeline.sst import build_sst_series
 from pipeline.trends import build_trends
 from pipeline.evidence import build_story_evidence
 from pipeline.outputs import (
-    assemble_events, attach_artifacts, build_meta, trends_csv_rows, write_csv, write_json,
+    assemble_events, assemble_exposure, attach_artifacts, build_meta,
+    trends_csv_rows, write_csv, write_json,
 )
 from pipeline.validate import (
     validate_events, validate_provenance, validate_sst, validate_trends,
@@ -34,13 +35,15 @@ def run(out_dir: Path) -> None:
     print(f"== Pipeline-Lauf → {out_dir}")
     ib, wpp, sst_raw = load_ibtracs(), load_wpp(), load_sst()
 
-    ev = join_population(build_challenge_events(ib, load_pdh_affected()), wpp)
+    pdh = load_pdh_affected()
+    ev = join_population(build_challenge_events(ib, pdh), wpp)
     storm_exposed = storm_exposed_count(ib)
+    exposure_out = assemble_exposure(exposure_rows(ib, pdh))
 
-    fits = {m: fit(ev, m) for m in ("absolute", "perCapita")}
+    # popSize läuft auf derselben Stichprobe wie perCapita (siehe fits._xy) — nur so ist
+    # der R²-Vergleich der Story ein Vergleich und keine Gegenüberstellung zweier Datensätze.
+    fits = {m: fit(ev, m) for m in ("absolute", "perCapita", "popSize")}
     bands = {m: quantile_band(ev, m) for m in ("absolute", "perCapita")}
-    ev["residual_abs"] = residuals(ev, fits["absolute"], "absolute")
-    ev["residual_pc"] = residuals(ev, fits["perCapita"], "perCapita")
 
     sst = build_sst_series(sst_raw)
     trends = build_trends(ib)
@@ -54,6 +57,7 @@ def run(out_dir: Path) -> None:
 
     sizes = {
         "events.json": write_json(events_out, out_dir / "events.json"),
+        "exposure.json": write_json(exposure_out, out_dir / "exposure.json"),
         "tracks.json": write_json(tracks, out_dir / "tracks.json"),
         "sst.json": write_json(sst, out_dir / "sst.json"),
         "sst.csv": write_csv(sst, out_dir / "sst.csv"),
@@ -61,12 +65,12 @@ def run(out_dir: Path) -> None:
         "trends.csv": write_csv(trends_csv_rows(trends), out_dir / "trends.csv"),
     }
     attach_artifacts(meta, out_dir, [
-        "events.json", "tracks.json", "sst.json", "sst.csv",
+        "events.json", "exposure.json", "tracks.json", "sst.json", "sst.csv",
         "trends.json", "trends.csv", "land-110m.json",
     ])
     sizes["meta.json"] = write_json(meta, out_dir / "meta.json")
 
-    validate_events(events_out, meta, tracks)
+    validate_events(events_out, meta, tracks, exposure_out)
     validate_sst(sst)
     validate_trends(trends)
     validate_provenance(meta)
@@ -76,9 +80,13 @@ def run(out_dir: Path) -> None:
         print(f"  {name:24s} {size/1024:6.1f} KB")
     print(f"  {'GESAMT':24s} {total/1024:6.1f} KB")
     assert total < 300 * 1024, f"Output zu groß: {total/1024:.0f} KB"
-    f = meta["fits"]
-    print(f"  Fits: absolut R²={f['absolute']['r2']} (p={f['absolute']['p']}, n={f['absolute']['n']}) · "
-          f"pro Kopf R²={f['perCapita']['r2']} (p={f['perCapita']['p']}, n={f['perCapita']['n']})")
+    f, c = meta["fits"], meta["coverage"]
+    print(f"  Fits: pro Kopf R²={f['perCapita']['r2']} (p={f['perCapita']['p']}, n={f['perCapita']['n']}) · "
+          f"Landesgröße R²={f['popSize']['r2']} (p={f['popSize']['p']}, n={f['popSize']['n']})")
+    print(f"  Records: {c['rows']} gemeldet = {c['positive_toll']} positiv + {c['zero_toll']} Nullen · "
+          f"Fit-Basis {c['scatterable']} · Zero-Lane {c['zero_lane']}")
+    print(f"  Exponiert: {c['storm_exposed']} Land-Jahre = {c['scatterable']} Toll + "
+          f"{c['zero_with_storm']} gemeldete 0 + {c['no_report']} ohne Meldung")
     print("== OK\n")
 
 

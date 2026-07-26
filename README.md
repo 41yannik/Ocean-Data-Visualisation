@@ -12,8 +12,21 @@ Interaktive D3-Visualisierung über tropische Wirbelstürme und gemeldete mensch
 │   └── tests/        # Unit-, Pipeline- und Playwright-Prüfungen
 ├── data/         # Rohdaten der Quellen + SOURCES.md (Herkunft/Lizenzen)
 ├── last weeks presentation/
-└── short paper/
+└── short paper/  # Short Paper (.docx), Screenrecording, Problem statement (EN)
 ```
+
+## Challenge-Konformität (Pacific Dataviz Challenge 2026)
+
+| Regel | Stand |
+|---|---|
+| §9 Offizieller Datensatz | erfüllt: PDH SDG 11.5.1 (`VC_DSR_AFFCT`) und PDH SST-Anomalien (`SST_ANOM`) |
+| §9 Zusatzdaten nur offen | erfüllt: IBTrACS (US-Behördenwerk), UN WPP (CC BY 3.0 IGO), Natural Earth (Public Domain) |
+| §9 Alle Datensätze zitiert | erfüllt: Abschnitt „Data & methods" der Seite, `meta.json`, [`data/SOURCES.md`](data/SOURCES.md) |
+| §9 KI nur unterstützend | erfüllt und offengelegt: siehe Short Paper, Abschnitt „Einsatz von KI-Werkzeugen" |
+| §8 Arbeitssprache EN/FR | erfüllt: Oberfläche vollständig Englisch |
+| §10 Problem statement | [`short paper/problem-statement-EN.md`](short%20paper/problem-statement-EN.md) |
+| §10 Öffentliche URL | <https://ozeanvisualisierung.yannik-h-huber.de>, muss bis mindestens 31.08.2029 erreichbar bleiben (GitHub Pages, Custom-Domain) |
+| §13 IP-Lizenz an Organisator | möglich: alle genutzten Datenlizenzen erlauben Weiterverbreitung und kommerzielle Nutzung |
 
 ## Datenbasis und Veröffentlichung
 

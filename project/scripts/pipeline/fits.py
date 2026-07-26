@@ -1,4 +1,11 @@
-"""Regressionen (in Python, nie im Frontend): absolut + pro Kopf, Residuen, Quantilband-Stützpunkte."""
+"""Regressionen (in Python, nie im Frontend): absolut + pro Kopf, Landesgrößen-Fit,
+Quantilband-Stützpunkte.
+
+Alle Fits laufen NUR über Records mit positivem Toll (affected > 0). Die gemeldeten
+Nullen bleiben in den Daten (sie sind der Kern des Ehrlichkeits-Beats), können aber
+nicht in eine log-Regression eingehen. Die Maske ist damit der Log-Schutz, den früher
+ein Datenfilter in challenge.py leistete (Audit 2026-07).
+"""
 import math
 
 import numpy as np
@@ -7,15 +14,40 @@ from scipy import stats
 
 
 def _xy(events: pd.DataFrame, mode: str):
+    """(Teiltabelle, x, y) für einen Fit. positive = Log-Definitionsbereich."""
+    positive = events["total_affected"].notna() & (events["total_affected"] > 0)
     if mode == "absolute":
-        m = events["intensity_kt"].notna() & events["total_affected"].notna()
+        m = events["intensity_kt"].notna() & positive
+        x = events.loc[m, "intensity_kt"].astype(float)
         y = np.log10(events.loc[m, "total_affected"] + 1)
     elif mode == "perCapita":
-        m = events["intensity_kt"].notna() & events["affected_pc"].notna()
-        y = np.log10(events.loc[m, "affected_pc"])  # min 7.7e-5, keine Nullen (verifiziert)
+        m = events["intensity_kt"].notna() & events["affected_pc"].notna() & positive
+        x = events.loc[m, "intensity_kt"].astype(float)
+        y = np.log10(events.loc[m, "affected_pc"])
+    elif mode == "popSize":
+        # Landesgrößen-Fit: erklärt der Bevölkerungsnenner den gemeldeten Anteil
+        # besser als der Wind? Läuft bewusst auf DERSELBEN Stichprobe wie perCapita
+        # (inkl. intensity_kt-Bedingung) — sonst wäre der R²-Vergleich der Story
+        # ein Vergleich zweier verschiedener Datensätze.
+        m = (events["intensity_kt"].notna() & events["pop"].notna() & (events["pop"] > 0)
+             & events["affected_pc"].notna() & positive)
+        x = np.log10(events.loc[m, "pop"].astype(float))
+        y = np.log10(events.loc[m, "affected_pc"])
     else:
         raise ValueError(mode)
-    return events.loc[m], events.loc[m, "intensity_kt"].astype(float), y
+    return events.loc[m], x, y
+
+
+_Y_TRANSFORM = {
+    "absolute": "log10(affected+1)",
+    "perCapita": "log10(affected_pc)",
+    "popSize": "log10(affected_pc)",
+}
+_X_TRANSFORM = {
+    "absolute": "intensity_kt",
+    "perCapita": "intensity_kt",
+    "popSize": "log10(pop)",
+}
 
 
 def fit(events: pd.DataFrame, mode: str) -> dict:
@@ -28,7 +60,8 @@ def fit(events: pd.DataFrame, mode: str) -> dict:
         "r2": round(lr.rvalue ** 2, 4),
         "p": round(lr.pvalue, 5),
         "n": int(len(x)),
-        "y_transform": "log10(affected+1)" if mode == "absolute" else "log10(affected_pc)",
+        "x_transform": _X_TRANSFORM[mode],
+        "y_transform": _Y_TRANSFORM[mode],
     }
 
 
@@ -64,15 +97,23 @@ if __name__ == "__main__":
 
     ev = join_population(build_challenge_events(load_ibtracs(), load_pdh_affected()), load_wpp())
 
-    for mode in ("absolute", "perCapita"):
+    for mode in ("absolute", "perCapita", "popSize"):
         f = fit(ev, mode)
-        print(f"{mode:10s}: n={f['n']:2d}  slope={f['slope']:+.5f}/kt  R²={f['r2']:.4f}  p={f['p']:.5f}")
-        band = quantile_band(ev, mode)
-        print(f"            Band: {len(band)} Stützpunkte, x {band[0]['x']}–{band[-1]['x']} kt")
+        print(f"{mode:10s}: n={f['n']:2d}  slope={f['slope']:+.5f}  R²={f['r2']:.4f}  p={f['p']:.5f}"
+              f"   ({f['y_transform']} ~ {f['x_transform']})")
         res = residuals(ev, f, mode)
-        assert res.notna().sum() == f["n"]
+        assert res.notna().sum() == f["n"], f"Residuen-Anzahl weicht von n ab ({mode})"
+        assert np.isfinite(res.dropna()).all(), f"nicht-endliches Residuum ({mode})"
 
+    for mode in ("absolute", "perCapita"):
+        band = quantile_band(ev, mode)
+        print(f"{mode:10s}: Band {len(band)} Stützpunkte, x {band[0]['x']}–{band[-1]['x']} kt")
+
+    # Strukturelle Checks. KEINE Signifikanz-Erwartung mehr: ob der Wind etwas erklärt,
+    # ist der Befund der Story und darf kein Build-Gate sein (Audit 2026-07).
     f_pc = fit(ev, "perCapita")
-    assert f_pc["p"] < 0.05, f"Pro-Kopf-Fit nicht signifikant (p={f_pc['p']}) — Konzeptannahme verletzt!"
-    assert not math.isnan(f_pc["r2"])
+    assert not math.isnan(f_pc["r2"]), "R² ist NaN"
+    assert f_pc["n"] == int((ev["intensity_kt"].notna() & (ev["total_affected"] > 0)).sum())
+    print(f"\nBefund (nicht erzwungen): Wind erklärt R²={f_pc['r2']:.4f} (p={f_pc['p']:.3f}), "
+          f"Landesgröße R²={fit(ev, 'popSize')['r2']:.4f}")
     print("fits: alle Smoke-Checks OK")

@@ -16,6 +16,16 @@ export function createImpactLayer(g, layerCtx) {
   const { data, geo } = layerCtx;
   const { byId, centroids } = data.index;
 
+  // Bezugswert für die Flächenskala: das Maximum über ALLE Records, nicht über die
+  // gerade sichtbaren Blasen (Audit 2026-07). Vorher wurde je Step neu normiert -
+  // Winstons Kreis (633.584 Betroffene) sah dann exakt so groß aus wie Vanuatus
+  // (246.802), obwohl er 2,6-mal so viele Menschen bedeutet. Fläche ∝ Wert gilt jetzt
+  // über die ganze Story hinweg, Kreise sind zwischen Kapiteln vergleichbar.
+  const globalMax = Math.max(
+    ...data.events.filter((e) => e.affected != null).map((e) => e.affected),
+    1,
+  );
+
   let bubbles = new Map(); // iso3 -> { circle, label, r }
   let lastKey = null;
   let timers = [];
@@ -46,11 +56,17 @@ export function createImpactLayer(g, layerCtx) {
       .filter(Boolean);
     if (!items.length) return;
 
-    const vmax = Math.max(...items.map((d) => d.e.affected));
     for (const d of items) {
       const [px, py] = d.point;
-      const r = R_BUBBLE_MAX * Math.sqrt(d.e.affected / vmax);
+      // r ∝ √Wert, also Fläche ∝ Wert. Der äußere Ring nutzt dieselbe Skala für die
+      // Bevölkerung, damit Fläche(innen)/Fläche(außen) exakt affected_pc ergibt.
+      const rInner = R_BUBBLE_MAX * Math.sqrt(d.e.affected / globalMax);
+      const rOuter = R_BUBBLE_MAX * Math.sqrt(d.e.pop / globalMax);
       const node = g.append('g').attr('class', 'impact');
+
+      const outerCircle = node.append('circle')
+        .attr('class', 'impact-bubble-outer')
+        .attr('cx', px).attr('cy', py).attr('r', 0);
 
       const circle = node.append('circle')
         .attr('class', 'impact-bubble')
@@ -62,18 +78,46 @@ export function createImpactLayer(g, layerCtx) {
         .attr('class', 'impact-label').attr('opacity', 0);
       // Direktlabel mit BEIDEN Perspektiven: absolute Betroffene (Kreisfläche) UND
       // Bevölkerungsanteil (relativ) - die zentrale Kontrast-Erkenntnis direkt an der Karte.
+      // Offset orientiert sich am äußeren Kreis.
       label.append('tspan').attr('class', 'il-name')
-        .attr('x', px + r + 8).attr('y', py - 8)
+        .attr('x', px + rOuter + 8).attr('y', py - 8)
         .text(COUNTRY_LOOKUP[d.e.iso3] ?? d.e.iso3);
       label.append('tspan').attr('class', 'il-value')
-        .attr('x', px + r + 8).attr('dy', 14)
+        .attr('x', px + rOuter + 8).attr('dy', 14)
         .text(`${fmtInt(d.e.affected)} affected`);
       label.append('tspan').attr('class', 'il-pct')
-        .attr('x', px + r + 8).attr('dy', 13)
+        .attr('x', px + rOuter + 8).attr('dy', 13)
         .text(`${fmtPct(d.e.affected_pc)} of population`);
 
-      bubbles.set(d.e.iso3, { circle, label, r });
+      bubbles.set(d.e.iso3, { circle, outerCircle, label, rInner, rOuter });
     }
+
+    // Legende: ohne sie ist der gestrichelte Außenring unerklärt - und damit genau die
+    // Aussage des Beats (Anteil = gefüllte Fläche im Ring) auf der Karte nicht lesbar.
+    const legend = g.append('g').attr('class', 'impact-legend').attr('opacity', 0);
+    const lr = 18;
+    // Background pill for contrast
+    legend.append('rect')
+      .attr('x', -10).attr('y', -6)
+      .attr('width', 260).attr('height', lr * 2 + 12)
+      .attr('rx', 8).attr('ry', 8)
+      .attr('fill', 'var(--bg)').attr('fill-opacity', 0.75)
+      .attr('stroke', 'var(--graticule)').attr('stroke-width', 1);
+    legend.append('circle').attr('class', 'impact-bubble-outer')
+      .attr('cx', lr).attr('cy', lr).attr('r', lr);
+    legend.append('circle').attr('class', 'impact-bubble')
+      .attr('cx', lr).attr('cy', lr).attr('r', lr * 0.62)
+      .style('pointer-events', 'none');
+    legend.append('text').attr('class', 'impact-legend-label')
+      .attr('x', lr * 2 + 12).attr('y', lr - 4)
+      .text('filled = people reported affected');
+    legend.append('text').attr('class', 'impact-legend-label')
+      .attr('x', lr * 2 + 12).attr('y', lr + 14)
+      .text('ring = total population');
+    legend.attr('transform', `translate(16, ${(layerCtx.inner?.height ?? geo.height ?? 520) - 62})`);
+    legend.transition('impact-pop')
+      .delay(state.reducedMotion ? 0 : (state.storyFx?.camera?.flyMs ?? 0) + 200)
+      .duration(state.reducedMotion ? 0 : 300).attr('opacity', 1);
 
     // Selbst-Pop: nach dem Kamera-Einflug, leicht gestaffelt; reducedMotion sofort.
     const instant = state.reducedMotion;
@@ -95,13 +139,17 @@ export function createImpactLayer(g, layerCtx) {
     if (!b) return;
     b.circle.style('pointer-events', 'auto');
     if (instant) {
-      b.circle.attr('r', b.r);
+      b.outerCircle.attr('r', b.rOuter);
+      b.circle.attr('r', b.rInner);
       b.label.attr('opacity', 1);
       return;
     }
+    b.outerCircle.attr('r', 0)
+      .transition('impact-pop').duration(550).ease(easeBackOut.overshoot(1.4))
+      .attr('r', b.rOuter);
     b.circle.attr('r', 0)
       .transition('impact-pop').duration(550).ease(easeBackOut.overshoot(1.4))
-      .attr('r', b.r);
+      .attr('r', b.rInner);
     b.label.attr('opacity', 0)
       .transition('impact-pop').delay(350).duration(300).attr('opacity', 1);
   }

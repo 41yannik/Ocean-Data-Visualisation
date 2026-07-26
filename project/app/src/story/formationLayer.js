@@ -1,19 +1,22 @@
-// Formations-Layer (Paket 10 Task 8): besitzt ALLE 99 Sturm-Land-Kreise (data-key = id)
-// und ersetzt in der Bühnen-Gruppe 'dots2' den Punkte-Layer des Scatters.
-//   formation 'scatter':      78 scatterbare Punkte an x/y der Skalen, 21 Ghosts unsichtbar (r 0).
-//   formation 'residualRows': dieselben 78 Punkte als EINE Zeile je Land, x = Abstand zur
-//                             wind-only line (residualRows.js) - macht „again and again" abzählbar.
-//   formation 'subregion':    dieselben 78 Punkte gefaltet auf drei Subregion-Zeilen
-//                             (computeSubregionRows) inkl. Gruppen-Median-Tick - der Beat
-//                             zeigt, dass die Regionen-Faltung das Länder-Muster verwischt.
-//   formation 'unit':         alle 99 fliegen ins Unit-Raster (chrono bzw. quality je unitSort),
-//                             Ghosts wachsen ein - Scatter-Chrome (Achsen/Trend) fadet per CSS aus.
+// Formations-Layer: besitzt ALLE gemeldeten Land-Jahr-Kreise (data-key = id) und
+// ersetzt in der Bühnen-Gruppe 'dots2' den Punkte-Layer des Scatters.
+//   formation 'scatter':   Punkte an x/y der Skalen; gemeldete Nullen in der Zero-Lane.
+//   formation 'sizeRows':  dieselben Punkte als EINE Zeile je Land, sortiert nach
+//                          BEVÖLKERUNG, x = gemeldeter Anteil (sizeRows.js). Macht den
+//                          einzigen belastbaren Befund abzählbar: der Anteil hängt am
+//                          Nenner, nicht am Wind.
+//   formation 'unit':      alle fliegen ins Unit-Raster (chrono bzw. quality je unitSort).
 // Objektkonstanz + benannte Transition 'formation' - der Kern von Strategie 4 (Paket 10).
+//
+// Entfallen (Audit 2026-07): 'residualRows' und 'subregion'. Beide ordneten nach dem
+// Abstand zu einer wind-only line, die nichts erklärt (R² 0.015, p 0.31); 56 % aller
+// Punkte lagen über ihr, kein Land wich signifikant ab, und das Subregionen-Muster war
+// ein Bevölkerungsgrößen-Effekt.
 import { easeCubicInOut } from 'd3';
-import { isScatterable } from '../core/filters.js';
+import { isScatterable, isZeroLane, isPlottable } from '../core/filters.js';
 import { fmtKt, fmtPct } from '../core/format.js';
 import { computeUnitLayout, unitTipContent } from './unitChart.js';
-import { computeResidualRows, computeSubregionRows, RR_R } from './residualRows.js';
+import { computeSizeRows, RR_R } from './sizeRows.js';
 
 const DUR_FORMATION = 900;
 // Punktgröße = RR_R (Review 2026-07-13): die Kreise behalten über Residual-Zeilen und
@@ -29,8 +32,7 @@ export function createFormationLayer(gDots, layerCtx) {
   // Die links liegende Textkarte überlappt nur den äußersten Rand → Gitter bleibt frei.
   const unit = computeUnitLayout(data.events, { W: inner.width, H: inner.height, cell: UNIT_CELL });
   const events = unit.events;
-  const rr = computeResidualRows(data.events, { W: inner.width, H: inner.height });
-  const rrSub = computeSubregionRows(data.events, { W: inner.width, H: inner.height });
+  const rr = computeSizeRows(data.events, { W: inner.width, H: inner.height });
 
   const formationNow = () => bus.get().formation ?? 'scatter';
 
@@ -41,21 +43,15 @@ export function createFormationLayer(gDots, layerCtx) {
     // per Tooltip, wie das Evidence-Panel). Ghosts sind im Scatter r 0 → nicht hoverbar;
     // der Guard fängt den theoretischen Randfall trotzdem ab.
     .on('mouseenter', (event, d) => {
-      if (formationNow() === 'scatter' && !isScatterable(d)) return;
+      if (formationNow() === 'scatter' && !isPlottable(d)) return;
       showTip(event, d);
     })
     .on('mousemove', positionTip)
     .on('mouseleave', hideTip);
 
-  // Residual-Stems (Step 5): vertikale Linien von Fokus-Punkten zur gestrichelten
-  // wind-only line - machen den Abstand „über der Erwartung" sichtbar, statt ihn dem
-  // Auge zu überlassen. Unter den Kreisen eingehängt (insert vor dem ersten circle);
-  // gleiche Fit-Mathematik wie pointsLayer.hoverExtras.
-  const gStems = gDots.insert('g', 'circle').attr('class', 'fm-stems').attr('opacity', 0);
-
   // Block-Beschriftungen (nur Qualitäts-Sortierung der Unit-Formation)
   const gLabels = gDots.append('g').attr('class', 'uc-labels').attr('opacity', 0);
-  for (const key of ['a', 'b']) {
+  for (const key of ['a', 'b', 'c']) {
     gLabels.append('text').attr('class', 'uc-block-label')
       .attr('x', unit.labels[key].x).attr('y', unit.labels[key].y)
       .attr('text-anchor', 'middle').text(unit.labels[key].text);
@@ -66,7 +62,8 @@ export function createFormationLayer(gDots, layerCtx) {
   // bildet dadurch eine Einheit mit der Visualisierung statt eine zweite, breitere Achse.
   const gLegend = gDots.append('g').attr('class', 'uc-legend').attr('opacity', 0);
   const legItems = [
-    { cls: 'unit-solid', label: 'toll + cyclone' },
+    { cls: 'unit-solid', label: 'reported toll' },
+    { cls: 'unit-zero', label: 'reported zero' },
     { cls: 'unit-ghost', label: 'no cyclone near' },
   ];
   const legendWidth = Math.min(320, inner.width);
@@ -82,65 +79,83 @@ export function createFormationLayer(gDots, layerCtx) {
   const legendX = inner.width / 2 - (legendBox.x + legendBox.width / 2);
   gLegend.attr('transform', `translate(${legendX}, ${inner.height - 30})`);
 
-  // Zeilen-Chrome der Zeilen-Formationen: Labels mit Above-Zähler, gestrichelte
-  // Null-Linie (gleiche Dash-Sprache wie die wind-only line) und Faktor-Ticks. Kein
-  // separates Achsen-Label: der Tick „wind-only line" bei 0 benennt die Referenz selbst.
-  // Für die Subregion-Zeilen zusätzlich ein Median-Tick je Gruppe (die Gruppen-Lesart,
-  // auf die die Step-Copy zeigt).
-  function drawRowChrome(g, lay, { medianTick = false } = {}) {
+  // Zeilen-Chrome: Länderlabel + Bevölkerung als Sublabel (der Nenner, um den es geht),
+  // Median-Referenzlinie über alle Records, Prozent-Ticks und je Zeile ein Median-Tick.
+  // Die Zeilen sind nach Bevölkerung sortiert; das Sublabel macht die Ordnung lesbar,
+  // ohne dass der Text sie behaupten muss.
+  function drawRowChrome(g, lay) {
     g.append('line').attr('class', 'rr-zero')
       .attr('x1', lay.zeroX).attr('x2', lay.zeroX)
       .attr('y1', 6).attr('y2', lay.axisY - 14);
+    g.append('text').attr('class', 'rr-zero-label')
+      .attr('x', lay.zeroX).attr('y', 2).attr('text-anchor', 'middle')
+      .text('median across all records');
+    // Edge-Band: komprimierter Streifen für Anteile < 0.01 % (16 % der Records, u. a.
+    // ein Papua-Neuguinea-Rekord) - dieselbe Idee wie die Zero-Lane, nur für "sehr klein,
+    // nicht null". Solide statt gestrichelte Trennlinie (keine Gridlines-als-Rauschen).
+    // Label auf einer EIGENEN Zeile über den Haupt-Ticks (wie beim Zero-Lane-Vorbild),
+    // sonst kollidiert es mit dem ersten Haupt-Tick auf derselben Baseline.
+    if (lay.hasEdge) {
+      g.append('line').attr('class', 'rr-edge-divider')
+        .attr('x1', lay.edgeDividerX).attr('x2', lay.edgeDividerX)
+        .attr('y1', 6).attr('y2', lay.axisY - 14);
+      g.append('text').attr('class', 'rr-tick')
+        .attr('x', lay.edgeDividerX - 4).attr('y', lay.axisY - 15)
+        .attr('text-anchor', 'end').text('<0.01%');
+    }
     for (const t of lay.ticks) {
       g.append('text').attr('class', 'rr-tick')
         .attr('x', t.x).attr('y', lay.axisY).attr('text-anchor', 'middle').text(t.label);
     }
+    g.append('text').attr('class', 'rr-axis-label')
+      .attr('x', (lay.x.range()[0] + lay.x.range()[1]) / 2).attr('y', lay.axisY + 18)
+      .attr('text-anchor', 'middle').text('share of population reported affected');
     for (const row of lay.rows) {
       g.append('text').attr('class', 'rr-row-label')
         .attr('x', lay.labelX).attr('y', row.y - 1).attr('text-anchor', 'end').text(row.label);
-      // Ausgeschrieben statt „8/10 above" (Review 2026-07-13: Bruch-Notation war unklar) -
-      // zählt schlicht die orangen Punkte der Zeile.
       g.append('text').attr('class', 'rr-row-count')
         .attr('x', lay.labelX).attr('y', row.y + 13).attr('text-anchor', 'end')
-        .text(`${row.nAbove} of ${row.n} hit harder`);
-      if (medianTick && row.median != null) {
+        .text(`${row.sublabel} · ${row.n} yrs`);
+      // medianX statt lay.x(row.median): ein Zeilen-Median unter dem Edge-Floor muss auf
+      // der Edge-Skala stehen, sonst zeigt die Markierung (Audit-Fund) auf einen anderen
+      // Pixel als der Punkt, den sie zusammenfasst - bei einzeiligen Ländern (n=1) ist
+      // das sogar mathematisch falsch, weil Punkt und Median identisch sein müssen.
+      if (row.medianX != null) {
         g.append('line').attr('class', 'rr-median')
-          .attr('x1', lay.x(row.median)).attr('x2', lay.x(row.median))
-          .attr('y1', row.y - 26).attr('y2', row.y + 26);
+          .attr('x1', row.medianX).attr('x2', row.medianX)
+          .attr('y1', row.y - 18).attr('y2', row.y + 18);
       }
     }
   }
   const gRR = gDots.append('g').attr('class', 'rr-chrome').attr('opacity', 0);
   drawRowChrome(gRR, rr);
-  // Modifier-Klasse: unterscheidbar für Styling/Audit (beide Chromes liegen im DOM,
-  // nur die aktive Formation blendet ihres ein).
-  const gRRSub = gDots.append('g').attr('class', 'rr-chrome rr-chrome--sub').attr('opacity', 0);
-  drawRowChrome(gRRSub, rrSub, { medianTick: true });
 
   // Lokaler Tooltip - Wortlaut identisch zum eigenständigen Unit Chart
   const tip = document.createElement('div');
   tip.className = 'tooltip';
   document.body.appendChild(tip);
-  // Faktor zur Erwartung: residual_pc ist log10, also 10^|r| = „N× über/unter der Linie".
-  function factorLine(d) {
+  // Einordnungszeile: wie viele Menschen der Anteil bedeutet. Ersetzt den früheren
+  // „N× über der Erwartung"-Vergleich, der sich auf eine nichtssagende Linie bezog.
+  function contextLine(d) {
+    if (isZeroLane(d)) {
+      return `<div class="tt-sub">reported as zero affected, despite a storm reaching the country</div>`;
+    }
     if (!isScatterable(d)) return '';
-    const res = d.residual_pc ?? 0;
-    const factor = 10 ** Math.abs(res);
-    const n = factor >= 10 ? Math.round(factor) : Math.round(factor * 10) / 10;
-    return `<div class="tt-sub">toll ≈ ${n}× ${res > 0 ? 'above' : 'below'} the wind-only expectation</div>`;
+    return `<div class="tt-sub">${d.affected.toLocaleString('en-US')} of ${d.pop.toLocaleString('en-US')} people</div>`;
   }
   function showTip(event, d) {
     const f = formationNow();
     if (f === 'scatter') {
-      // Einfache Sprache wie im Evidence-Panel (ui/tooltip contentSimple) + Faktor-Zeile -
-      // Wind & Metrik direkt am Punkt, passend zur Stem-Lesart des Steps.
+      // Einfache Sprache wie im Evidence-Panel (ui/tooltip contentSimple).
+      const body = isZeroLane(d)
+        ? `<div class="tt-simple">The strongest storm to reach the country brought `
+          + `<strong>${fmtKt(d.intensity_kt)}</strong>. Reported affected that year: <strong>0</strong>.</div>`
+        : `<div class="tt-simple">At <strong>${fmtKt(d.intensity_kt)}</strong> of wind, `
+          + `<strong>${fmtPct(d.affected_pc)}</strong> of the population was reported affected.</div>`;
       tip.innerHTML = `<div class="tt-title">${d.name ?? 'Unnamed storm'} · ${d.country} · ${d.year}</div>`
-        + `<div class="tt-simple">At <strong>${fmtKt(d.intensity_kt)}</strong> of wind, `
-        + `<strong>${fmtPct(d.affected_pc)}</strong> of the population was reported affected.</div>`
-        + factorLine(d);
+        + body + contextLine(d);
     } else {
-      tip.innerHTML = unitTipContent(d)
-        + (f === 'residualRows' || f === 'subregion' ? factorLine(d) : '');
+      tip.innerHTML = unitTipContent(d) + (f === 'sizeRows' ? contextLine(d) : '');
     }
     tip.classList.add('visible');
     positionTip(event);
@@ -159,25 +174,21 @@ export function createFormationLayer(gDots, layerCtx) {
 
   function scatterTarget(d) {
     const { x, y } = layerCtx.scales;
-    if (!isScatterable(d)) return null; // Ghost: im Scatter unsichtbar
-    // Todesfälle sind weder Teil der Aussage noch der erklärten Kodierung dieses Kapitels.
+    if (!isPlottable(d)) return null; // kein Sturm im Radius: im Scatter unsichtbar
     // Ein fixer Radius verhindert eine unbeabsichtigte dritte Variable und bleibt beim
     // anschließenden Morph in Länderzeilen und Vollständigkeitsraster objektkonstant.
-    return { cx: x(d.intensity_kt), cy: y.scale(y.value(d)), r: UNIT_R, o: 1 };
+    // yOf() setzt gemeldete Nullen in die Zero-Lane statt in den Logarithmus.
+    return { cx: x(d.intensity_kt), cy: y.yOf(d), r: UNIT_R, o: 1 };
   }
   function unitTarget(d, sort) {
     const [cx, cy] = sort === 'quality' ? unit.quality(d) : unit.chrono(d);
     return { cx, cy, r: UNIT_R, o: 1 };
   }
-  // Ghosts parken unsichtbar auf ihrer Chrono-Zielposition - beim Morph wachsen
-  // sie dort ein statt quer über die Bühne zu fliegen (gilt für Scatter UND Residual).
+  // Nicht darstellbare Records parken unsichtbar auf ihrer Chrono-Zielposition - beim
+  // Morph wachsen sie dort ein statt quer über die Bühne zu fliegen.
   const ghostPark = (d) => ({ ...unitTarget(d, 'chrono'), r: 0, o: 0 });
-  function residualTarget(d) {
+  function sizeRowTarget(d) {
     const p = rr.pos(d);
-    return p ? { cx: p[0], cy: p[1], r: RR_R, o: 1 } : ghostPark(d);
-  }
-  function subregionTarget(d) {
-    const p = rrSub.pos(d);
     return p ? { cx: p[0], cy: p[1], r: RR_R, o: 1 } : ghostPark(d);
   }
 
@@ -189,8 +200,7 @@ export function createFormationLayer(gDots, layerCtx) {
     last = key;
     const target = (d) => {
       if (f === 'unit') return unitTarget(d, state.unitSort ?? 'chrono');
-      if (f === 'residualRows') return residualTarget(d);
-      if (f === 'subregion') return subregionTarget(d);
+      if (f === 'sizeRows') return sizeRowTarget(d);
       return scatterTarget(d) ?? ghostPark(d);
     };
     const sel = animate && !state.reducedMotion
@@ -202,40 +212,19 @@ export function createFormationLayer(gDots, layerCtx) {
       .attr('cy', (d) => target(d).cy)
       .attr('r', (d) => target(d).r)
       .attr('opacity', (d) => target(d).o);
-    const isRowFormation = f === 'residualRows' || f === 'subregion';
+    const isRowFormation = f === 'sizeRows';
     gDots.classed('fm-unit', f === 'unit').classed('fm-residual', isRowFormation);
-    // Divergenz nur in den Zeilen-Formationen: über der Linie = Akzent, darunter = Blau.
-    // WICHTIG: Positions-Check über das AKTIVE Layout, sonst leaken Länder-Positionen
-    // in die Subregion-Formation (beide platzieren dieselben 78, aber getrennt gehalten).
-    const activeRR = f === 'subregion' ? rrSub : rr;
+    // Divergenz in der Zeilen-Formation: über dem Gesamtmedian = Akzent, darunter = Blau.
+    // Der Median ist eine reine Lage-Referenz und behauptet nichts über den Wind.
     circles
-      .classed('rr-above', (d) => isRowFormation && activeRR.pos(d) != null && (d.residual_pc ?? 0) > 0)
-      .classed('rr-below', (d) => isRowFormation && activeRR.pos(d) != null && (d.residual_pc ?? 0) <= 0);
+      .classed('rr-above', (d) => isRowFormation && rr.pos(d) != null
+        && Math.log10(d.affected_pc) > rr.overallMedian)
+      .classed('rr-below', (d) => isRowFormation && rr.pos(d) != null
+        && Math.log10(d.affected_pc) <= rr.overallMedian);
     gLabels.transition('fm-lab').duration(400)
       .attr('opacity', f === 'unit' && (state.unitSort ?? 'chrono') === 'quality' ? 1 : 0);
     gLegend.transition('fm-leg').duration(400).attr('opacity', f === 'unit' ? 1 : 0);
-    gRR.transition('fm-rr').duration(400).attr('opacity', f === 'residualRows' ? 1 : 0);
-    gRRSub.transition('fm-rrsub').duration(400).attr('opacity', f === 'subregion' ? 1 : 0);
-  }
-
-  // Stems nur in der Scatter-Formation, wenn der Step sie anfordert (storyFx.residualStems)
-  // und Fokus-Events gesetzt sind; beim Morph in eine andere Formation faden sie aus.
-  function stems(state) {
-    const fx2 = state.storyFx;
-    const fit = layerCtx.meta?.fits?.[state.mode];
-    const show = (state.formation ?? 'scatter') === 'scatter'
-      && !!fx2?.residualStems && fx2?.focusEventIds != null && fit != null;
-    const focus = show
-      ? fx2.focusEventIds.map((id) => data.index.byId.get(id)).filter((e) => e && isScatterable(e))
-      : [];
-    const { x, y } = layerCtx.scales;
-    gStems.selectAll('line').data(focus, (e) => e.id).join('line')
-      .attr('class', 'residual-line')
-      .attr('x1', (e) => x(e.intensity_kt)).attr('x2', (e) => x(e.intensity_kt))
-      .attr('y1', (e) => y.scale(y.value(e)))
-      .attr('y2', (e) => y.scale(fit.slope * e.intensity_kt + fit.intercept));
-    gStems.transition('fm-stems').duration(state.reducedMotion ? 0 : 400)
-      .attr('opacity', focus.length ? 1 : 0);
+    gRR.transition('fm-rr').duration(400).attr('opacity', isRowFormation ? 1 : 0);
   }
 
   // Story-Klassen der Scatter-Formation (Teilmenge von pointsLayer.classes - der
@@ -252,9 +241,9 @@ export function createFormationLayer(gDots, layerCtx) {
 
   return {
     update(state, patch) {
-      if (!patch) { layout(state, false); classes(state); stems(state); return; }
+      if (!patch) { layout(state, false); classes(state); return; }
       if ('formation' in patch || 'unitSort' in patch) layout(state, true);
-      if ('formation' in patch || 'storyFx' in patch) { classes(state); stems(state); }
+      if ('formation' in patch || 'storyFx' in patch) classes(state);
     },
     destroy() { tip.remove(); gDots.selectAll('*').remove(); },
   };

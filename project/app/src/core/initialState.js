@@ -37,7 +37,7 @@ export function makeInitialState() {
     // Evidence-Lab „Beyond the wind line": Zeilen-Gruppierung
     // 'country' | 'subregion' | 'sizeClass'.
     residualGroupBy: 'country',
-    // Bühnen-Gruppe dots2: 'scatter' | 'residualRows' | 'subregion' | 'unit' -
+    // Bühnen-Gruppe dots2: 'scatter' | 'sizeRows' | 'unit' -
     // Ziel-Formation der 99 Kreise.
     formation: 'scatter',
     exploreUnlocked: true,

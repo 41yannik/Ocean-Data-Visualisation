@@ -1,19 +1,19 @@
-// Punkte-Layer: 78 scatterbare Sturm-Land-Paare (data-key = id → Objektkonstanz beim Toggle),
-// Tote = Radius, Fallback = gestrichelt, Multi-Country-Connectors ("ein Sturm, n Länder").
-// 1:n: hover.sid highlightet Geschwister; Punkt ohne SID (2004-0153-FJI) ist nicht klickbar (L4).
+// Punkte-Layer: 121 geplottete Land-Jahre (data-key = id → Objektkonstanz beim Toggle) —
+// 70 mit positivem Toll im Log-Bereich, 51 ausdrücklich als 0 gemeldete in der Zero-Lane
+// darunter. Multi-Country-Connectors ("ein Sturm, n Länder").
+// 1:n: hover.sid highlightet Geschwister; Punkt ohne SID ist nicht klickbar (L4).
 import { select } from 'd3';
-import { DUR_MODE, REVEAL_RESIDUAL_MIN, UNIFORM_POINT_R } from '../core/config.js';
-import { matchesFilters, isScatterable } from '../core/filters.js';
+import { DUR_MODE, UNIFORM_POINT_R } from '../core/config.js';
+import { matchesFilters, isScatterable, isZeroLane, isPlottable } from '../core/filters.js';
 import { fmtKt, fmtPct } from '../core/format.js';
 
 export function createPointsLayer(gPoints, gConnectors, layerCtx) {
   const { data, bus, meta, inner } = layerCtx;
-  const events = data.events.filter(isScatterable);
+  const events = data.events.filter(isPlottable);
 
-  // Hover-Extras (Step 3): Residuum-Linie vom Punkt zur Trendlinie + eingeblendeter Name.
-  // In gConnectors (unter den Punkten) bzw. gPoints (über den Punkten) - eigene Klassen,
-  // damit der Connector-Join sie nicht mitfasst.
-  const residual = gConnectors.append('line').attr('class', 'residual-line').style('display', 'none');
+  // Hover-Extra: eingeblendeter Sturmname. Die frühere Residuum-Linie zur Fit-Linie ist
+  // entfallen — sie maß den Abstand zu einer Geraden, die nichts erklärt (R² 0.015,
+  // p 0.31) und lud dazu ein, Rauschen als Verwundbarkeit zu lesen (Audit 2026-07).
   const stormSpine = gConnectors.append('line').attr('class', 'storm-spine').style('display', 'none');
   const hoverName = gPoints.append('text').attr('class', 'hover-name')
     .attr('text-anchor', 'middle').style('display', 'none');
@@ -202,11 +202,14 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
     }
 
     const { x, y } = layerCtx.scales;
-    const cx = x(group.list[0].intensity_kt);
-    const pointY = (event) => y.scale(y.value(event));
+    const pointY = (event) => y.yOf(event);
+    const xs = group.list.map((e) => x(e.intensity_kt));
     const ys = group.list.map(pointY);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    // Die Spine spannt jetzt den gesamten Bereich auf, den ein Sturm über seine Länder
+    // erzeugt — in BEIDEN Achsen, denn der lokale Wind unterscheidet sich je Land.
     stormSpine.style('display', null)
-      .attr('x1', cx).attr('x2', cx)
+      .attr('x1', Math.min(...xs)).attr('x2', Math.max(...xs))
       .attr('y1', Math.min(...ys)).attr('y2', Math.max(...ys));
 
     // Klick fixiert die Gruppe: danach werden Titel und kollisionsgeschützte
@@ -261,10 +264,13 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
 
     tx(circles)
       .attr('cx', (d) => x(d.intensity_kt))
-      .attr('cy', (d) => y.scale(y.value(d)))
-      .attr('r', UNIFORM_POINT_R);
+      .attr('cy', (d) => y.yOf(d))
+      .attr('r', UNIFORM_POINT_R)
+      .attr('class', (d) => (isZeroLane(d) ? 'point point--zero' : 'point'));
 
-    // Connectors: je Sturm mit >= 2 sichtbaren Punkten eine dünne Vertikale (Analyseeinheit!)
+    // Connectors: je Sturm mit >= 2 sichtbaren Punkten ein Streckenzug. Seit der
+    // Umstellung auf lokalen Wind hat jedes Land seinen EIGENEN x-Wert (Harold traf
+    // Vanuatu mit 145 kt, die Salomonen mit 60 kt) — eine Vertikale wäre jetzt falsch.
     const visible = events.filter((e) => matchesFilters(e, state.filters) && e.sid);
     const bySid = new Map();
     for (const e of visible) {
@@ -274,17 +280,14 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
     const groups = [...bySid.entries()].filter(([, list]) => list.length >= 2)
       .map(([sid, list]) => ({
         sid,
-        x: x(list[0].intensity_kt),
-        y0: Math.min(...list.map((e) => y.scale(y.value(e)))),
-        y1: Math.max(...list.map((e) => y.scale(y.value(e)))),
+        points: [...list].sort((a, b) => a.intensity_kt - b.intensity_kt)
+          .map((e) => `${x(e.intensity_kt)},${y.yOf(e)}`).join(' '),
       }));
 
-    const conn = gConnectors.selectAll('line.connector').data(groups, (d) => d.sid);
+    const conn = gConnectors.selectAll('polyline.connector').data(groups, (d) => d.sid);
     conn.exit().remove();
-    const connAll = conn.enter().append('line').attr('class', 'connector').merge(conn);
-    tx(connAll)
-      .attr('x1', (d) => d.x).attr('x2', (d) => d.x)
-      .attr('y1', (d) => d.y0).attr('y2', (d) => d.y1);
+    const connAll = conn.enter().append('polyline').attr('class', 'connector').merge(conn);
+    tx(connAll).attr('points', (d) => d.points);
     return connAll;
   }
 
@@ -315,17 +318,19 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
         .map((event) => event.id))
       : null;
 
-    // Outlier-Glow (residualReveal) nur, solange kein Set die Bühne übernommen hat.
-    const revealGlow = fx?.residualReveal === true && !activeSet;
-    const isOutlier = (d) => (d.residual_pc ?? -Infinity) > REVEAL_RESIDUAL_MIN;
-    const isReveal = (d) => revealGlow && isOutlier(d);
+    // Zero-Lane-Reveal: hebt die Land-Jahre hervor, die trotz Sturm 0 gemeldet haben.
+    // Ersetzt den früheren Residuen-Glow, der Abstände zu einer nichtssagenden Linie feierte.
+    const revealGlow = fx?.zeroReveal === true && !activeSet;
+    const isReveal = (d) => revealGlow && isZeroLane(d);
     const isStoryFaded = (d) => {
-      // Ein direkter Punkt-Hover gewinnt temporär gegen einen aktiven Beispiel-Button.
-      // Nach Mouseleave kehrt dessen Hervorhebung unverändert zurück.
-      if (hoverFocusIds) return !hoverFocusIds.has(d.id);
+      // Ein aktiver Beispiel-Button (chartControls: Harold/Donna/Reported-zero) gewinnt
+      // gegen den Storm-Spine-Hover: sonst fadet die gewählte Beispielmarke bei JEDEM
+      // Hover eines fremden Punktes weg, weil .story-faded.storm-hoverable Pointer-Events
+      // auf gefadeten Punkten offen hält (Audit 2026-07, per Playwright reproduziert).
       if (activeSet) return !activeSet.has(d.id);
+      if (hoverFocusIds) return !hoverFocusIds.has(d.id);
       if (!fx) return false;
-      if (revealGlow && !isOutlier(d)) return true;
+      if (revealGlow && !isZeroLane(d)) return true;
       if (focusSet && !focusSet.has(d.id)) return true;
       return false;
     };
@@ -359,44 +364,33 @@ export function createPointsLayer(gPoints, gConnectors, layerCtx) {
     // kommt nach vorn; die fixierten Labels bleiben anschließend oberste SVG-Ebene.
     if (storm?.activeEventId) circles.filter((d) => d.id === storm.activeEventId).raise();
     stormLabels.raise();
-    gConnectors.selectAll('line.connector')
+    gConnectors.selectAll('polyline.connector')
       .classed('dimmed', () => sel != null)
-      // Connectors ausblenden, wenn Punkte versteckt sind ODER der Step sie unterdrückt (Step 3).
+      // Connectors ausblenden, wenn Punkte versteckt sind ODER der Step sie unterdrückt.
       .classed('story-hidden', () => fx != null && (!fx.showPoints || fx.hideConnectors === true))
-      // Beim Residuen-Reveal treten ALLE Connectors zurück - der Beat gehört den Punkten.
+      // Beim Zero-Reveal treten ALLE Connectors zurück - der Beat gehört den Punkten.
       .classed('story-faded', (d) => (focusSids != null && !focusSids.has(d.sid))
-        || fx?.residualReveal === true);
+        || fx?.zeroReveal === true);
   }
 
-  // Residuum-Linie vom gehoverten Punkt zur Trendlinie + Name-Label (nur im Story-Step 3).
+  // Name-Label am gehoverten Punkt. Die frühere Linie zur Fit-Geraden ist entfallen:
+  // sie stellte einen Abstand zu einer Vorhersage dar, die keine ist (Audit 2026-07).
   function hoverExtras(state) {
-    // Residuum-Linie + Name bei Einzel-Hover: Step 3 (hoverPoints) und Step 4 (Guba, residualReveal).
-    const interactive = state.storyFx?.hoverPoints === true || state.storyFx?.residualReveal === true;
+    const interactive = state.storyFx?.hoverPoints === true || state.storyFx?.zeroReveal === true;
     const id = interactive ? (state.hover?.eventId ?? null) : null;
     const e = id != null ? data.index.byId.get(id) : null;
-    if (!e || !isScatterable(e)) {
-      residual.style('display', 'none');
+    if (!e || !isPlottable(e)) {
       hoverName.style('display', 'none');
       return;
     }
     const { x, y } = layerCtx.scales;
     const cx = x(e.intensity_kt);
-    const cy = y.scale(y.value(e));
+    const cy = y.yOf(e);
     const ringR = UNIFORM_POINT_R;
-
-    const fit = meta?.fits?.[state.mode];
-    const storm = activeStorm(state);
-    if (state.storyFx?.showTrend && fit && !storm) {
-      const ty = y.scale(fit.slope * e.intensity_kt + fit.intercept);
-      residual.style('display', null)
-        .attr('x1', cx).attr('x2', cx).attr('y1', cy).attr('y2', ty);
-    } else {
-      residual.style('display', 'none');
-    }
 
     if (state.storyFx?.uniformPoints || layerCtx.uniformPoints) {
       // Im Evidence-Panel nennt der Tooltip den Sturm bereits. Ein zweites SVG-Label
-      // würde mit Fit- und Punktbeschriftungen konkurrieren.
+      // würde mit den Punktbeschriftungen konkurrieren.
       hoverName.style('display', 'none');
     } else {
       hoverName.style('display', null)

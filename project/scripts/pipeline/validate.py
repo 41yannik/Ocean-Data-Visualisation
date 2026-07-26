@@ -1,5 +1,13 @@
-"""Validierung der Pipeline-Ausgaben — bricht laut ab, statt still falsche Story-Zahlen zu liefern."""
+"""Validierung der Pipeline-Ausgaben — bricht laut ab, statt still falsche Story-Zahlen zu liefern.
+
+Grenze zwischen hart und weich (Audit 2026-07): STRUKTURELLE Invarianten (Felder,
+Wertebereiche, Konsistenz von Zählern, keine gesperrten Quellen) brechen den Build.
+INHALTLICHE Befunde (erklärt der Wind etwas? gibt es einen Trend?) werden nur noch
+gemeldet. Ein Datenupdate, das der Story widerspricht, muss zu einem korrigierten
+Text führen, nicht zu einem roten Build.
+"""
 import json
+import math
 import re
 
 from pipeline.outputs import EMDAT_FIELDS
@@ -9,7 +17,11 @@ def _fail(msg):
     raise AssertionError(f"VALIDIERUNG FEHLGESCHLAGEN: {msg}")
 
 
-def validate_events(events: list, meta: dict, tracks: dict):
+def _warn(msg):
+    print(f"  WARN  {msg}")
+
+
+def validate_events(events: list, meta: dict, tracks: dict, exposure: list | None = None):
     for e in events:
         leaked = EMDAT_FIELDS & set(e.keys())
         if leaked:
@@ -20,32 +32,86 @@ def validate_events(events: list, meta: dict, tracks: dict):
         _fail("gesperrte Quelle in der Meta gelistet")
     if not any(s["id"] == "pdh-affected" for s in meta["sources"]):
         _fail("offene Wirkungsquelle pdh-affected fehlt in der Meta")
-    if any(e.get("affected") == 0 for e in events):
-        _fail("affected == 0 im Output (log-Skala!)")
-    if any(e.get("affected_pc") == 0 for e in events):
-        _fail("affected_pc == 0 im Output (log10(0)=NaN im Frontend!)")
 
-    # Der offene Kernbefund muss halten: Wind erklärt den Betroffenenanteil kaum,
-    # der Zusammenhang ist pro Kopf signifikant und stärker als absolut.
+    # Gemeldete Nullen sind erlaubt und erwünscht (sie tragen den Ehrlichkeits-Beat),
+    # müssen aber sauber als 0.0 vorliegen und dürfen nie in einen Logarithmus laufen.
+    for e in events:
+        if e.get("affected") is None:
+            _fail(f"Record ohne Meldewert: {e['id']}")
+        if e["affected"] < 0:
+            _fail(f"negative Betroffenenzahl: {e['id']}")
+        if e["affected"] == 0 and e.get("affected_pc") not in (0, 0.0):
+            _fail(f"gemeldete 0 ohne affected_pc == 0: {e['id']}")
+        for key in ("affected_pc", "intensity_kt", "peak_kt"):
+            v = e.get(key)
+            if isinstance(v, float) and not math.isfinite(v):
+                _fail(f"nicht-endlicher Wert {key} in {e['id']}")
+    if any("residual" in k for e in events for k in e):
+        _fail("Residual-Feld im Output — bezieht sich auf einen Fit ohne Erklärungswert")
+
+    # Zähler-Konsistenz (strukturell, nicht inhaltlich).
+    c = meta.get("coverage", {})
+    positive = [e for e in events if e["affected"] > 0]
+    zeros = [e for e in events if e["affected"] == 0]
+    scatter = [e for e in positive if e["intensity_kt"] is not None]
+    zero_lane = [e for e in zeros if e["intensity_kt"] is not None]
+    for key, want in (("rows", len(events)), ("positive_toll", len(positive)),
+                      ("zero_toll", len(zeros)), ("scatterable", len(scatter)),
+                      ("zero_lane", len(zero_lane))):
+        if c.get(key) != want:
+            _fail(f"coverage.{key}={c.get(key)} weicht von den Daten ab ({want})")
+    if c.get("storm_exposed") is not None and c.get("no_report") is not None:
+        if c["scatterable"] + c["zero_with_storm"] + c["no_report"] != c["storm_exposed"]:
+            _fail("Ehrlichkeits-Zerlegung geht nicht auf (Toll + Nullen + ohne Meldung != exponiert)")
+
     fits = meta.get("fits", {})
-    if not fits or fits["perCapita"]["p"] >= 0.05:
-        _fail(f"Challenge-Pro-Kopf-Fit nicht signifikant: {fits.get('perCapita')}")
-    if fits["perCapita"]["r2"] <= fits["absolute"]["r2"]:
-        _fail("R²(pro Kopf) nicht größer als R²(absolut) in Challenge")
+    if not fits or "perCapita" not in fits:
+        _fail("perCapita-Fit fehlt")
+    for name, f in fits.items():
+        if not math.isfinite(f["r2"]) or not math.isfinite(f["p"]):
+            _fail(f"Fit {name} mit nicht-endlichem R²/p")
+        if f["n"] != len(scatter):
+            _fail(f"Fit {name}: n={f['n']} weicht von der Fit-Basis ab ({len(scatter)})")
 
-    # Harold-2020-Hook: derselbe Sturm über Vanuatu und Fiji, verschiedene Anteile.
-    har = {e["iso3"]: e for e in events if e["year"] == 2020 and e["iso3"] in ("VUT", "FJI")
-           and (e.get("name") or "").lower() == "harold"}
-    if set(har) != {"VUT", "FJI"}:
-        _fail(f"Harold-2020-Hook unvollständig: {sorted(har)}")
-    if not (har["VUT"]["affected_pc"] and har["FJI"]["affected_pc"]
-            and har["VUT"]["affected_pc"] > har["FJI"]["affected_pc"]):
-        _fail("Harold-Hook: Vanuatu-Anteil nicht größer als Fiji-Anteil")
+    # 2020-Hook (Vanuatu vs. Fiji): strukturell hart — beide Records müssen existieren
+    # und einen Anteil tragen. Welcher Sturm das Land-Jahr repräsentiert, ist Datenbefund:
+    # seit der Umstellung auf lokalen Wind ist das für Fiji Yasa (140 kt) statt Harold
+    # (125 kt), weil die Betroffenenzahl ohnehin ein JAHRESwert ist. Der Story-Text muss
+    # das benennen, das Gate darf es nicht erzwingen.
+    hook = {e["iso3"]: e for e in events if e["year"] == 2020 and e["iso3"] in ("VUT", "FJI")}
+    if set(hook) != {"VUT", "FJI"}:
+        _fail(f"2020-Hook unvollständig: {sorted(hook)}")
+    for iso, e in hook.items():
+        if not e.get("affected_pc"):
+            _fail(f"2020-Hook: {iso} ohne affected_pc")
+    if not (hook["VUT"]["affected_pc"] > hook["FJI"]["affected_pc"]):
+        _warn("2020-Hook: Vanuatu-Anteil NICHT mehr größer als Fiji — Story-Text prüfen!")
+    names = {iso: (e.get("name") or "?") for iso, e in hook.items()}
+    if names.get("FJI", "").lower() != "harold" or names.get("VUT", "").lower() != "harold":
+        _warn(f"2020-Hook wird nicht mehr von einem einzigen Sturm getragen: {names} "
+              "— der Hook-Text muss die Jahres-Semantik benennen.")
+
+    if exposure is not None:
+        seen = {(e["iso3"], e["year"]) for e in events}
+        for r in exposure:
+            if r["status"] == "none" and (r["iso3"], r["year"]) in seen:
+                _fail(f"Exposure-Status 'none', obwohl Meldung existiert: {r['id']}")
+            if r["status"] not in {"toll", "zero", "none"}:
+                _fail(f"unbekannter Exposure-Status: {r['status']}")
 
     _validate_tracks(tracks, {e["sid"] for e in events if e["sid"]})
-    scatter = [e for e in events if e["intensity_kt"] is not None and e["affected"]]
-    print(f"validate(events): OK — {len(events)} offene Land-Jahre, {len(scatter)} scatterfähig, "
-          f"R²_pc={fits['perCapita']['r2']} (p={fits['perCapita']['p']}), {len(tracks)} Tracks")
+
+    # Inhaltliche Befunde: nur berichten, nie erzwingen.
+    pc, pop = fits["perCapita"], fits.get("popSize")
+    print(f"validate(events): OK — {len(events)} gemeldete Land-Jahre "
+          f"({len(positive)} positiv, {len(zeros)} Nullen), Fit-Basis {len(scatter)}, "
+          f"Zero-Lane {len(zero_lane)}, {len(tracks)} Tracks")
+    print(f"  Befund: Wind R²={pc['r2']} (p={pc['p']})"
+          + (f" · Landesgröße R²={pop['r2']} (p={pop['p']})" if pop else ""))
+    if pc["p"] >= 0.05:
+        _warn(f"Wind-Fit nicht signifikant (p={pc['p']}) — die Story muss das so erzählen.")
+    if pop and pop["r2"] <= pc["r2"]:
+        _warn("Landesgröße erklärt NICHT mehr als der Wind — Story-Text prüfen!")
 
 
 def validate_provenance(meta: dict):
@@ -111,8 +177,8 @@ def validate_sst(series: list):
 
 
 def validate_trends(trends: dict):
-    """Sichert die Kernaussage der no-trend-Sektion ab: Zahl + Mittelwind flach
-    (nicht signifikant), NW-Entstehungsbreite signifikant polwärts."""
+    """Struktur der Trend-Serien hart, die Trend-BEFUNDE weich (Audit 2026-07):
+    ob Zahl und Mittelwind flach sind, ist Ergebnis und darf kein Build-Gate sein."""
     if trends.get("window") != [2001, 2025]:
         _fail(f"trends.window {trends.get('window')} statt [2001, 2025]")
     s = trends["series"]
@@ -128,11 +194,14 @@ def validate_trends(trends: dict):
         if idx and (idx != list(range(idx[0], idx[-1] + 1))):
             _fail(f"trends.series.{key}: None mitten in der Serie")
     f = trends["fits"]
+    for key, fit in f.items():
+        if not math.isfinite(fit["p"]) or not math.isfinite(fit["r2"]):
+            _fail(f"trends.fits.{key} mit nicht-endlichem p/R²")
     if f["count"]["p"] < 0.05:
-        _fail(f"Sturmzahl-Trend unerwartet signifikant (p={f['count']['p']}) — Aussage 'flach' verletzt")
+        _warn(f"Sturmzahl-Trend jetzt signifikant (p={f['count']['p']}) — Story-Text prüfen!")
     if f["windMean"]["p"] < 0.05:
-        _fail(f"Mittelwind-Trend unerwartet signifikant (p={f['windMean']['p']}) — Aussage 'flach' verletzt")
+        _warn(f"Mittelwind-Trend jetzt signifikant (p={f['windMean']['p']}) — Story-Text prüfen!")
     if not (f["genesisWP"]["p"] < 0.05 and f["genesisWP"]["perDecade"] > 0):
-        _fail(f"NW-Polwärts-Signal fehlt (p={f['genesisWP']['p']}, perDecade={f['genesisWP']['perDecade']})")
-    print(f"validate(trends): OK — 25 Saisons, Zahl/Wind flach, "
-          f"NW +{f['genesisWP']['perDecade']}°/Dekade (p={f['genesisWP']['p']})")
+        _warn(f"NW-Polwärts-Signal nicht mehr signifikant (p={f['genesisWP']['p']}) — Story-Text prüfen!")
+    print(f"validate(trends): OK — 25 Saisons · Zahl p={f['count']['p']}, "
+          f"Wind p={f['windMean']['p']}, NW {f['genesisWP']['perDecade']:+}°/Dekade (p={f['genesisWP']['p']})")

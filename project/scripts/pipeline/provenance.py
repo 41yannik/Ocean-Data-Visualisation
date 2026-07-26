@@ -67,7 +67,8 @@ def source_catalog() -> list[dict]:
             "provider": "NOAA/NCEI",
             "version": "v04r01",
             "subset": "South Pacific and Western Pacific basin files",
-            "period": "2001–2026 impact subset; 2001–2025 full-basin trend",
+            "period": f"{ref.CHALLENGE_YEAR_MIN}–{ref.CHALLENGE_YEAR_MAX} impact subset; "
+                      "2001–2025 full-basin trend",
             "usedFor": "storm tracks, peak wind, category, gale-force wind radii and annual storm trends",
             "fields": [
                 "SID", "SEASON", "ISO_TIME", "LAT", "LON", "USA_WIND", "WMO_WIND",
@@ -174,7 +175,8 @@ def build_analysis(ev: pd.DataFrame, sst_raw: pd.DataFrame, sst: list, trends: d
     analysis.update({
             "join": {
                 "rule": f"IBTrACS track point within {ref.CHALLENGE_PROXIMITY_KM} km of the country "
-                        "centroid in the same calendar year; strongest such storm kept",
+                        "centroid in the same calendar year; of those storms the one that reached "
+                        "the highest wind speed inside that radius is kept",
                 "matchedRows": int(ev["sid"].notna().sum()),
                 "totalRows": int(len(ev)),
                 "stormExposedCountryYears": int(storm_exposed) if storm_exposed is not None else None,
@@ -182,15 +184,20 @@ def build_analysis(ev: pd.DataFrame, sst_raw: pd.DataFrame, sst: list, trends: d
             "impact": {
                 "unit": "country-year",
                 "outcomeSource": "PDH VC_DSR_AFFCT (SDG 11.5.1): people affected by all disasters per year",
+                "reportingRule": "every reported country-year is a record, including the ones reported "
+                                 "as exactly zero affected; nothing is filtered on the outcome",
                 "populationFormula": "affected_pc = annual_affected / population",
                 "populationLastYear": ref.WPP_LAST_YEAR,
-                "windRule": f"basin-lifetime maximum USA_WIND (kt) of the strongest storm within "
-                            f"{ref.CHALLENGE_PROXIMITY_KM} km of the centroid that year",
+                "windRule": f"maximum USA_WIND (kt, WMO_WIND where missing) measured at track points "
+                            f"inside {ref.CHALLENGE_PROXIMITY_KM} km of the centroid — the wind that "
+                            f"reached the country, not the storm's lifetime peak (kept as peak_kt)",
             },
             "model": {
                 "absoluteFormula": "log10(total_affected + 1) ~ intensity_kt",
                 "perCapitaFormula": "log10(affected_pc) ~ intensity_kt",
-                "residual": "observed log10 impact minus the value predicted by the wind-only OLS line",
+                "popSizeFormula": "log10(affected_pc) ~ log10(pop), fitted on the same records as perCapita",
+                "fitBasis": "records with a positive reported toll and a measured local wind; reported "
+                            "zeros are kept in the data but cannot enter a log regression",
                 "band": "25th, 50th and 75th percentiles within six equally populated intensity bins",
             },
         })

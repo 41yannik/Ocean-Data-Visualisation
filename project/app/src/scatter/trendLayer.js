@@ -1,23 +1,40 @@
-// Trend + Quantilband + generierte Annotation (fitLabel - nie getippt, Lücke L8).
-// Fit-Parameter kommen ausschließlich aus meta.fits[mode] (Pipeline) - nie im Frontend fitten.
-// Die geringe erklärte Variation ist der Befund; die sichtbare Steigung wird nicht
-// als „flach" überinterpretiert.
+// Referenz-Layer des Scatters: Median-Linie, Quantilband und der Befund-Text.
+//
+// Bis zum Audit 2026-07 zeichnete dieser Layer eine „wind-only fit"-Gerade. Mit dem
+// lokal erreichten Wind auf der x-Achse erklärt diese Gerade nichts (R² 0.015, p 0.31):
+// eine gezeichnete Regressionslinie hätte einen Zusammenhang behauptet, den die Daten
+// nicht hergeben. Stattdessen steht dort jetzt der MEDIAN des gemeldeten Anteils - eine
+// Referenz, die nichts über den Wind behauptet - plus die ausgeschriebene Aussage
+// „no detectable relationship". Alle Kennwerte stammen aus meta.fits (Pipeline),
+// gerechnet wird im Frontend nichts.
 import { line as d3line, area as d3area, curveMonotoneX } from 'd3';
 import { DUR_MODE } from '../core/config.js';
-
-const X_CLAMP = [45, 172]; // Datenbereich der Linie (Punkte: 35–170 kt)
+import { isScatterable } from '../core/filters.js';
 
 export function createTrendLayer(gBand, gTrend, gAnnotations, layerCtx) {
-  const { meta, inner } = layerCtx;
+  const { data, meta, inner } = layerCtx;
 
   const bandPath = gBand.append('path').attr('class', 'trend-band');
-  const medianPath = gBand.append('path').attr('class', 'trend-median');
-  const linePath = gTrend.append('path').attr('class', 'trend-line');
-  const keyLine = gAnnotations.append('line').attr('class', 'trend-key-line');
-  const label = gAnnotations.append('text').attr('class', 'trend-annotation')
+  const bandMedian = gBand.append('path').attr('class', 'trend-median');
+  const medianLine = gTrend.append('line').attr('class', 'median-line');
+  const medianLabel = gAnnotations.append('text').attr('class', 'median-annotation')
     .attr('text-anchor', 'start');
+  // Der fruehere "median, not a fit"-Mini-Key oben ist entfallen (Audit 2026-07): die
+  // Median-Linie traegt bereits ihr eigenes Inline-Label und ist als Horizontale ohnehin
+  // nicht mit einer Trendgeraden zu verwechseln - der zweite Schluessel war reiner Clutter.
   const fitNote = gAnnotations.append('text').attr('class', 'trend-fit-note')
     .attr('text-anchor', 'start');
+
+  // Median des geplotteten Anteils - Bezugslinie ohne Wind-Behauptung.
+  const medianValue = (mode) => {
+    const vals = data.events.filter(isScatterable)
+      .map((e) => (mode === 'absolute' ? Math.log10(e.affected + 1) : Math.log10(e.affected_pc)))
+      .filter((v) => Number.isFinite(v))
+      .sort((a, b) => a - b);
+    if (!vals.length) return null;
+    const mid = vals.length >> 1;
+    return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+  };
 
   function render(state, animate) {
     const { x, y } = layerCtx.scales;
@@ -27,11 +44,13 @@ export function createTrendLayer(gBand, gTrend, gAnnotations, layerCtx) {
       ? (sel) => sel.transition('mode').duration(DUR_MODE)
       : (sel) => sel;
 
-    const lineGen = d3line()
-      .x((d) => x(d.xv))
-      .y((d) => y.scale(fit.slope * d.xv + fit.intercept));
-    const linePts = [{ xv: X_CLAMP[0] }, { xv: X_CLAMP[1] }];
-    tx(linePath).attr('d', lineGen(linePts));
+    const med = medianValue(state.mode);
+    if (med != null) {
+      const my = y.scale(med);
+      tx(medianLine).attr('x1', 0).attr('x2', inner.width).attr('y1', my).attr('y2', my);
+      tx(medianLabel).attr('x', 6).attr('y', my - 6);
+      medianLabel.text('median reported share');
+    }
 
     const areaGen = d3area()
       .x((d) => x(d.x))
@@ -44,23 +63,16 @@ export function createTrendLayer(gBand, gTrend, gAnnotations, layerCtx) {
       .x((d) => x(d.x))
       .y((d) => y.scale(d.q50))
       .curve(curveMonotoneX);
-    tx(medianPath).attr('d', medianGen(band));
+    tx(bandMedian).attr('d', medianGen(band));
 
-    // Feste Schlüsselzeile im oberen Plot-Rand statt Direktlabel im Punktefeld.
-    // Sie bleibt unabhängig von Filter/Punktverteilung garantiert kollisionsfrei.
-    const keyX = Math.max(150, inner.width - 292);
-    tx(keyLine)
-      .attr('x1', keyX).attr('x2', keyX + 27)
-      .attr('y1', -14).attr('y2', -14);
-    tx(label)
-      .attr('x', keyX + 35)
-      .attr('y', -10);
-    label.text('wind-only fit');
-    tx(fitNote)
-      .attr('x', keyX + 116)
-      .attr('y', -10);
-    const r2Pct = (fit.r2 * 100).toFixed(1).replace(/\.0$/, '');
-    fitNote.text(`About ${r2Pct}% of variation captured`);
+    // Nur noch der Befund im oberen Plot-Rand, links an der Position des fruheren Keys.
+    const keyX = Math.max(150, inner.width - 332);
+    tx(fitNote).attr('x', keyX).attr('y', -10);
+    // Der Befund selbst, ausgeschrieben: der Wind trägt praktisch nichts bei.
+    const r2Pct = fit.r2 * 100;
+    const r2Text = r2Pct < 1 ? '<1%' : `${r2Pct.toFixed(1).replace(/\.0$/, '')}%`;
+    const pText = fit.p >= 0.001 ? fit.p.toFixed(2) : '<0.001';
+    fitNote.text(`Wind explains ${r2Text} of the differences (p = ${pText})`);
   }
 
   // Story-Sichtbarkeit (storyFx = null → alles sichtbar); Fade via CSS-Transition.
@@ -68,17 +80,11 @@ export function createTrendLayer(gBand, gTrend, gAnnotations, layerCtx) {
     const fx = state.storyFx;
     const hideForStormFocus = fx?.hoverPoints === true
       && (state.hover?.eventId != null || state.stormPin?.sid != null);
-    linePath.classed('story-hidden', fx != null && !fx.showTrend);
-    // Reveal-Step: die Abweichungen von der Linie tragen die Hauptaussage.
-    linePath.classed('trend-emphasis', fx?.residualReveal === true);
-    // Das Fit-Label (R²/p) erscheint mit dem Band ODER explizit via showFitLabel
-    // (Evidence-Panel: Linie + Label ohne Band).
-    const hideFitKey = hideForStormFocus || (fx != null && !fx.showBand && !fx.showFitLabel);
-    keyLine.classed('story-hidden', hideFitKey);
-    label.classed('story-hidden', hideFitKey);
+    medianLine.classed('story-hidden', fx != null && !fx.showTrend);
+    medianLabel.classed('story-hidden', (fx != null && !fx.showTrend) || hideForStormFocus);
     fitNote.classed('story-hidden', hideForStormFocus || fx?.showFitNote !== true);
     bandPath.classed('story-hidden', fx != null && !fx.showBand);
-    medianPath.classed('story-hidden', fx != null && !fx.showBand);
+    bandMedian.classed('story-hidden', fx != null && !fx.showBand);
   }
 
   return {

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { isScatterable, matchesFilters } from '../app/src/core/filters.js';
+import { isScatterable, isZeroLane, isPlottable, matchesFilters } from '../app/src/core/filters.js';
 import { makeInitialState } from '../app/src/core/initialState.js';
 import { createStore } from '../app/src/core/state.js';
 import { buildConclusionSynthesisModel } from '../app/src/story/conclusionSynthesis.js';
-import { computeResidualRows, computeSubregionRows, RR_R } from '../app/src/story/residualRows.js';
+import { computeSizeRows, computeSubregionRows, RR_R } from '../app/src/story/sizeRows.js';
 import { resolveRefs } from '../app/src/story/refs.js';
 import { buildSteps, STEP_COUNT } from '../app/src/story/steps.js';
 import { buildGenesisModel } from '../app/src/story/stormTrend.js';
@@ -134,23 +134,63 @@ test('filters combine inclusive year, minimum-category set, and countries', () =
   assert.equal(matchesFilters({ ...event, iso3: 'FJI' }, filters), false);
 });
 
-test('scatterability requires both wind and reported impact, including zero', () => {
-  assert.equal(isScatterable({ intensity_kt: 80, affected: 0 }), true);
+test('scatterable needs a positive toll; reported zeros form their own class', () => {
+  // Der Log-Bereich verlangt einen POSITIVEN Toll - log10(0) existiert nicht.
+  assert.equal(isScatterable({ intensity_kt: 80, affected: 100 }), true);
+  assert.equal(isScatterable({ intensity_kt: 80, affected: 0 }), false);
   assert.equal(isScatterable({ intensity_kt: null, affected: 100 }), false);
   assert.equal(isScatterable({ intensity_kt: 80, affected: null }), false);
+  // Gemeldete Nullen mit Sturm im Radius sind Records, keine Lücken: eigene Klasse.
+  assert.equal(isZeroLane({ intensity_kt: 80, affected: 0 }), true);
+  assert.equal(isZeroLane({ intensity_kt: null, affected: 0 }), false);
+  assert.equal(isZeroLane({ intensity_kt: 80, affected: 5 }), false);
+  // Beide erscheinen im Plot, ein Toll ohne Sturm nicht.
+  assert.equal(isPlottable({ intensity_kt: 80, affected: 0 }), true);
+  assert.equal(isPlottable({ intensity_kt: 80, affected: 5 }), true);
+  assert.equal(isPlottable({ intensity_kt: null, affected: 5 }), false);
+});
+
+test('events carry local wind and no residual fields', async () => {
+  const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const meta = JSON.parse(await readFile(new URL('../app/public/data/meta.json', import.meta.url)));
+  // Residuen beziehen sich auf einen Fit ohne Erklärungswert und werden nicht mehr geliefert.
+  for (const e of events) {
+    assert.equal('residual_pc' in e, false, `${e.id} still carries residual_pc`);
+    assert.equal('residual_abs' in e, false, `${e.id} still carries residual_abs`);
+  }
+  // intensity_kt ist der lokal erreichte Wind und darf den Lifetime-Peak nie übersteigen.
+  const withBoth = events.filter((e) => e.intensity_kt != null && e.peak_kt != null);
+  assert.ok(withBoth.length > 0, 'no records with both winds');
+  for (const e of withBoth) {
+    assert.ok(e.intensity_kt <= e.peak_kt, `${e.id}: local wind above lifetime peak`);
+  }
+  // Mindestens ein Record, wo beide auseinanderfallen - sonst wäre die Umstellung wirkungslos.
+  assert.ok(withBoth.some((e) => e.intensity_kt < e.peak_kt), 'local wind never differs from peak');
+  // Zähler-Konsistenz gegen die Daten.
+  assert.equal(meta.coverage.rows, events.length);
+  assert.equal(meta.coverage.scatterable, events.filter(isScatterable).length);
+  assert.equal(meta.coverage.zero_lane, events.filter(isZeroLane).length);
+  assert.equal(meta.fits.perCapita.n, meta.coverage.scatterable);
+  // popSize läuft auf derselben Stichprobe - nur so ist der R²-Vergleich zulässig.
+  assert.equal(meta.fits.popSize.n, meta.fits.perCapita.n);
 });
 
 test('conclusion synthesis exposes the mismatch and keeps one ordered dataset', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
   const model = buildConclusionSynthesisModel(events);
 
-  assert.equal(model.rows.length, 71);
-  assert.equal(model.topWind.length, 6); // Gleichstand am fünften Windrang
-  assert.equal(model.topImpact.length, 5);
-  assert.deepEqual(model.shared.map((event) => event.id), ['PLW-2021', 'FJI-2016']);
-  assert.equal(model.byId.get('PLW-2021').impactRank, 1);
-  assert.equal(model.byId.get('PLW-2021').windRank, 1);
+  // Datengetrieben statt hartkodiert (Audit 2026-07): der Test sichert die Mechanik,
+  // nicht eine bestimmte Rangliste. Sonst zementieren Tests die Story-Schlussfolgerung.
+  assert.equal(model.rows.length, events.filter(isScatterable).length);
+  assert.ok(model.topWind.length >= 5 && model.topImpact.length >= 5);
+  // Die Pointe des Beats: die beiden Ranglisten stimmen NICHT überein.
+  assert.ok(model.shared.length < 5, 'top five identical in both orders - no mismatch to tell');
   assert.ok(model.ordered.every((row, i) => i === 0 || model.ordered[i - 1].intensity_kt <= row.intensity_kt));
+  // Rang 1 je Kriterium gehört wirklich dem Maximum.
+  const maxWind = Math.max(...model.rows.map((r) => r.intensity_kt));
+  const maxShare = Math.max(...model.rows.map((r) => r.affected_pc));
+  assert.equal(model.topWind[0].intensity_kt, maxWind);
+  assert.equal(model.topImpact[0].affected_pc, maxShare);
 });
 
 test('conclusion keeps both top-five readings linked to the same complete rows', async () => {
@@ -158,56 +198,69 @@ test('conclusion keeps both top-five readings linked to the same complete rows',
   const model = buildConclusionSynthesisModel(events);
 
   assert.ok([...model.topWind, ...model.topImpact].every((row) => model.byId.get(row.id) === row));
-  assert.equal(model.topImpact.find((row) => row.id === 'FJI-2016').windRank, 3);
-  assert.equal(model.topWind.find((row) => row.id === 'FJI-2016').impactRank, 5);
   assert.equal(new Set(model.ordered.map((row) => row.id)).size, model.rows.length);
   assert.ok(model.orders.impact.every((row, i) =>
     i === 0 || model.orders.impact[i - 1].affected_pc <= row.affected_pc));
+  // Jede Zeile trägt beide Ränge, sonst kann die verlinkte Ansicht nicht koppeln.
+  assert.ok(model.rows.every((row) => row.windRank >= 1 && row.impactRank >= 1));
 });
 
 test('country recurrence sorts by reported impacts and keeps every record counted', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
   const rows = buildCountryRecurrence(events);
-  assert.equal(rows.length, 15);
-  assert.equal(rows[0].iso3, 'SLB');
+  assert.equal(rows.length, new Set(events.map((e) => e.iso3)).size);
   assert.ok(rows.every((row, index) => index === 0 || rows[index - 1].reportedCount >= row.reportedCount));
-  assert.equal(rows.reduce((sum, row) => sum + row.totalCount, 0), 99);
-  // Offene Basis ist impact-led: jeder Record hat einen gemeldeten Toll.
-  assert.equal(rows.reduce((sum, row) => sum + row.reportedCount, 0), 99);
+  // Jede gemeldete Zeile ist genau einmal gezählt - auch die gemeldeten Nullen.
+  assert.equal(rows.reduce((sum, row) => sum + row.totalCount, 0), events.length);
+  assert.equal(
+    rows.reduce((sum, row) => sum + row.reportedCount, 0),
+    events.filter((e) => e.affected > 0).length,
+  );
 });
 
-test('residual rows lay out all scatterable records and hide ghosts', async () => {
+test('size rows give every country its own row, ordered by population', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
-  const rr = computeResidualRows(events, { W: 562, H: 416 });
+  const rr = computeSizeRows(events, { W: 562, H: 416 });
 
   const scatterable = events.filter(isScatterable);
-  assert.equal(scatterable.length, 71);
   assert.ok(scatterable.every((e) => rr.pos(e) != null));
+  // Gemeldete Nullen haben keinen Logarithmus und bekommen deshalb keine Position.
   assert.ok(events.filter((e) => !isScatterable(e)).every((e) => rr.pos(e) == null));
+  assert.equal(rr.rows.reduce((sum, row) => sum + row.n, 0), scatterable.length);
 
-  // Zeilen: 6 Länder mit ≥4 Records + „Other" zuletzt; Summen decken alle 71 Records ab.
-  assert.equal(rr.rows.length, 7);
-  assert.equal(rr.rows.at(-1).key, 'OTHER');
-  assert.equal(rr.rows.at(-1).n, 21);
-  assert.equal(rr.rows.reduce((sum, row) => sum + row.n, 0), 71);
+  // KEINE „Other"-Faltung mehr: sie versteckte ausgerechnet die kleinsten Staaten,
+  // um die es im Beat geht (Regression zum Audit 2026-07).
+  assert.ok(!rr.rows.some((row) => row.key === 'OTHER'), 'small countries folded away again');
+  assert.equal(rr.rows.length, new Set(scatterable.map((e) => e.iso3)).size);
 
-  // Erzähl-Reihenfolge: Palau (4/4 über der Linie) zuerst.
-  assert.equal(rr.rows[0].key, 'PLW');
-  assert.equal(rr.rows[0].nAbove, 4);
-  assert.equal(rr.rows[0].n, 4);
+  // Zeilenordnung IST die Aussage: kleinste Bevölkerung zuerst.
+  for (let i = 1; i < rr.rows.length; i++) {
+    assert.ok(rr.rows[i - 1].pop <= rr.rows[i].pop, `row order broken at ${rr.rows[i].label}`);
+  }
+  assert.ok(rr.rows[0].pop < 50_000, 'first row should be a very small state');
+  assert.equal(rr.rows.at(-1).key, 'PNG');
 });
 
-test('residual rows place dots on the correct side of the zero line without overlap', async () => {
+test('size rows place dots by reported share, unclamped and without overlap', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
-  const rr = computeResidualRows(events, { W: 562, H: 416 });
-
+  const rr = computeSizeRows(events, { W: 562, H: 416 });
   const scatterable = events.filter(isScatterable);
+
+  // Seite relativ zum Gesamtmedian stimmt mit dem Wert überein.
   for (const e of scatterable) {
     const [px] = rr.pos(e);
-    if ((e.residual_pc ?? 0) > 0) assert.ok(px > rr.zeroX, `${e.id} sollte rechts der Null-Linie liegen`);
-    else assert.ok(px <= rr.zeroX, `${e.id} sollte links der Null-Linie liegen`);
+    const v = Math.log10(e.affected_pc);
+    if (v > rr.overallMedian) assert.ok(px > rr.zeroX, `${e.id} should sit right of the median`);
+    else assert.ok(px <= rr.zeroX, `${e.id} should sit left of the median`);
   }
-  assert.equal(rr.zeroX, rr.x(0));
+  assert.equal(rr.zeroX, rr.x(rr.overallMedian));
+
+  // KEIN Clamp: die Extremwerte bekommen echte Positionen, nicht den Rand. Der Vorgänger
+  // stapelte 12 von 71 Punkten unsichtbar am Rand, darunter den Hauptdarsteller der Story.
+  const sorted = [...scatterable].sort((a, b) => a.affected_pc - b.affected_pc);
+  assert.ok(rr.pos(sorted[0])[0] < rr.pos(sorted.at(-1))[0], 'x order does not follow the value');
+  const xs = scatterable.map((e) => rr.pos(e)[0]);
+  assert.ok(xs.filter((x) => x === Math.max(...xs)).length === 1, 'dots stacked at the right edge');
 
   // Dodge: kein Punktepaar derselben Zeile+Lane näher als ein Durchmesser.
   const byLane = new Map();
@@ -217,56 +270,69 @@ test('residual rows place dots on the correct side of the zero line without over
     if (!byLane.has(key)) byLane.set(key, []);
     byLane.get(key).push(px);
   }
-  for (const xs of byLane.values()) {
-    xs.sort((a, b) => a - b);
-    for (let i = 1; i < xs.length; i++) {
-      assert.ok(xs[i] - xs[i - 1] >= RR_R * 2, `Lane-Kollision: Abstand ${xs[i] - xs[i - 1]}`);
+  for (const xsInLane of byLane.values()) {
+    xsInLane.sort((a, b) => a - b);
+    for (let i = 1; i < xsInLane.length; i++) {
+      assert.ok(xsInLane[i] - xsInLane[i - 1] >= RR_R * 2, `lane collision: ${xsInLane[i] - xsInLane[i - 1]}`);
     }
   }
 });
 
-test('subregion rows collapse the same 71 records into three honest groups', async () => {
+test('subregion rows stay available as a folded view of the same records', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
   const rr = computeSubregionRows(events, { W: 562, H: 416 });
-
-  // Drei Zeilen, aboveShare absteigend: Mikronesien lehnt schwer, Melanesien lehnt
-  // unter die Linie - die Pointe des offenen Subregion-Beats.
-  assert.deepEqual(rr.rows.map((row) => row.key), ['Micronesia', 'Polynesia', 'Melanesia']);
-  assert.deepEqual(rr.rows.map((row) => [row.nAbove, row.n]), [[11, 13], [10, 16], [19, 42]]);
-  assert.equal(rr.rows.reduce((sum, row) => sum + row.n, 0), 71);
-
-  // Gruppen-Median: Mikronesien klar rechts der Null-Linie, Melanesien links.
-  assert.ok(rr.rows[0].median > 0);
-  assert.ok(rr.rows[2].median < 0);
-
-  // Jeder scatterbare Punkt hat eine Position; Ghosts (kein Residuum) keine.
   const scatterable = events.filter(isScatterable);
+
+  assert.equal(rr.rows.length, 3);
+  assert.deepEqual([...rr.rows.map((r) => r.key)].sort(), ['Melanesia', 'Micronesia', 'Polynesia']);
+  assert.equal(rr.rows.reduce((sum, row) => sum + row.n, 0), scatterable.length);
   assert.ok(scatterable.every((e) => rr.pos(e) != null));
-  assert.ok(events.filter((e) => !isScatterable(e)).every((e) => rr.pos(e) == null));
-
-  // Regression: die Länder-Variante bleibt unter der Generalisierung stabil.
-  const country = computeResidualRows(events, { W: 562, H: 416 });
-  assert.equal(country.rows.length, 7);
-  assert.equal(country.rows[0].key, 'PLW');
 });
 
-test('subregionAboveCount stat renders a countable claim and fails loud on unknown regions', async () => {
+test('the population signal the story tells is present in the data', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
-  const ctx = { data: { events } };
-  assert.equal(resolveRefs('{{stat:subregionAboveCount.Micronesia}}', ctx), '11 of 13');
-  assert.equal(resolveRefs('{{stat:subregionAboveCount.Melanesia}}', ctx), '19 of 42');
-  assert.throws(() => resolveRefs('{{stat:subregionAboveCount.Atlantis}}', ctx));
+  const meta = JSON.parse(await readFile(new URL('../app/public/data/meta.json', import.meta.url)));
+  const ctx = { data: { events }, meta };
+
+  // Der Beat behauptet, Landesgröße erkläre mehr als Wind. Das kommt aus meta und darf
+  // nicht still kippen, ohne dass ein Test anschlägt.
+  assert.ok(meta.fits.popSize.r2 > meta.fits.perCapita.r2,
+    'story claims population explains more than wind');
+  assert.ok(meta.fits.popSize.p < 0.05, 'population fit no longer significant');
+
+  // Die Zähler-Referenz des Textes ist abzählbar und deckt sich mit den Daten.
+  const rendered = resolveRefs('{{stat:smallCountryAbove}}', ctx);
+  const [above, , total] = rendered.split(' ');
+  assert.ok(Number(above) > 0 && Number(total) > 0);
+  assert.ok(Number(above) <= Number(total));
+  // Entfernte Residuen-Statistiken müssen laut scheitern, nicht still etwas rendern.
+  assert.throws(() => resolveRefs('{{stat:aboveCount.FJI}}', ctx));
+  assert.throws(() => resolveRefs('{{stat:subregionAboveCount.Micronesia}}', ctx));
 });
 
-test('aboveCount stat renders a countable claim and fails loud on unknown countries', async () => {
+test('zero-report stats are countable and consistent with coverage', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
-  const ctx = { data: { events } };
-  assert.equal(resolveRefs('{{stat:aboveCount.FJI}}', ctx), '8 of 13');
-  assert.equal(resolveRefs('{{stat:aboveCount.PLW}}', ctx), '4 of 4');
-  assert.throws(() => resolveRefs('{{stat:aboveCount.XXX}}', ctx));
+  const meta = JSON.parse(await readFile(new URL('../app/public/data/meta.json', import.meta.url)));
+  const ctx = { data: { events }, meta };
+
+  assert.equal(resolveRefs('{{stat:zeroCount}}', ctx), String(meta.coverage.zero_toll));
+  assert.equal(resolveRefs('{{stat:zeroWithStorm}}', ctx), String(meta.coverage.zero_with_storm));
+  assert.equal(resolveRefs('{{stat:noReport}}', ctx), String(meta.coverage.no_report));
+  // Der Story-Satz "N reported tolls had no cyclone within range" darf die gemeldeten
+  // Nullen NICHT mitzaehlen - sie stehen im selben Satz schon separat. Die Zahl muss
+  // deshalb identisch zu der sein, die der Methodenabschnitt aus meta ausweist.
+  assert.equal(resolveRefs('{{stat:missingWind}}', ctx), String(meta.coverage.missing_wind));
+  // Die Ehrlichkeits-Zerlegung muss aufgehen.
+  assert.equal(
+    meta.coverage.scatterable + meta.coverage.zero_with_storm + meta.coverage.no_report,
+    meta.coverage.storm_exposed,
+  );
+  // Der stärkste Fall der Story: ein Land meldet 0 trotz sehr starkem Wind.
+  const strongZero = events.filter(isZeroLane).sort((a, b) => b.intensity_kt - a.intensity_kt)[0];
+  assert.ok(strongZero.intensity_kt >= 100, 'no strong-wind zero report left to tell');
 });
 
-test('story has eleven steps and the row beats morph the dots2 stage', async () => {
+test('story has nine steps and the country-size beat morphs the dots2 stage', async () => {
   const [events, meta, sst, trends] = await Promise.all([
     'events.json', 'meta.json', 'sst.json', 'trends.json',
   ].map(async (file) => JSON.parse(await readFile(new URL(`../app/public/data/${file}`, import.meta.url)))));
@@ -279,9 +345,9 @@ test('story has eleven steps and the row beats morph the dots2 stage', async () 
   const ctx = { data: { events, sst, trends, index: { byId, bySid } }, meta };
 
   const steps = buildSteps(ctx);
-  assert.equal(steps.length, 11);
+  assert.equal(steps.length, 9);
   assert.equal(steps.length, STEP_COUNT);
-  assert.equal(SECTIONS.length, 11);
+  assert.equal(SECTIONS.length, 9);
   assert.deepEqual(SECTIONS.map((section) => section.step), [...steps.keys()]);
   assert.ok(steps.every((step) => step.source?.trim()), 'every visualisation has a source');
   assert.ok(steps.every((step) => step.hint?.trim()), 'every visualisation has a How to read explanation');
@@ -293,47 +359,48 @@ test('story has eleven steps and the row beats morph the dots2 stage', async () 
     return index;
   };
 
-  // Harold-Hook: zwei Impact-Bubbles (VUT + FJI) und Kamera-Einflug.
-  const hook = at('hook-harold');
-  assert.equal(steps[hook].title, 'One storm, two ways to count impact');
+  // Hook: zwei Impact-Bubbles (VUT + FJI) und Kamera-Einflug.
+  const hook = at('hook');
   const hookFx = steps[hook].apply().storyFx;
   assert.deepEqual(hookFx.impactBubbles.map((b) => b.eventId), ['VUT-2020', 'FJI-2020']);
   assert.ok(hookFx.camera.flyMs > 0);
-  assert.ok(steps[hook].html.includes('3× gap'));
+  // Der Hook benennt beide Stuerme, weil ihn nicht mehr ein einziger traegt.
+  assert.match(steps[hook].html, /Harold/);
+  assert.match(steps[hook].html, /Yasa/);
 
   const evidence = at('evidence');
-  assert.equal(steps[evidence].caveat, undefined);
   assert.deepEqual(steps[evidence].apply().storyFx.annotations, []);
   assert.equal(steps[evidence].apply().storyFx.uniformPoints, true);
   assert.equal(steps[evidence].apply().stormPin, null);
   assert.ok(SECTIONS[evidence].split, 'evidence panel keeps its interactive controls');
+  // Der Beat nennt die Nicht-Signifikanz, statt eine erklaerende Linie zu behaupten.
+  assert.match(steps[evidence].html, /not statistically detectable/);
 
-  // Winston-Fallstudie: eine Bubble über Fiji.
+  // Winston-Fallstudie: eine Bubble ueber Fiji.
   const winston = at('winston');
   assert.deepEqual(steps[winston].apply().storyFx.impactBubbles.map((b) => b.eventId), ['FJI-2016']);
 
-  // Residual-Beat: gleiche Bühne wie patterns/honesty, Formation residualRows.
-  const rr = at('residual-rows');
-  assert.equal(steps[rr].apply().formation, 'residualRows');
-  assert.equal(SECTIONS[rr].stage, 'dots2');
-  assert.ok(steps[rr].html.includes('4 of 4'));   // Palau
-  assert.ok(steps[rr].html.includes('8 of 13'));  // Fiji
+  // Landesgroessen-Beat: ersetzt die drei Residuen-Beats, Formation sizeRows.
+  const size = at('country-size');
+  assert.equal(steps[size].apply().formation, 'sizeRows');
+  assert.equal(SECTIONS[size].stage, 'dots2');
+  assert.match(steps[size].html, /population/i);
 
-  // Subregion-Beat: direkt nach den Länderzeilen, gleiche Bühne, Formation subregion.
-  const sub = at('subregion-rows');
-  assert.equal(sub, rr + 1);
-  assert.equal(steps[sub].apply().formation, 'subregion');
-  assert.equal(SECTIONS[sub].stage, 'dots2');
-  assert.ok(steps[sub].html.includes('11 of 13'));
-  assert.ok(steps[sub].html.includes('19 of 42'));
+  // Ehrlichkeits-Beat: Unit-Formation, nennt die gemeldeten Nullen und Pam.
+  const honesty = at('honesty');
+  assert.equal(steps[honesty].apply().formation, 'unit');
+  assert.equal(SECTIONS[honesty].stage, 'dots2');
+  assert.match(steps[honesty].html, /zero/i);
+  assert.ok(steps[honesty].html.includes('Pam'));
 
-  // patterns zeichnet die Stems; apply() liefert stets frische Objekte (Store-Konvention).
-  const patterns = at('patterns');
-  assert.equal(steps[patterns].apply().storyFx.residualStems, true);
-  assert.equal(steps[patterns].apply().storyFx.uniformPoints, true);
-  assert.match(steps[patterns].hint, /Every dot uses the same size/);
-  const first = steps[patterns].apply();
-  const second = steps[patterns].apply();
+  // Entfernte Beats duerfen nicht zurueckkehren.
+  for (const gone of ['patterns', 'residual-rows', 'subregion-rows']) {
+    assert.equal(steps.findIndex((s) => s.id === gone), -1, `${gone} should be gone`);
+  }
+
+  // apply() liefert stets frische Objekte (Store-Konvention).
+  const first = steps[size].apply();
+  const second = steps[size].apply();
   assert.notEqual(first, second);
   assert.notEqual(first.storyFx, second.storyFx);
 });
@@ -380,79 +447,69 @@ test('hot-zone aggregation separates frequency from average wind', () => {
   assert.equal(aggregateHotZoneCells(storms, null, 'frequency', 2019).length, 0);
 });
 
-test('residual lab groups by country, sorts by above-share, and switches fields by mode', async () => {
+test('impact lab groups by country, orders by population, and switches field by mode', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const scatterable = events.filter(isScatterable);
   const pc = buildResidualLab(events);
 
-  // 15 Länder haben Residuen; zusammen exakt die 71 scatterbaren Records.
-  assert.equal(pc.field, 'residual_pc');
-  assert.equal(pc.rows.length, 15);
-  assert.equal(pc.rows.reduce((sum, row) => sum + row.n, 0), 71);
-  assert.ok(pc.rows.every((row) => row.events.every((event) => event.residual_pc != null)));
+  // Alle Laender mit positivem Toll, zusammen exakt die Fit-Basis.
+  assert.equal(pc.field, 'affected_pc');
+  assert.equal(pc.rows.length, new Set(scatterable.map((e) => e.iso3)).size);
+  assert.equal(pc.rows.reduce((sum, row) => sum + row.n, 0), scatterable.length);
+  // Gemeldete Nullen gehoeren nicht in eine Log-Achse.
+  assert.ok(pc.rows.every((row) => row.events.every((event) => event.affected > 0)));
 
-  // Sortierung: aboveShare absteigend (PLW 4/4 zuerst).
-  assert.equal(pc.rows[0].iso3, 'PLW');
-  assert.equal(pc.rows[0].nAbove, 4);
-  assert.ok(pc.rows[0].median > 0);
-  assert.ok(pc.rows.every((row, index) => index === 0
-    || pc.rows[index - 1].aboveShare > row.aboveShare
-    || (pc.rows[index - 1].aboveShare === row.aboveShare && pc.rows[index - 1].n >= row.n)));
+  // Sortierung: kleinste Bevoelkerung zuerst - dieselbe Lesart wie im Story-Beat.
+  for (let i = 1; i < pc.rows.length; i++) {
+    assert.ok(pc.rows[i - 1].pop <= pc.rows[i].pop, `row order broken at ${pc.rows[i].country}`);
+  }
 
-  // Vanuatu: im offenen Datensatz KEIN Repeat-Victim mehr (4 von 12 über der Linie).
-  const vut = pc.rows.find((row) => row.iso3 === 'VUT');
-  assert.equal(vut.n, 12);
-  assert.equal(vut.nAbove, 4);
+  // nAbove zaehlt gegen den Gesamtmedian, nicht gegen eine Fit-Linie.
+  const total = pc.rows.reduce((sum, row) => sum + row.nAbove, 0);
+  assert.ok(total > 0 && total < scatterable.length);
 
-  // Mode wechselt das Residual-Feld (nicht nur die Beschriftung).
+  // Mode wechselt die gemessene Groesse (nicht nur die Beschriftung).
   const abs = buildResidualLab(events, { mode: 'absolute' });
-  assert.equal(abs.field, 'residual_abs');
-  assert.equal(abs.rows.reduce((sum, row) => sum + row.n, 0), 71);
-
-  // Filter wirken vor der Gruppierung.
-  const filtered = buildResidualLab(events, {
-    filters: { yearRange: [2005, 2023], categories: null, countries: ['VUT'] },
-  });
-  assert.equal(filtered.rows.length, 1);
-  assert.equal(filtered.rows[0].iso3, 'VUT');
+  assert.equal(abs.field, 'affected');
+  assert.equal(abs.rows.reduce((sum, row) => sum + row.n, 0), scatterable.length);
+  assert.notEqual(abs.overall, pc.overall);
 });
 
-test('residual lab groups by subregion and fixed-order size classes on demand', async () => {
+test('impact lab groups by subregion and fixed-order size classes on demand', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const scatterable = events.filter(isScatterable);
 
-  // Subregion: 3 Zeilen, Summe 71, aboveShare-Sortierung wie gehabt.
   const sub = buildResidualLab(events, { groupBy: 'subregion' });
-  assert.deepEqual(sub.rows.map((row) => [row.iso3, row.nAbove, row.n]),
-    [['Micronesia', 11, 13], ['Polynesia', 10, 16], ['Melanesia', 19, 42]]);
-  assert.equal(sub.rows.reduce((sum, row) => sum + row.n, 0), 71);
+  assert.equal(sub.rows.length, 3);
+  assert.deepEqual([...sub.rows.map((r) => r.iso3)].sort(), ['Melanesia', 'Micronesia', 'Polynesia']);
+  assert.equal(sub.rows.reduce((sum, row) => sum + row.n, 0), scatterable.length);
 
-  // Größenklassen: FESTE klein→groß-Reihenfolge.
+  // Groessenklassen behalten ihre feste klein-nach-gross-Reihenfolge.
   const size = buildResidualLab(events, { groupBy: 'sizeClass' });
-  assert.deepEqual(size.rows.map((row) => [row.iso3, row.nAbove, row.n]),
-    [['small', 14, 14], ['medium', 25, 54], ['large', 1, 3]]);
-
-  // Feste Reihenfolge bleibt auch unter Filtern stabil (nur PNG → nur large).
-  const filtered = buildResidualLab(events, {
-    groupBy: 'sizeClass',
-    filters: { yearRange: [2005, 2023], categories: null, countries: ['PNG'] },
-  });
-  assert.deepEqual(filtered.rows.map((row) => row.iso3), ['large']);
-
-  // Regression: Default-Gruppierung unverändert (15 Länder-Zeilen).
-  assert.equal(buildResidualLab(events).rows.length, 15);
+  assert.deepEqual(size.rows.map((row) => row.iso3), ['small', 'medium', 'large']);
+  assert.equal(size.rows.reduce((sum, row) => sum + row.n, 0), scatterable.length);
 });
 
-test('lab hero stat reacts to view, filters and mode with computed numbers', async () => {
+test('lab hero stat reacts to view and filters with computed numbers', async () => {
   const events = JSON.parse(await readFile(new URL('../app/public/data/events.json', import.meta.url)));
+  const meta = JSON.parse(await readFile(new URL('../app/public/data/meta.json', import.meta.url)));
 
-  assert.deepEqual(buildLabHeroStat(events, { view: 'outliers' }), { view: 'outliers', above: 40, total: 71 });
-  assert.deepEqual(buildLabHeroStat(events, { view: 'residuals', mode: 'absolute' }),
-    { view: 'residuals', above: 35, total: 71 });
-  assert.deepEqual(buildLabHeroStat(events, {
-    view: 'residuals',
-    filters: { yearRange: [2005, 2023], categories: null, countries: ['VUT'] },
-  }), { view: 'residuals', above: 4, total: 12 });
-  assert.deepEqual(buildLabHeroStat(events, { view: 'countries' }), { view: 'countries', total: 99, reported: 99 });
-  assert.deepEqual(buildLabHeroStat(events, { view: 'geography' }), { view: 'geography', storms: 53 });
+  const outliers = buildLabHeroStat(events, { view: 'outliers' });
+  assert.equal(outliers.total, meta.coverage.scatterable);
+  assert.equal(outliers.zero, meta.coverage.zero_lane);
+
+  const countries = buildLabHeroStat(events, { view: 'countries' });
+  assert.equal(countries.total, events.length);
+  assert.equal(countries.reported, events.filter((e) => e.affected > 0).length);
+
+  const geography = buildLabHeroStat(events, { view: 'geography' });
+  assert.equal(geography.storms, new Set(events.map((e) => e.sid).filter(Boolean)).size);
+
+  // Filter wirken auf die Zahlen.
+  const filtered = buildLabHeroStat(events, {
+    view: 'outliers', filters: { yearRange: [2020, 2020], categories: null, countries: null },
+  });
+  assert.ok(filtered.total < outliers.total);
 });
 
 test('country toll aggregates reported impacts per country and mode', () => {
@@ -498,7 +555,7 @@ test('every story section resolves to one documented method and known sources', 
   const methodIds = new Set(METHOD_CATALOG.map((method) => method.id));
   const sourceIds = new Set(meta.sources.map((source) => source.id));
 
-  assert.equal(SECTIONS.length, 11);
+  assert.equal(SECTIONS.length, 9);
   for (const section of SECTIONS) {
     assert.ok(methodIds.has(section.methodId), `missing method ${section.methodId}`);
     assert.ok(section.sourceIds.length > 0, `section ${section.step} has no sources`);
@@ -517,17 +574,19 @@ test('methods render open facts, cleared publication and downloadable data', asy
   assert.match(html, /What the data cannot tell us/);
   assert.match(html, /Reproduce this analysis/);
   assert.match(html, /Publication cleared/);
-  assert.match(html, /71 of 99/);
+  assert.match(html, /\d+ of \d+/);
   assert.match(html, /country-years/);
   assert.match(html, /SDG 11\.5\.1/);
   assert.match(html, /Wind accounts for about/);
+  // Der Befund wird ausgeschrieben, nicht beschoenigt.
+  assert.match(html, /within the range of chance/);
   // Offene Daten sind freigegeben: events.json ist als Download gelistet.
   assert.match(html, /href="[^"]*events\.json" download/);
   // Keine gesperrten Quellen und keine kurs-Beat-Karten mehr.
   assert.doesNotMatch(html, /EM-DAT/);
   assert.doesNotMatch(html, /id="method-heta"/);
   assert.doesNotMatch(html, /id="method-pam"/);
-  assert.match(html, /id="method-hook-harold"/);
+  assert.match(html, /id="method-hook"/);
   assert.match(html, /id="method-open-scatter"/);
   assert.match(html, /id="method-open-conclusion"/);
   for (const method of METHOD_CATALOG) assert.match(html, new RegExp(`id="method-${method.id}"`));

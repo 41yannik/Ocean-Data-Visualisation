@@ -10,8 +10,21 @@ export function matchesFilters(event, filters) {
   return true;
 }
 
-// Zentrales Scatter-Prädikat: 78 von 99 Zeilen (21 ohne Wind- oder Impact-Wert
-// erscheinen bis Paket 07 nur in der n-Caption, nicht im Plot).
+// Zentrales Scatter-Prädikat: Record mit lokal gemessenem Wind UND positivem Toll.
+// Nur diese Zeilen können in eine log-Skala (70 von 174). Die ausdrücklich als 0
+// gemeldeten Land-Jahre sind KEINE Lücke, sondern eine eigene Klasse - sie erscheinen
+// in der Zero-Lane unter der Log-Achse (isZeroLane, 51 Zeilen). Vor dem Audit 2026-07
+// waren sie aus den Daten gefiltert, was auf der abhängigen Variablen selektierte.
 export function isScatterable(event) {
-  return event.intensity_kt != null && event.affected != null;
+  return event.intensity_kt != null && event.affected != null && event.affected > 0;
+}
+
+// Gemeldete Null mit Sturm im Radius: gehört in den Plot, aber nicht in den Logarithmus.
+export function isZeroLane(event) {
+  return event.intensity_kt != null && event.affected === 0;
+}
+
+// Jede Zeile, die im Scatter erscheint (Log-Bereich oder Zero-Lane).
+export function isPlottable(event) {
+  return isScatterable(event) || isZeroLane(event);
 }

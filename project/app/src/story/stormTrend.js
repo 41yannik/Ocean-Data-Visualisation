@@ -222,8 +222,13 @@ export function createStormTrend(container, ctx) {
         series: [{ values: S.count, fill: 'var(--point)', trend: t.fits.count }],
       },
       {
+        // Nullbasiert wie das obere Panel (Audit 2026-07): der frühere Ausschnitt
+        // [40, 100] ließ eine Steigung von -2.7 kt/Dekade steil abfallen aussehen,
+        // direkt neben der Caption „no clear trend". Zwei benachbarte Panels dürfen
+        // nicht stillschweigend verschiedene Nullpunkt-Konventionen haben.
         title: 'Average wind strength  ·  kt',
-        yDomain: [40, 100], yTicks: 4, yFmt: (v) => v,
+        yDomain: [0, niceCeil(Math.max(...S.meanWind.filter((v) => v != null)), 20)],
+        yTicks: 4, yFmt: (v) => v,
         caption: verdict(t.fits.windMean),
         series: [{ values: S.meanWind, fill: 'var(--point)', trend: t.fits.windMean }],
       },

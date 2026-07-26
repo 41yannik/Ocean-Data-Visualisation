@@ -1,5 +1,7 @@
 // Evidence-Lab-Ansicht „Repeated country impacts": eine Zeile je Land, Punkte je
-// Land-Jahr-Record. Gefüllt = Betroffenheit gemeldet, hohl = unbekannt.
+// Land-Jahr-Record. Gefüllt = positiver Toll gemeldet, hohl = ausdrücklich 0 gemeldet.
+// Seit dem Audit 2026-07 enthalten die Daten auch die 75 Null-Meldungen; „gemeldet"
+// heißt hier weiterhin „ein Impact wurde beziffert", also affected > 0.
 import { select, scaleLinear, scaleSequentialSqrt, interpolateLab } from 'd3';
 import { matchesFilters } from '../core/filters.js';
 import { getActivePalette, onThemeChange } from '../core/theme.js';
@@ -17,7 +19,7 @@ export function buildCountryRecurrence(events, filters = null) {
   return [...grouped.values()].map((row) => ({
     ...row,
     totalCount: row.events.length,
-    reportedCount: row.events.filter((event) => event.affected != null).length,
+    reportedCount: row.events.filter((event) => event.affected > 0).length,
   })).sort((a, b) => b.reportedCount - a.reportedCount
     || b.totalCount - a.totalCount || a.country.localeCompare(b.country));
 }
@@ -101,7 +103,7 @@ export function createCountryRecurrence(container, ctx) {
 
     const duplicateIndex = new Map();
     marks = svg.append('g').selectAll('circle').data(all, (d) => d.event.id).join('circle')
-      .attr('class', (d) => `cr-mark${d.event.affected == null ? ' missing' : ''}`)
+      .attr('class', (d) => `cr-mark${d.event.affected > 0 ? '' : ' missing'}`)
       .attr('data-event-id', (d) => d.event.id)
       .attr('cx', (d) => x(d.event.year))
       .attr('cy', (d) => {
@@ -110,14 +112,15 @@ export function createCountryRecurrence(container, ctx) {
         return M.top + d.rowIndex * rowH + rowH / 2 + (slot % 3 - 1) * (compact ? 3.5 : 4.2);
       })
       .attr('r', compact ? 4 : 4.7).attr('tabindex', 0)
-      .attr('aria-label', (d) => `${d.event.name}, ${d.event.country}, ${d.event.year}: ${d.event.affected == null ? 'human impact not reported' : `${fmtPct(d.event.affected_pc)} of population reported affected`}`)
+      .attr('aria-label', (d) => `${d.event.name}, ${d.event.country}, ${d.event.year}: ${d.event.affected > 0 ? `${fmtPct(d.event.affected_pc)} of population reported affected` : 'reported as zero affected'}`)
       .style('fill', (d) => {
-        if (d.event.affected == null) return 'transparent';
+        if (!(d.event.affected > 0)) return 'transparent';
         return state.mode === 'absolute' ? absoluteColor(d.event.affected) : shareColor(d.event.affected_pc ?? 0);
       })
       .on('mouseenter focus', (event, d) => {
-        const impact = d.event.affected == null ? 'Human impact not reported'
-          : `${fmtInt(d.event.affected)} affected · ${fmtPct(d.event.affected_pc)} of population`;
+        const impact = d.event.affected > 0
+          ? `${fmtInt(d.event.affected)} affected · ${fmtPct(d.event.affected_pc)} of population`
+          : 'Reported as zero people affected';
         tip.innerHTML = `<div class="tt-title">${d.event.name ?? 'Unnamed storm'} · ${d.event.year}</div><div class="tt-sub">${d.event.country}</div><div class="tt-sub">${impact}</div>`;
         tip.classList.add('visible'); if ('clientX' in event) moveTip(event);
         bus.set({ hover: { sid: d.event.sid, eventId: d.event.id, source: 'countries' } });

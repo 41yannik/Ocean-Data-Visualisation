@@ -1,31 +1,40 @@
-import { isScatterable, matchesFilters } from '../core/filters.js';
+import { isScatterable, isZeroLane, matchesFilters } from '../core/filters.js';
 
 const VIEWS = ['outliers', 'residuals', 'countries', 'geography'];
 
 // Filterreaktive Kernaussage über den Panels - pur und getestet; der Renderer baut
-// daraus einen Satz. Zahlen IMMER berechnet, nie getippt (z. B. „42 of 78").
+// daraus einen Satz. Zahlen IMMER berechnet, nie getippt.
+//
+// Der Satz zählt seit dem Audit 2026-07 keine Punkte mehr „über der wind-only line":
+// diese Linie erklärt nichts, und bei einer Basisrate von 56 % war die Zahl ohne
+// Aussagekraft. Stattdessen: wie viele Records überhaupt in die Log-Analyse eingehen
+// und wie viele davon ausdrücklich 0 gemeldet haben.
 export function buildLabHeroStat(events, { view = 'outliers', filters = null, mode = 'perCapita' } = {}) {
   const visible = events.filter((event) => !filters || matchesFilters(event, filters));
   if (view === 'countries') {
-    return { view, total: visible.length, reported: visible.filter((e) => e.affected != null).length };
+    return { view, total: visible.length, reported: visible.filter((e) => e.affected > 0).length };
   }
   if (view === 'geography') {
     return { view, storms: new Set(visible.map((e) => e.sid).filter(Boolean)).size };
   }
-  const field = mode === 'absolute' ? 'residual_abs' : 'residual_pc';
-  const complete = visible.filter((e) => e[field] != null);
-  return { view, above: complete.filter((e) => e[field] > 0).length, total: complete.length };
+  return {
+    view,
+    total: visible.filter(isScatterable).length,
+    zero: visible.filter(isZeroLane).length,
+  };
 }
 
 function heroSentence(stat) {
   if (stat.view === 'countries') {
-    return `<strong>${stat.total}</strong> country-year records, each with a reported toll.`;
+    return `<strong>${stat.total}</strong> reported country-years, `
+      + `<strong>${stat.reported}</strong> of them with a toll above zero.`;
   }
   if (stat.view === 'geography') {
     return `<strong>${stat.storms}</strong> storm${stat.storms === 1 ? '' : 's'} cross the current filters.`;
   }
-  if (!stat.total) return 'No complete records match these filters.';
-  return `<strong>${stat.above} of ${stat.total}</strong> complete records outran the wind-only expectation.`;
+  if (!stat.total && !stat.zero) return 'No records match these filters.';
+  return `<strong>${stat.total}</strong> records with a reported toll and a measured wind, `
+    + `plus <strong>${stat.zero}</strong> reported as zero despite a storm.`;
 }
 
 export function createExploreLab(sectionEl, ctx) {

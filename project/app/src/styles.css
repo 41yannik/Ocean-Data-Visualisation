@@ -468,21 +468,44 @@ body::before {
    dieselbe vertikale Mitte und gemeinsam eine zentrierte Vergleichsbühne. */
 #step-2 .viz-row--dual {
   display: grid;
-  grid-template-columns: minmax(0, 2.111fr) minmax(300px, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(340px, 1.2fr);
   align-items: center;
-  gap: clamp(28px, 3vw, 52px);
+  gap: clamp(28px, 4vw, 64px);
   width: min(1500px, 100%);
   margin-inline: auto;
+  padding-right: 60px; /* Ample spacing to prevent overlap with the right dot navigation */
 }
+/* aspect-ratio spiegelt den SVG-viewBox 1:1 (340/405) statt einer zweiten, unabhaengig
+   gepflegten Zahl - verhindert das Auseinanderdriften, das den urspruenglichen
+   Overlap-Bug mitverursacht hat (Audit 2026-07). */
+.viz-frame--haroldComparison { max-width: 360px; aspect-ratio: 340 / 480; }
 #step-2 .viz-frame--map,
-#step-2 .viz-frame--bars { width: 100%; max-width: none; }
+#step-2 .viz-frame--haroldComparison { width: 100%; max-width: none; }
+
+/* Winston-Rank (Step 4): identisches Zwei-Spalten-Muster wie der Hook-Split oben -
+   gezoomte Karte links (~2/3), die zwei Rang-Zahlenstrahlen rechts (~1/3). */
+#step-4 .viz-row--dual {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1.2fr);
+  align-items: center;
+  gap: clamp(28px, 4vw, 64px);
+  width: min(1500px, 100%);
+  margin-inline: auto;
+  padding-right: 60px;
+}
+.viz-frame--winstonRank { max-width: 320px; aspect-ratio: 320 / 268; }
+#step-4 .viz-frame--map,
+#step-4 .viz-frame--winstonRank { width: 100%; max-width: none; }
 
 @media (max-width: 1099px) {
   .viz-row--dual { flex-wrap: wrap; }
   .viz-row--dual .viz-frame--map, .viz-row--dual .viz-frame--scatter { flex-basis: 100%; }
-  #step-2 .viz-row--dual { grid-template-columns: 1fr; gap: 34px; }
+  #step-2 .viz-row--dual { grid-template-columns: 1fr; gap: 34px; padding-right: 0; }
   #step-2 .viz-frame--map { max-width: 960px; justify-self: center; }
-  #step-2 .viz-frame--bars { max-width: 460px; justify-self: center; }
+  #step-2 .viz-frame--haroldComparison { max-width: 360px; justify-self: center; }
+  #step-4 .viz-row--dual { grid-template-columns: 1fr; gap: 34px; padding-right: 0; }
+  #step-4 .viz-frame--map { max-width: 960px; justify-self: center; }
+  #step-4 .viz-frame--winstonRank { max-width: 320px; justify-self: center; }
 }
 
 .section-explore .ui-bar { margin-top: 3vh; max-width: 1150px; margin-left: auto; margin-right: auto; }
@@ -515,7 +538,8 @@ body::before {
 [data-layout="dual"] .view-map, [data-layout="explore"] .view-map {
   opacity: 1; pointer-events: auto; left: 3%; right: 52%;
 }
-[data-layout="dual"] .view-scatter, [data-layout="explore"] .view-scatter {
+[data-layout="dual"] .view-scatter, [data-layout="explore"] .view-scatter,
+[data-layout="dual"] .view-haroldComparison {
   opacity: 1; pointer-events: auto; left: 52%; right: 3%;
 }
 
@@ -623,7 +647,10 @@ body::before {
 .point.filtered-out { display: none; }
 .point:focus-visible { outline: none; stroke: var(--accent); stroke-width: 2.4; }
 
-.connector { stroke: var(--point); stroke-opacity: 0.35; stroke-width: 0.8; }
+/* Ein Sturm über mehrere Länder. Seit der Umstellung auf lokalen Wind ist das ein
+   Streckenzug statt einer Vertikalen: derselbe Sturm bringt jedem Land einen anderen
+   Wind, die Punkte liegen also auch horizontal auseinander. */
+.connector { fill: none; stroke: var(--point); stroke-opacity: 0.35; stroke-width: 0.8; }
 .connector.dimmed { stroke-opacity: var(--dim-opacity); }
 .storm-spine {
   stroke: var(--accent); stroke-width: 2.1; stroke-opacity: 0.9;
@@ -652,9 +679,17 @@ body::before {
 .rug-tick.filtered-out { display: none; }
 .rug-tick:focus-visible { outline: none; fill: var(--accent); }
 
-.trend-line { fill: none; stroke: var(--trend); stroke-width: 1.6; stroke-dasharray: 7 5; }
+/* Median-Referenz statt Regressionsgerade (Audit 2026-07): dünner und zurückhaltender
+   als die frühere .trend-line, weil sie eine Lage markiert und keinen Zusammenhang
+   behauptet. Durchgezogen, nicht gestrichelt: sie ist ein Fakt, keine Vorhersage. */
+.median-line { stroke: var(--trend); stroke-width: 1.2; stroke-opacity: 0.55; }
+.median-annotation {
+  font-size: 10.5px; fill: var(--muted);
+  paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round;
+  pointer-events: none;
+}
 .trend-key-line {
-  stroke: var(--trend); stroke-width: 1.6; stroke-dasharray: 7 5;
+  stroke: var(--trend); stroke-width: 1.2; stroke-opacity: 0.55;
   pointer-events: none;
 }
 .trend-median { fill: none; stroke: var(--band); stroke-width: 1; stroke-dasharray: 4 3; }
@@ -665,6 +700,25 @@ body::before {
   paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round;
 }
 .axis-scale-note { font-size: 10.5px; fill: var(--muted); }
+
+/* Zero-Lane: eigenes Band unter der Log-Achse für die ausdrücklich als 0 gemeldeten
+   Land-Jahre. Der Skalenbruch wird sichtbar markiert, statt die Nullen stillschweigend
+   an den Achsenboden zu klemmen. */
+.zero-lane__rule {
+  stroke: var(--muted); stroke-opacity: 0.45; stroke-width: 1; stroke-dasharray: 2 4;
+  pointer-events: none;
+}
+.zero-lane__label { font-size: 10px; fill: var(--muted); pointer-events: none; }
+/* Gemeldete Null: hohl mit Akzentkontur - sichtbar anders als ein sehr kleiner Wert,
+   denn genau das ist die Aussage. */
+.point--zero, .fm-dot.unit-zero, .unit-zero {
+  fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-opacity: 0.85;
+  /* fill:none laesst den Kreisinnenraum ohne Trefferflaeche - hoverbar waere nur die
+     1,6px-Kontur. Die gemeldeten Nullen sind eine Kernkategorie der Story und muessen
+     dieselbe Trefferflaeche haben wie ein gefuellter Punkt. */
+  pointer-events: all;
+}
+.point--zero:hover, .unit-zero:hover { stroke-opacity: 1; stroke-width: 2.2; }
 
 /* ---------- Story-Choreografie (storyFx) ---------- */
 .point, .connector, .storm-spine, .storm-spine-labels, .trend-key-line,
@@ -977,6 +1031,20 @@ body::before {
 }
 .impact-bubble.hl { fill-opacity: 1; stroke: var(--accent); stroke-width: 2.4; transform: scale(1.08); }
 .impact-bubble.dim { fill-opacity: 0.28; }
+.impact-bubble-outer {
+  fill: var(--graticule);
+  fill-opacity: 0.05;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 3;
+}
+/* Legende der Impact-Blasen: erklärt den gestrichelten Außenring (Bevölkerung) -
+   ohne sie bleibt der Anteil, um den es im Beat geht, auf der Karte unlesbar. */
+.impact-legend { pointer-events: none; }
+.impact-legend-label {
+  font-size: 13px; fill: var(--text); font-weight: 500;
+  paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round;
+}
 .impact-bar { transition: fill-opacity 0.18s ease, fill 0.18s ease; }
 .impact-bar.hl { fill: var(--accent); fill-opacity: 1; }
 .impact-bar.dim { fill-opacity: 0.3; }
@@ -1018,6 +1086,9 @@ body::before {
 }
 .axis text { font-size: 11px; fill: var(--muted); }
 .axis line, .axis path { stroke: var(--graticule); }
+/* Unbeschriftete Zwischen-Dekaden auf der Log-Achse: Strich bleibt, Text nicht -
+   reduziert die Tick-Dichte ohne einen Wert aus der Skala zu nehmen (Audit 2026-07). */
+.tick--minor line { opacity: 0.45; }
 .axis-label { font-size: 12px; fill: var(--muted); }
 .n-caption { font-size: 12px; fill: var(--muted); }
 /* Größen-Legende (Evidenz-Scatter): Punktradius = gemeldete Todesfälle */
@@ -1067,6 +1138,205 @@ body::before {
 .ds-dot--top { fill: var(--accent); }
 .ds-annotation { font-size: 12px; font-weight: 600; fill: var(--accent-text); }
 .ds-ledger { font-size: 12.5px; font-style: italic; fill: var(--muted); }
+
+/* ---------- Harold-Comparison (One storm, two ways to count, Step 2) ---------- */
+.harold-comparison-svg {
+  width: 100%;
+  height: 100%;
+}
+.hc-main-title {
+  font-size: 16px;
+  font-weight: 700;
+  fill: var(--text);
+}
+.hc-section-subtitle {
+  font-size: 11.5px;
+  fill: var(--muted);
+}
+.hc-col-label {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--text);
+  transition: fill-opacity 0.2s ease;
+}
+.hc-col-label--sm {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--muted);
+}
+.hc-col-label--dim { fill-opacity: 0.4; }
+/* Track = 100 % der Bevoelkerung. Heller Schritt derselben Farbe wie die Fuellung,
+   nicht neutrales Grau: so liest der ganze Balken als EINE Groesse (Bevoelkerung),
+   von der ein Teil eingefaerbt ist. */
+.hc-bar-bg {
+  fill: var(--accent);
+  opacity: 0.12;
+}
+/* Dunkler Grund schluckt den Farbstich: eigener Schritt statt automatischem Flip,
+   sonst liest der Track als neutraler dunkler Block statt als heller Teil derselben
+   Groesse. */
+:root[data-theme="ocean"] .hc-bar-bg { opacity: 0.2; }
+.hc-bar-fill {
+  transition: fill-opacity 0.2s ease, filter 0.2s ease;
+}
+.hc-bar-fill.hc-bar--hl {
+  filter: brightness(1.12) saturate(1.15);
+}
+.hc-bar-fill.hc-bar--dim {
+  fill-opacity: 0.28;
+}
+.hc-bar-value {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--text);
+}
+.hc-bar-value--pct {
+  font-size: 19px;
+  font-weight: 800;
+}
+/* Label sitzt im gefuellten Balken: Farbe fuer Text auf Accent-Flaeche. */
+.hc-bar-value--inside { fill: var(--on-accent); }
+.hc-bar-count {
+  font-size: 11px;
+  fill: var(--muted);
+}
+.hc-footnote {
+  font-size: 10px;
+  fill: var(--muted);
+  opacity: 0.8;
+}
+.hc-axis-label {
+  font-size: 10px;
+  fill: var(--muted);
+  font-weight: 600;
+}
+.hc-axis-label--sub {
+  font-weight: 400;
+  opacity: 0.85;
+}
+/* Solide Hairline: gestrichelte Achsen lesen als Schwelle oder Projektion,
+   hier markieren sie schlicht 0 % und 100 % der Skala. */
+.hc-axis-tick {
+  stroke: var(--graticule);
+  stroke-width: 1;
+  opacity: 0.9;
+}
+.hc-divider {
+  stroke: var(--graticule);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+.hc-bracket {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+}
+.hc-bracket--highlight {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.hc-annotation {
+  font-size: 13px;
+  fill: var(--muted);
+  font-weight: 500;
+}
+.hc-annotation--highlight {
+  fill: var(--accent-text);
+  font-weight: 800;
+  font-size: 14.5px;
+}
+.hc-hitarea {
+  fill: transparent;
+  cursor: pointer;
+}
+/* Das Tooltip wird per raise() ueber beide Panels gehoben, damit es nicht hinter
+   den Balken verschwindet. Ohne pointer-events:none faengt es dort den Cursor ab
+   und loest sofort mouseleave auf der Hitarea aus - der Tooltip flackert weg. */
+.hc-tooltip { pointer-events: none; }
+.hc-tooltip-bg {
+  fill: var(--surface-elevated);
+  stroke: var(--graticule);
+  stroke-width: 1;
+  filter: drop-shadow(0 2px 6px var(--shadow));
+}
+.hc-tooltip-text {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text);
+}
+.hc-tooltip-text--sub {
+  font-weight: 400;
+  fill: var(--muted);
+  font-size: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hc-bar-fill { transition: none; }
+}
+
+/* ---------- Winston-Rank (The strongest storm, and one of the hardest hit, Step 4) ---------- */
+.winston-rank-svg {
+  width: 100%;
+  height: 100%;
+}
+.wr-main-title {
+  font-size: 16px;
+  font-weight: 700;
+  fill: var(--text);
+}
+.wr-subtitle {
+  font-size: 11.5px;
+  fill: var(--muted);
+}
+.wr-axis {
+  stroke: var(--graticule);
+  stroke-width: 1;
+}
+/* Die anderen 69 Records: dünne graue Striche - Kontext, keine Kategorie-Farbe. */
+.wr-tick {
+  stroke: var(--band);
+  stroke-width: 1.4;
+}
+/* Median-Anker: kraeftiger als die 69 grauen Kontext-Ticks, aber ruhiger als der
+   Winston-Akzent - eine neutrale Bezugsmarke, keine dritte "Kategorie". */
+.wr-median {
+  stroke: var(--muted);
+  stroke-width: 1.6;
+}
+.wr-scale-note {
+  font-size: 10px;
+  fill: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.wr-dot {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.wr-leader {
+  stroke: var(--accent);
+  stroke-width: 1.2;
+}
+.wr-label-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  fill: var(--accent-text);
+}
+.wr-label-rank {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--accent-text);
+}
+.wr-legend-dot {
+  fill: var(--accent);
+}
+.wr-legend-tick {
+  stroke: var(--band);
+  stroke-width: 1.4;
+}
+.wr-legend-text {
+  font-size: 11px;
+  fill: var(--muted);
+}
 
 /* ---------- Tooltip ---------- */
 .tooltip {
@@ -1284,7 +1554,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   padding: 0 24px;
 }
 .stage-sticky .viz-frame--scatter {
-  width: min(720px, 92vw, calc(92vh * 640 / 520));
+  /* Eigene, hoehere Box fuer die dots2-Buehne (DOTS2_SCATTER, 640x696 - Audit 2026-07):
+     15 Laenderzeilen brauchen mehr Zeilenhoehe als die globale 640x520-Scatter-Box.
+     aspect-ratio MUSS mitgeaendert werden, sonst letterboxt das SVG in die vererbte
+     Basis-Ratio (640/520) und die zusaetzliche Hoehe kommt nie auf dem Bildschirm an. */
+  width: min(720px, 92vw, calc(92vh * 640 / 696));
+  aspect-ratio: 640 / 696;
   /* Grafik nach rechts versetzen - die Textkarte (links, 6vw) soll die y-Achse nicht verdecken */
   margin-left: auto; margin-right: 4vw;
 }
@@ -1326,12 +1601,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   .stage-group .connector { transition: none; }
 }
 
-/* Unit-Sort-Umschalter direkt an der Grafik (oben rechts im Chart-Frame, Review
-   2026-07-13 - vorher unter dem Erklärtext). Nur in der Unit-Formation sichtbar,
-   gleiche :has()-Mechanik wie der Chrome-Fade darunter. */
+/* Unit-Sort-Umschalter direkt an der Grafik. Oben LINKS und tiefer gesetzt (Audit
+   2026-07): oben rechts lag er unter dem global fixierten Theme-Toggle und wurde
+   verdeckt. Links-oben ist die Ecke frei; ein erhoehter, beschatteter Pill hebt den
+   Umschalter klar vom Hintergrund ab. Nur in der Unit-Formation sichtbar (:has()). */
 .story-controls--stage {
-  position: absolute; top: 2px; right: 4px; margin: 0; max-width: none; z-index: 2;
+  position: absolute; top: 34px; left: 20px; right: auto; margin: 0; max-width: none; z-index: 3;
   opacity: 0; pointer-events: none; transition: opacity 0.4s;
+}
+.story-controls--stage .toggle-btn {
+  box-shadow: 0 4px 16px var(--shadow);
+  font-size: 13.5px; font-weight: 600;
+  padding: 9px 18px;
+}
+/* Nur der INAKTIVE Zustand bekommt den erhoehten Grund fuer Kontrast zum Seitenhintergrund;
+   der aktive Zustand behaelt seinen dunklen control-active-Grund mit heller Schrift, sonst
+   stuende weisser Text (--on-solid) auf hellem Grund und der Button waere leer (Audit 2026-07). */
+.story-controls--stage .toggle-btn:not(.active) {
+  background: var(--surface-elevated);
 }
 .stage-group[data-stage="dots2"]:has(.g-formation.fm-unit) .story-controls--stage {
   opacity: 1; pointer-events: auto;
@@ -1364,8 +1651,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   opacity: 0; pointer-events: none;
 }
 
-/* Residual-Zeilen-Formation (Beat „Country by country"): Divergenz über/unter der
-   wind-only line mit den zwei vorhandenen Story-Farben - kein neues Farbpaar.
+/* Landesgrößen-Zeilen (Beat „What does explain it"): Divergenz über/unter dem
+   Gesamtmedian mit den zwei vorhandenen Story-Farben - kein neues Farbpaar.
    Scoped unter .fm-residual, damit nichts in Scatter/Unit-Formation durchsickert. */
 .g-formation.fm-residual .fm-dot.rr-above {
   fill: var(--accent); fill-opacity: 0.92; stroke: var(--mark-outline); stroke-width: 1;
@@ -1373,12 +1660,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 .g-formation.fm-residual .fm-dot.rr-below {
   fill: var(--point); fill-opacity: 0.85; stroke: var(--mark-outline); stroke-width: 1;
 }
-.rr-zero { stroke: var(--trend); stroke-width: 1.4; stroke-dasharray: 7 5; } /* Dash wie .trend-line */
+.rr-zero { stroke: var(--trend); stroke-width: 1.4; stroke-dasharray: 7 5; }
+.rr-zero-label {
+  font-size: 10px; fill: var(--muted);
+  paint-order: stroke; stroke: var(--bg); stroke-width: 3px;
+}
+/* Edge-Band-Trennlinie (Audit 2026-07): SOLIDE statt gestrichelt - eine gestrichelte
+   Achsenregel liest als Rauschen (dataviz-Anti-Pattern), hier ist es aber die Grenze
+   eines echten Skalenbruchs, keine Gridline. */
+.rr-edge-divider { stroke: var(--band); stroke-width: 1; }
 .rr-row-label { font-size: 12px; font-weight: 700; fill: var(--text); }
-.rr-row-count { font-size: 11px; fill: var(--muted); }
+.rr-row-count { font-size: 10.5px; fill: var(--muted); }
+.rr-axis-label { font-size: 11.5px; fill: var(--muted); }
 .rr-tick {
-  font-size: 11px; fill: var(--muted);
-  paint-order: stroke; stroke: var(--halo); stroke-width: 3px; /* Halo über der Null-Linie */
+  font-size: 10.5px; fill: var(--muted);
+  paint-order: stroke; stroke: var(--halo); stroke-width: 3px;
 }
 .rr-chrome { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {

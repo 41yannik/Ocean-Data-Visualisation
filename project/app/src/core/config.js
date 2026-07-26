@@ -88,7 +88,10 @@ export const BREAKPOINT = 1000;
 export const MAP = { width: 960, height: 480, pad: 10 };
 export const SCATTER = {
   width: 640, height: 520,
-  margin: { top: 28, right: 20, bottom: 76, left: 58 },
+  // left 76 statt 58: auf der vollen Log-Achse sind die kleinsten Tick-Labels ("0.0001%")
+  // so breit, dass sie sonst in den rotierten Y-Achsentitel liefen (Audit 2026-07,
+  // sichtbar als verstuemmeltes "5.0001%"). Mehr Rand haelt Titel und Ticks getrennt.
+  margin: { top: 28, right: 20, bottom: 76, left: 76 },
 };
 export const UNIFORM_POINT_R = 4;
 
