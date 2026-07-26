@@ -48,8 +48,8 @@ def publication_policy() -> dict:
         "note": (
             "This open build measures impact with the PDH SDG 11.5.1 affected-persons series "
             "(country-year) linked to IBTrACS storms by track proximity. The PDH SDG dataset "
-            "licence is confirmed as open; every source is open data. The DesInventar cross-check "
-            "export is archived locally only and is not redistributed."
+            "licence is confirmed as open; every source is open data. The repository carries "
+            "only the raw files this pipeline actually reads."
         ),
         "allowedDownloads": [
             "events.json", "meta.json", "tracks.json",

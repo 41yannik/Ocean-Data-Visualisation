@@ -14,9 +14,6 @@ IBTRACS = [
 SST = DATA_ROOT / "Mean sea surface temperature anomalies.csv"
 # Offene Challenge-Wirkungsquelle: SDG 11.5.1 „directly affected persons" (SPC/PDH, SDMX-Export).
 PDH_AFFECTED = DATA_ROOT / "Number of directly affected persons attributed to disasters.csv"
-# DesInventar „Pacific Islands (PDN)"-Export — nur als Data/-Stage zur Ereignis-Gegenprobe
-# archiviert (Lizenz der Daten bei SPC/UNDRR ungeklärt), NICHT Teil des Public-Builds.
-DESINVENTAR_PDN = DATA_ROOT / "external" / "desinventar" / "DI_export_pac.xml"
 
 # GEO_PICT (SPC, ISO-2) -> ISO3 — 22 PICTs, aus KONZEPT.md §9
 CROSSWALK = {

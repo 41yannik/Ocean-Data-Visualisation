@@ -25,9 +25,8 @@ export function makeInitialState() {
     // Story-Choreografie (Paket 06): null = neutral (alles sichtbar, keine Effekte).
     // Nicht-null nur während der Story; Shape siehe story/steps.js fx().
     storyFx: null,
-    // Step 4 (reveal) - interaktive Beweismittel: highlight = persistenter Toggle-Filter
-    // ({ key, ids } | null, aus revealToggles), textSet = flüchtiges Set aus Text-Hover
-    // ({ ids, pulse } | null; „Category 1"/„glowing outliers").
+    // Interaktive Beweismittel: highlight = persistenter Toggle-Filter ({ key, ids } |
+    // null), textSet = flüchtiges Set aus Text-Hover ({ ids, pulse } | null).
     highlight: null,
     textSet: null,
     // Evidence-Panel: per Klick fixierte 1:n-Gruppe (ein Sturm, mehrere Länderpunkte).

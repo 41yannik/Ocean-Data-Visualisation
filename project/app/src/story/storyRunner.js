@@ -14,8 +14,7 @@ export function createStoryRunner(container, ctx, opts = {}) {
   const steps = buildSteps(ctx);
 
   // Layout v4 (2026-07-03): je Step ein UNSICHTBARER 100vh-Trigger-Screen hinter
-  // der sticky Bühne - jeder Scroll-Screen "ersetzt" den vorigen Zustand. Der
-  // Step-Text lebt in der storyCaption-Komponente (Bühne, unten links).
+  // der sticky Bühne - jeder Scroll-Screen "ersetzt" den vorigen Zustand.
   container.innerHTML = steps.map((s, i) => `
     <div class="step-screen" data-step="${i}" data-step-id="${s.id}" aria-hidden="true"></div>`).join('');
   const sections = [...container.querySelectorAll('.step-screen')];
