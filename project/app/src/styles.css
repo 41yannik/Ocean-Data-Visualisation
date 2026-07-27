@@ -131,10 +131,15 @@ body::before {
   background: var(--point); box-shadow: inset 0 0 0 2px var(--control-active);
 }
 
-/* Globaler Vollbild-Umschalter: gleiche Pille wie der Theme-Umschalter, unten links. */
+/* Vollbild-Umschalter: gleiche Pille wie der Theme-Umschalter, oben links im Hero.
+   Bis zum Audit 2026-07-27 klebte er fixiert unten links - genau dort, wo die Grafiken
+   ihre y-Achsenbeschriftungen, Legenden und die Rangliste des Fazits haben. Er verdeckte
+   deshalb auf jedem Viewport dauerhaft Inhalt (8 von 10 verbliebenen Kollisionen). Als
+   mitscrollende Pille im Kopf verdeckt er nichts mehr: Vollbild schaltet man ohnehin vor
+   dem Lesen ein, und verlassen lässt es sich zusätzlich mit Esc. */
 .fullscreen-toggle {
-  position: fixed;
-  bottom: calc(14px + env(safe-area-inset-bottom));
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
   left: calc(14px + env(safe-area-inset-left));
   z-index: 60;
   min-height: 34px; padding: 5px 13px 5px 11px;
@@ -162,10 +167,18 @@ body::before {
     -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 16%, transparent 84%, #000 100%);
     mask-image: linear-gradient(90deg, #000 0%, transparent 16%, transparent 84%, #000 100%);
   }
-  .theme-toggle { top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); }
+  /* Auf schmalen Viewports läuft der Fließtext über die volle Breite: fixierte
+     Bedienpillen verdeckten dort dauerhaft Wörter (Audit 2026-07-27: 74 Kollisionen
+     bei 390px, u. a. mitten im Hook-Absatz und über den Achsenbeschriftungen).
+     Der Theme-Umschalter wird deshalb mitgescrollt statt fixiert - er steht oben
+     im Hero, gibt danach den Text frei und bleibt per Tastatur erreichbar. */
+  .theme-toggle {
+    position: absolute;
+    top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right));
+  }
   .theme-toggle button { min-height: 32px; padding-inline: 9px; font-size: 11.5px; }
   .fullscreen-toggle {
-    bottom: calc(10px + env(safe-area-inset-bottom)); left: calc(10px + env(safe-area-inset-left));
+    top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left));
     min-height: 32px; padding-inline: 9px 11px; font-size: 11.5px;
   }
 }
@@ -220,6 +233,10 @@ body::before {
 
 /* ----- Sektionen: Text über zentrierter Grafik, viel Luft ----- */
 .section { padding: 11vh 24px; }
+/* Ab 1100px ist die Kapitelleiste eingeblendet: 32px statt 24px Seitenrand halten den
+   Inhalt symmetrisch von ihr frei (Audit 2026-07-27). Symmetrisch, damit zentrierte
+   Blöcke zentriert bleiben. */
+@media (min-width: 1100px) { .section { padding-inline: 32px; } }
 .section-text { max-width: 700px; margin: 0 auto 5vh; text-align: left; }
 .section-text h2 { font-size: 26px; line-height: 1.2; margin: 0 0 10px; }
 .section-text p { margin: 0 0 10px; font-size: 16px; line-height: 1.6; }
@@ -585,8 +602,12 @@ body::before {
 }
 
 /* ----- Kapitel-Navigation (Paket 10 Task 2) ----- */
+/* right 10px statt 18px: die Punktleiste belegte [vw-28, vw-18], der Sektionsinhalt
+   endete bei vw-24 - die Leiste lag also durchgehend 4px ÜBER der rechten Inhaltskante
+   (sichtbar am Land-Dropdown des Evidence-Beats bei 1100-1366px, Audit 2026-07-27).
+   Zusammen mit dem breiteren Sektionsrand unten bleiben jetzt 12px Luft. */
 .chapter-nav {
-  position: fixed; right: 18px; top: 50%; transform: translateY(-50%);
+  position: fixed; right: 10px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 12px; z-index: 30;
 }
 .cn-dot {
@@ -1814,7 +1835,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 }
 
 /* ----- Fazit, vertikal: zwei große Listen + Doppel-Thermometer ----- */
-.section--conclusion .conclusion-evidence { width: min(1280px, calc(100vw - 52px)); }
+/* 100% statt 100vw-52px: die Breite muss sich am Inhaltsfeld der Sektion orientieren,
+   nicht am Viewport - sonst verschiebt jede Änderung des Sektionsrands den Block aus der
+   Mitte (Audit 2026-07-27), und 100vw zählt zusätzlich eine klassische Scrollbar mit. */
+.section--conclusion .conclusion-evidence { width: min(1280px, 100%); }
 .conclusion-synthesis .cs-head {
   display: block; max-width: 760px; margin-bottom: clamp(34px, 5vh, 58px);
 }
@@ -2004,7 +2028,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 
 /* ----- Redaktioneller Schluss: Frage → Antwort → nummerierte Bedingungs-Karten ----- */
 .conclusion-factors {
-  display: block; width: min(1280px, calc(100vw - 52px));
+  display: block; width: min(1280px, 100%);   /* am Inhaltsfeld, nicht am Viewport */
   margin: clamp(64px, 9vh, 108px) auto 0; padding: 0; border: 0;
 }
 .conclusion-answer {
@@ -2229,7 +2253,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 /* ================= Guided Evidence Lab ================= */
 .section-explore { padding-top: 9vh; padding-bottom: 7vh; }
 .section-explore .section-text { margin-bottom: 28px; }
-.evidence-lab { width: min(1080px, calc(100vw - 48px)); margin: 0 auto; }
+.evidence-lab { width: min(1080px, 100%); margin: 0 auto; }   /* am Inhaltsfeld, nicht am Viewport */
 .evidence-switcher {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px;
   align-items: end; border-bottom: 1px solid var(--graticule);

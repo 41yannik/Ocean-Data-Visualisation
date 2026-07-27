@@ -414,7 +414,16 @@ def audit_page(browser, viewport):
         "#step-8 #country-recurrence svg, #step-8 #hot-zone-map svg, "
         "#step-8 #residual-lab svg, #step-8 #human-toll-map svg"
     ).count() == 0
-    assert "Distance from the line" in page.locator("#selection-summary").inner_text()
+    # Die Leseregel des Evidence Labs darf keine Regressionsgerade behaupten: gezeichnet
+    # sind nur der Gesamtmedian und das Quartilsband je Wind-Bin. Der frühere Text
+    # ("Distance from the line is the clue" / "wind-only line") stammte aus der Fassung
+    # vor dem Audit 2026-07 und widersprach der Kernaussage - dieser Test hält ihn fern.
+    summary_text = page.locator("#selection-summary").inner_text()
+    assert "Look for spread" in summary_text
+    assert "middle half of the records" in summary_text
+    assert "not a" in summary_text and "fitted trend" in summary_text
+    assert "wind-only line" not in summary_text
+    assert "Distance from the line" not in summary_text
     # Explore-lab scatter uses uniform dots (no size legend exists in the lab).
     assert page.locator("#step-8 .g-points .point").first.get_attribute("r") == "4"
     assert page.locator('#step-8 .g-points .point[r="4"]').count() == page.locator("#step-8 .g-points .point").count()

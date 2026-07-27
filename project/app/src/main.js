@@ -56,7 +56,11 @@ const params = new URLSearchParams(location.search);
 })();
 
 // Kompakter Scatter für das stabile Analysefenster des Evidence Labs.
-const EXPLORE_SCATTER = { width: 720, height: 500, margin: { top: 24, right: 20, bottom: 68, left: 64 } };
+// left 76 wie in SCATTER (core/config.js): mit 64 lief das breiteste Tick-Label
+// ("0.0001%") in den rotierten Y-Achsentitel, der dadurch auf einen Streifen
+// zerschnittener Glyphen zusammenfiel (Audit 2026-07-27, gleicher Fehler wie
+// zuvor in der Story-Achse - die Korrektur war hier nur nicht nachgezogen).
+const EXPLORE_SCATTER = { width: 720, height: 500, margin: { top: 24, right: 20, bottom: 68, left: 76 } };
 
 // Eigene, größere Box NUR für die dots2-Bühne (Länderzeilen + Unit-Raster, Audit
 // 2026-07): 15 Länderzeilen in der globalen SCATTER-Box (562×416) waren mit ~24,5px

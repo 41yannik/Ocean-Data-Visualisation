@@ -10,10 +10,5 @@ dist/
 __pycache__/
 *.pyc
 
-# Tool-Cache (Claude Code / impeccable / MCP-Server)
-.impeccable/
-.playwright-mcp/
-.serena/
-
 # Hinweis: Die Rohdaten unter data/ und die erzeugten Artefakte unter
 # project/app/public/data/ werden bewusst mit veröffentlicht.
