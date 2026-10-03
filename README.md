@@ -1,55 +1,57 @@
 # From Track to Toll
 
-Interaktive D3-Visualisierung über tropische Wirbelstürme und gemeldete menschliche Auswirkungen in pazifischen Inselstaaten. Die Seite verbindet eine geführte Story mit einem frei filterbaren Evidence Lab und einem öffentlich lesbaren Provenienzbereich.
+**Does stronger wind really explain who suffers most?** An interactive D3 data story about tropical cyclones and reported human impact across Pacific island states, 2005 to 2023.
 
-## Ordnerstruktur der Abgabe
+[![Live demo](https://img.shields.io/badge/live%20demo-ozeanvisualisierung.yannik--h--huber.de-1f6feb)](https://ozeanvisualisierung.yannik-h-huber.de)
+[![Deploy](https://github.com/41yannik/Ocean-Data-Visualisation/actions/workflows/deploy.yml/badge.svg)](https://github.com/41yannik/Ocean-Data-Visualisation/actions/workflows/deploy.yml)
+![D3](https://img.shields.io/badge/D3-v7-f9a03c)
+![Vite](https://img.shields.io/badge/Vite-6-646cff)
+![Python](https://img.shields.io/badge/pipeline-Python-3776ab)
 
-```
-.
-├── project/      # der gesamte Code (Visualisierung + Datenpipeline + Tests)
-│   ├── app/          # Vanilla-JS/Vite/D3-Frontend (deployt als GitHub Pages)
-│   ├── scripts/      # Python-Datenpipeline
-│   └── tests/        # Unit-, Pipeline- und Playwright-Prüfungen
-├── data/         # Rohdaten der Quellen + SOURCES.md (Herkunft/Lizenzen)
-├── last weeks presentation/
-└── short paper/  # Short Paper (.docx), Screenrecording, Problem statement (EN)
-```
+**[Open the live visualisation](https://ozeanvisualisierung.yannik-h-huber.de)**
 
-## Challenge-Konformität (Pacific Dataviz Challenge 2026)
+![Evidence view: share of population reported affected, one row per country, smallest population first](docs/assets/evidence.png)
 
-| Regel | Stand |
+## What it shows
+
+The story links physical storm tracks to country-level impact records. It tests how far the wind a cyclone actually brought to a country lines up with the share of people reported affected. The finding: wind explains little. Country size explains several times more. Of the records from countries under 60,000 people, 12 of 14 sit above the overall median share. Population size explains 13 % of the differences (p = 0.003).
+
+The page has three parts:
+
+- **Guided story:** a scrollytelling narrative from storm tracks to impact records.
+- **Evidence Lab:** freely filterable views of the same data.
+- **Data & methods:** a public provenance section with every source, transformation and limitation.
+
+| Storm trends 2001 to 2025 | Opening |
 |---|---|
-| §9 Offizieller Datensatz | erfüllt: PDH SDG 11.5.1 (`VC_DSR_AFFCT`) und PDH SST-Anomalien (`SST_ANOM`) |
-| §9 Zusatzdaten nur offen | erfüllt: IBTrACS (US-Behördenwerk), UN WPP (CC BY 3.0 IGO), Natural Earth (Public Domain) |
-| §9 Alle Datensätze zitiert | erfüllt: Abschnitt „Data & methods" der Seite, `meta.json`, [`data/SOURCES.md`](data/SOURCES.md) |
-| §9 KI nur unterstützend | erfüllt und offengelegt: siehe Short Paper, Abschnitt „Einsatz von KI-Werkzeugen" |
-| §8 Arbeitssprache EN/FR | erfüllt: Oberfläche vollständig Englisch |
-| §10 Problem statement | [`short paper/problem-statement-EN.md`](short%20paper/problem-statement-EN.md) |
-| §10 Öffentliche URL | <https://ozeanvisualisierung.yannik-h-huber.de>, muss bis mindestens 31.08.2029 erreichbar bleiben (GitHub Pages, Custom-Domain) |
-| §13 IP-Lizenz an Organisator | möglich: alle genutzten Datenlizenzen erlauben Weiterverbreitung und kommerzielle Nutzung |
+| ![Storms per year and average peak wind](docs/assets/storm-trends.png) | ![From Track to Toll title screen](docs/assets/hero.png) |
 
-## Datenbasis und Veröffentlichung
+## Highlights
 
-Die Visualisierung nutzt eine einzige, vollständig offene Datenbasis auf Land-Jahr-Auflösung:
+- **Reproducible pipeline:** a Python pipeline turns raw source data into JSON artefacts. `meta.json` records the source catalogue, transformations, story evidence, Git state and SHA-256 checksums.
+- **Publication gate:** `npm run build:public` only builds when every source is open or permissioned and fully verified. A leak guard blocks restricted fields permanently.
+- **Tested end to end:** unit tests, pipeline tests and a Playwright browser audit.
+- **Honest limits:** the page states what the data cannot prove (see below).
 
-- Wirkungsmaß: [PDH SDG 11.5.1 „directly affected persons attributed to disasters"](https://pacificdata.org/data/dataset/sustainable-development-goals-sdg) (SPC/Pacific Data Hub, Jahreswerte 2005–2023, kompiliert aus dem UNDRR Sendai Framework Monitor).
-- Sturm-Verknüpfung: je Land und Jahr der stärkste IBTrACS-Sturm, dessen Track innerhalb von 500 km um das Länderzentroid verlief.
+## Tech stack
 
-Die Rohdaten liegen unter `data/` (Herkunft und Lizenzen: [`data/SOURCES.md`](data/SOURCES.md)). `npm run build:public` prüft den Publikationsstatus vor dem Build. Nur `publication.status=open|permissioned`, `publicBuild=true`, vollständig verifizierte Quellen und erlaubte Downloads passieren dieses Gate; ein Leck-Guard blockiert gesperrte Felder und Quelltexte dauerhaft.
+D3 v7 · Vanilla JS · Vite · Python (pandas, NumPy, SciPy) · Playwright · GitHub Actions and GitHub Pages
 
-## Quellen
+## Data sources
 
-- [IBTrACS v04r01, NOAA/NCEI](https://www.ncei.noaa.gov/products/international-best-track-archive): Tracks, Intensität, Kategorien, R34-Radien und saisonale Trends.
-- [SPC/PDH SDG-Indikatoren](https://pacificdata.org/data/dataset/sustainable-development-goals-sdg): jährliche Betroffenenzahlen (`VC_DSR_AFFCT`, SDG 11.5.1).
-- [SPC/PDH Climate Change Indicators](https://pacificdata.org/data/dataset/climate-change-indicators-df-climate-change): jährliche SST-Anomalien.
-- [UN World Population Prospects 2024](https://population.un.org/wpp/): Bevölkerungsnormalisierung (CC BY 3.0 IGO, Namensnennung erforderlich).
-- [Natural Earth über world-atlas](https://github.com/topojson/world-atlas): 110m-Basiskarte, Public Domain.
+| Source | Used for | License |
+|---|---|---|
+| [SPC / Pacific Data Hub, SDG 11.5.1](https://pacificdata.org/data/dataset/sustainable-development-goals-sdg) (`VC_DSR_AFFCT`) | Annual people affected per country | Open (PDH) |
+| [SPC / Pacific Data Hub, Climate Change Indicators](https://pacificdata.org/data/dataset/climate-change-indicators-df-climate-change) (`SST_ANOM`) | Sea surface temperature anomalies | Open (PDH) |
+| [IBTrACS v04r01, NOAA/NCEI](https://www.ncei.noaa.gov/products/international-best-track-archive) | Tracks, intensity, categories, R34 radii, seasonal trends | US government work |
+| [UN World Population Prospects 2024](https://population.un.org/wpp/) | Population normalisation | CC BY 3.0 IGO |
+| [Natural Earth via world-atlas](https://github.com/topojson/world-atlas) | 110m base map | Public domain |
 
-Genaue Teilmengen, Felder, Abrufdaten und Lizenzlinks stehen im generierten `project/app/public/data/meta.json` und im Seitenabschnitt „Data & methods".
+Storm linkage: for each country and year, the strongest IBTrACS storm whose track passed within 500 km of the country centroid. Details per file: [`data/SOURCES.md`](data/SOURCES.md).
 
-## Lokal ausführen
+## Run locally
 
-Voraussetzungen: Node.js 20+, Python 3 mit pandas, NumPy und SciPy. Die erzeugten Artefakte sind eingecheckt, das Frontend läuft ohne Pipeline-Lauf.
+Requirements: Node.js 20+, Python 3 with pandas, NumPy and SciPy. The generated artefacts are checked in, so the frontend runs without a pipeline run.
 
 ```bash
 cd project/app
@@ -57,25 +59,41 @@ npm ci
 npm run dev
 ```
 
-## Reproduzieren und prüfen
+Reproduce and test:
 
 ```bash
 cd project
-python3 scripts/build_track_to_toll.py     # liest ../data, schreibt app/public/data
+python3 scripts/build_track_to_toll.py   # reads ../data, writes app/public/data
 cd app
-npm run check                              # Unit- + Pipeline-Tests + Build
-npm run test:browser                       # Playwright-Audit
+npm run check                            # unit + pipeline tests + build
+npm run test:browser                     # Playwright audit
+npm run build:public                     # gated public build
 ```
 
-Die Pipeline erzeugt JSON-Artefakte sowie CSV-Exporte für die offenen SST- und Sturmtrendserien. `meta.json` enthält Quellenkatalog, Transformationen, Story-Evidenz, Git-Stand und SHA-256-Prüfsummen.
+## Project structure
 
-Der Public-Build:
-
-```bash
-cd project/app
-npm run build:public
+```
+.
+├── project/
+│   ├── app/       # Vanilla JS / Vite / D3 frontend (deployed to GitHub Pages)
+│   ├── scripts/   # Python data pipeline
+│   └── tests/     # unit, pipeline and Playwright checks
+├── data/          # raw source data + SOURCES.md (provenance and licenses)
+└── short paper/   # short paper, screen recording, problem statement
 ```
 
-## Was die Visualisierung nicht behauptet
+## What the visualisation does not claim
 
-Die Visualisierung beweist keine kausale Verwundbarkeit. Die Betroffenenzahlen sind Jahreswerte über alle Katastrophen (nicht sturm-spezifisch), gemeldete Auswirkungen sind unvollständig, Peakwind ist nicht gleich lokaler Wind am Landfall, und fehlende Werte bedeuten nicht null Betroffene.
+It does not prove causal vulnerability. The affected counts are annual totals across all disasters, not storm-specific. Reported impacts are incomplete. Peak wind differs from local wind at landfall, and a missing value does not mean zero people affected.
+
+## Context
+
+Built for the **Pacific Dataviz Challenge 2026**. The submission meets the challenge rules: official PDH datasets, only open supplementary data, every dataset cited, English interface, and AI tools used in a supporting role only (disclosed in the short paper). Problem statement: [`short paper/problem-statement-EN.md`](short%20paper/problem-statement-EN.md).
+
+## Author
+
+**Yannik Huber** · [Website](https://yannik-h-huber.de) · [LinkedIn](https://www.linkedin.com/in/yannik-huber/)
+
+## License
+
+Code: [MIT](LICENSE). The data in `data/` keeps its original licenses, listed above and in [`data/SOURCES.md`](data/SOURCES.md).
