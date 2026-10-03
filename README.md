@@ -8,7 +8,7 @@
 ![Vite](https://img.shields.io/badge/Vite-6-646cff)
 ![Python](https://img.shields.io/badge/pipeline-Python-3776ab)
 
-**[Open the live visualisation](https://ozeanvisualisierung.yannik-h-huber.de)**
+**[Open the live visualisation](https://ozeanvisualisierung.yannik-h-huber.de)** · also on [Hugging Face Spaces](https://huggingface.co/spaces/41yannik/from-track-to-toll) · dataset and analysis notebook on [Kaggle](https://www.kaggle.com/datasets/yannik41/pacific-cyclones-vs-people-affected-2005-2023)
 
 ![Evidence view: share of population reported affected, one row per country, smallest population first](docs/assets/evidence.png)
 
